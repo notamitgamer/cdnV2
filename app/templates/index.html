@@ -1,0 +1,1579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if page == 'file' %}{{ filename }} · amit/cdn{% elif page == 'upload' %}New · amit/cdn{% elif page == 'search' %}Find · amit/cdn{% else %}amit/cdn · {{ page | capitalize }}{% endif %}</title>
+    <meta name="description" content="Static file host for amit's projects. Browse, upload, and grab direct links.">
+
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16x16.png">
+    <link rel="icon" type="image/svg+xml" href="/static/icons/logo.svg">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/icons/apple-touch-icon.png">
+
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#000000">
+    <meta name="color-scheme" content="dark">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="amit/cdn">
+
+    <meta property="og:title" content="{% if page == 'upload' %}New · amit/cdn{% elif page == 'search' %}Find · amit/cdn{% else %}amit/cdn · {{ page | capitalize }}{% endif %}">
+    <meta property="og:description" content="Static file host for amit's projects. Browse, upload, and grab direct links.">
+    <meta property="og:image" content="/static/icons/og-logo.png">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
+
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@8.0.4/dist/turbo.es2017-esm.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #000000;
+            --surface: #0c0c0c;
+            --surface-2: #161616;
+            --text-main: #f2f2f0;
+            --text-dim: #868682;
+            --accent-pink: #3272f0;
+            --accent-2: #ff6a42;
+            --success: #2fb872;
+            --border: #262624;
+            --danger: #ff5c73;
+            --font-heading: 'Zilla Slab', Georgia, 'Times New Roman', serif;
+            --font-body: 'Work Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        }
+
+        * { box-sizing: border-box; }
+        * { -webkit-tap-highlight-color: transparent; }
+
+        ::selection { background: var(--accent-pink); color: #000000; }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0 0 3rem 0;
+            line-height: 1.6;
+            font-size: 1rem;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        @media (max-width: 480px) {
+            body {
+                font-size: 0.9rem;
+            }
+        }
+
+        .navbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.1rem 5%;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 2.5rem;
+        }
+        .wordmark {
+            font-family: var(--font-mono);
+            font-weight: 500;
+            font-size: 1.05rem;
+            color: var(--text-main) !important;
+            text-decoration: none !important;
+            letter-spacing: -0.01em;
+        }
+        .wordmark-slash { color: var(--accent-pink); }
+        .navlinks {
+            display: flex;
+            gap: 1.75rem;
+        }
+        .navlinks a {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            padding-bottom: 2px;
+            transition: color 0.15s ease, border-color 0.15s ease;
+        }
+        .navlinks a:hover {
+            color: var(--text-main);
+            border-color: var(--accent-pink);
+            text-decoration: none;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                width: 100%;
+                padding: 0 1rem;
+            }
+            .navbar { padding: 1rem 1rem; }
+        }
+
+        h1 {
+            font-family: var(--font-heading);
+            font-size: 2rem;
+            letter-spacing: -0.01em;
+            color: #ffffff;
+            font-weight: 600;
+            margin: 0 0 1.25rem 0;
+            line-height: 1.25;
+        }
+
+        blockquote {
+            background: transparent;
+            border: none;
+            border-left: 2px solid var(--accent-pink);
+            border-radius: 0;
+            margin: 0 0 2.5rem 0;
+            padding: 0.15rem 0 0.15rem 1.1rem;
+            color: var(--text-dim);
+            max-width: 60ch;
+        }
+
+        .upload-notice {
+            margin-bottom: 2.5rem;
+            color: var(--text-dim);
+        }
+
+        a { color: var(--accent-pink); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .breadcrumb {
+            color: var(--accent-pink);
+            margin-bottom: 1rem;
+            font-weight: 500;
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+        }
+        .breadcrumb a { color: inherit; }
+
+        .list-container {
+            border: 1px solid var(--border);
+            border-radius: 0;
+            background: var(--surface);
+            box-shadow: none;
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .filter-input {
+            width: 100%;
+            padding: 0.9rem 1.5rem;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-main);
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+        }
+        .filter-input:focus {
+            outline: none;
+            background: var(--surface-2);
+        }
+        .filter-input::placeholder { color: var(--text-dim); }
+
+        .search-input {
+            width: 100%;
+            padding: 0.9rem 1.5rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 0;
+            color: var(--text-main);
+            font-family: var(--font-mono);
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent-pink);
+        }
+        .search-input::placeholder { color: var(--text-dim); }
+
+        .search-status {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            margin-bottom: 0.75rem;
+        }
+        .list-item.search-result-item {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.3rem;
+        }
+        .search-result-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+        }
+        .search-result-item .item-name svg { flex-shrink: 0; }
+        .search-result-item .result-path {
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            word-break: break-all;
+        }
+
+        .list-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.85rem 1.5rem;
+            min-height: 44px;
+            border-bottom: 1px solid var(--border);
+            border-left: 2px solid transparent;
+            color: var(--text-main);
+            gap: 0.5rem;
+            transition: background 0.1s ease, border-color 0.1s ease;
+        }
+        .list-item:hover {
+            background: var(--surface-2);
+            border-left-color: var(--accent-pink);
+        }
+        .list-item:active {
+            background: var(--surface-2);
+            border-left-color: var(--accent-pink);
+        }
+        .list-item:last-child { border-bottom: none; }
+
+        .item-name {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            word-break: break-all;
+            min-width: 0;
+            flex: 1;
+            font-family: var(--font-mono);
+            font-size: 0.92rem;
+        }
+        .item-name svg {
+            color: var(--text-dim);
+            flex-shrink: 0;
+        }
+        .item-name a {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .item-name a[href^="/"]:not([data-turbo="false"]) {
+            color: #ffffff;
+            font-weight: 500;
+        }
+
+        .item-meta {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 480px) {
+            .item-meta .size-label {
+                display: none;
+            }
+        }
+
+        .download-icon {
+            color: var(--text-dim);
+            transition: color 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem;
+            min-width: 44px;
+            min-height: 44px;
+            margin: -0.5rem;
+        }
+        .download-icon:hover {
+            color: var(--accent-pink);
+        }
+        .download-icon:active {
+            color: var(--accent-pink);
+            background: var(--surface-2);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: transparent;
+            color: var(--text-main);
+            padding: 0.55rem 1.1rem;
+            border: 1px solid var(--border);
+            border-radius: 0;
+            cursor: pointer;
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: background 0.12s ease, border-color 0.12s ease;
+        }
+        .btn:hover:not(:disabled) { background: var(--surface-2); text-decoration: none; border-color: var(--text-dim); }
+        .btn:active:not(:disabled) { background: var(--surface-2); border-color: var(--text-dim); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .btn-primary {
+            background: var(--accent-pink);
+            color: #000000;
+            border-color: var(--accent-pink);
+            font-weight: 600;
+            box-shadow: none;
+        }
+        .btn-primary:hover:not(:disabled) { background: #4c85f2; border-color: #4c85f2; }
+        .btn-primary:active:not(:disabled) { background: #2a63d6; border-color: #2a63d6; }
+        .btn-primary svg { stroke: #000000; }
+
+        .file-card {
+            border: 1px solid var(--border);
+            border-radius: 0;
+            background: var(--surface);
+            box-shadow: none;
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .file-preview {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--surface);
+            background-image:
+                linear-gradient(var(--border) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border) 1px, transparent 1px);
+            background-size: 20px 20px;
+            border-bottom: 1px solid var(--border);
+            min-height: 160px;
+            padding: 2rem 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .file-icon {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 72px;
+            height: 72px;
+            border-radius: 0;
+            background: var(--bg);
+            border: 1px solid var(--accent-pink);
+            color: var(--accent-pink);
+        }
+        .file-ext-tag {
+            position: absolute;
+            bottom: -0.5rem;
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            letter-spacing: 0.5px;
+            font-weight: 500;
+            color: #000000;
+            background: var(--accent-2);
+            padding: 0.1rem 0.4rem;
+            border-radius: 0;
+            text-transform: uppercase;
+        }
+
+        .file-info {
+            padding: 1.5rem 1.75rem 1.75rem;
+            text-align: center;
+        }
+        .file-name {
+            font-family: var(--font-heading);
+            margin: 0 0 0.6rem 0;
+            font-weight: 600;
+            font-size: 1.3rem;
+            color: #ffffff;
+            word-break: break-all;
+        }
+        .file-meta-row {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-bottom: 0.85rem;
+        }
+        .file-pill {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            letter-spacing: 0.5px;
+            color: var(--text-dim);
+            border: 1px solid var(--border);
+            background: transparent;
+            border-radius: 0;
+            padding: 0.25rem 0.6rem;
+        }
+        .file-path {
+            font-family: var(--font-mono);
+            color: var(--text-dim);
+            margin: 0 0 1.75rem 0;
+            font-size: 0.78rem;
+            word-break: break-all;
+        }
+        .file-actions {
+            display: flex;
+            gap: 0.6rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 480px) {
+            .file-info { padding: 1.25rem 1rem 1.5rem; }
+            .file-actions {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 0.6rem;
+            }
+            .file-actions .btn {
+                justify-content: center;
+                width: 100%;
+            }
+        }
+
+        .url-input {
+            flex: 1;
+            padding: 0.7rem 1rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 0;
+            color: var(--text-main);
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+        }
+        .url-input:focus {
+            outline: none;
+            border-color: var(--accent-pink);
+        }
+        .url-input::placeholder { color: var(--text-dim); }
+
+        .folder-picker {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        .folder-picker-label {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+        .folder-option {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            border-radius: 0;
+            padding: 0.35rem 0.85rem;
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            cursor: pointer;
+            transition: background 0.12s ease, border-color 0.12s ease;
+        }
+        .folder-option:hover { border-color: var(--accent-pink); color: var(--text-main); }
+        .folder-option.active {
+            background: var(--accent-pink);
+            border-color: var(--accent-pink);
+            color: #000000;
+            font-weight: 600;
+        }
+
+        .icon-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 0;
+            cursor: pointer;
+            padding: 0.55rem 0.75rem;
+            transition: background 0.12s ease, border-color 0.12s ease;
+        }
+        .icon-btn:hover:not(:disabled) { background: var(--surface-2); border-color: var(--text-dim); }
+        .icon-btn:hover:not(:disabled) svg { stroke: var(--text-main); }
+        .icon-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        @media (max-width: 480px) {
+            .btn {
+                padding: 0.65rem 1.1rem;
+                font-size: 0.8rem;
+            }
+        }
+
+        #dropzone {
+            border: 1px dashed var(--border);
+            border-radius: 0;
+            padding: 3rem 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            color: var(--text-dim);
+            margin-bottom: 1.5rem;
+            background: var(--surface);
+            transition: all 0.15s;
+        }
+        #dropzone:hover, #dropzone.dragover {
+            border-color: var(--accent-pink);
+            color: var(--accent-pink);
+            background: var(--surface-2);
+        }
+
+        .file-row {
+            display: flex; justify-content: space-between; padding: 0.85rem 1rem;
+            border: 1px solid var(--border); border-radius: 0; margin-bottom: 0.5rem;
+            background: var(--surface);
+            align-items: center;
+        }
+        .file-row.done { border-color: var(--success); }
+        .file-row.error { border-color: var(--danger); }
+
+        .turbo-progress-bar {
+            height: 2px;
+            background-color: var(--accent-pink);
+        }
+
+        .container {
+            transition: opacity 0.15s ease;
+        }
+        body.turbo-loading .container {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 3rem 1.5rem;
+            color: var(--text-dim);
+        }
+        .empty-state svg { opacity: 0.6; }
+
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            position: sticky;
+            top: 0;
+            background: var(--bg);
+            z-index: 10;
+            padding: 0.85rem 0;
+        }
+        .breadcrumb-collapsed {
+            position: relative;
+            display: inline-flex;
+        }
+        .breadcrumb-ellipsis {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            border-radius: 0;
+            padding: 0.1rem 0.55rem;
+            cursor: pointer;
+            font-family: var(--font-mono);
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+        .breadcrumb-ellipsis:hover { color: var(--accent-pink); border-color: var(--accent-pink); }
+        .breadcrumb-menu {
+            display: none;
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            min-width: 160px;
+            max-width: 70vw;
+            max-height: 260px;
+            overflow-y: auto;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 0;
+            padding: 0.3rem;
+            flex-direction: column;
+            gap: 0.1rem;
+            z-index: 20;
+        }
+        .breadcrumb-menu.open { display: flex; }
+        .breadcrumb-menu a {
+            padding: 0.4rem 0.6rem;
+            border-radius: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .breadcrumb-menu a:hover { background: var(--surface-2); text-decoration: none; }
+        .copy-path-btn {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem;
+            min-width: 32px;
+            min-height: 32px;
+            transition: color 0.15s;
+        }
+        .copy-path-btn:hover { color: var(--accent-pink); }
+        .copy-path-btn:active { color: var(--accent-pink); }
+
+        .listing-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+        }
+
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+        .spin-anim {
+            animation: spin 1s linear infinite;
+        }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000;
+        }
+        .modal {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 0;
+            padding: 1.5rem;
+            max-width: 420px;
+            width: 90%;
+            box-shadow: none;
+        }
+        .modal h3 {
+            font-family: var(--font-heading);
+            margin-top: 0; margin-bottom: 1rem;
+            color: #fff; font-size: 1.3rem;
+            font-weight: 600;
+        }
+        .modal p { margin-bottom: 1.5rem; }
+        .modal-actions {
+            display: flex; justify-content: flex-end; gap: 0.75rem;
+        }
+
+        .upload-spinner {
+            display: inline-block;
+            width: 12px; height: 12px;
+            border: 2px solid var(--accent-pink);
+            border-top-color: transparent;
+            border-radius: 50%;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+
+        footer {
+            margin-top: 4rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        footer a { color: var(--text-dim); }
+        footer a:hover { color: var(--text-main); }
+
+        .list-container, .breadcrumb, h1, .site-notice {
+            animation: fadeIn 0.2s ease both;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <header class="navbar">
+        <a href="/" class="wordmark">amit<span class="wordmark-slash">/</span>cdn</a>
+        <nav class="navlinks">
+            <a href="/find">Find</a>
+            <a href="/new">New</a>
+        </nav>
+    </header>
+    <div class="container">
+        {% if page == 'listing' and not path %}
+        <h1>A place to keep and share files for <a href="https://amit.is-a.dev">my</a> projects.</h1>
+        <blockquote class="site-notice">
+            Nothing here is guaranteed to stay put forever — treat any link you grab as borrowed, not owned. Poke around if you're curious, just don't build something load-bearing on top of it.
+        </blockquote>
+        {% endif %}
+
+        {% if not (page == 'listing' and not path) %}
+        <div class="breadcrumb" id="breadcrumb">
+            {% set current = namespace(val='') %}
+            {% set ns = namespace(items=[{'name': 'root', 'href': '/'}]) %}
+            {% if path %}
+                {% set path_parts = path.split('/') %}
+                {% if page == 'file' %}{% set path_parts = path_parts[:-1] %}{% endif %}
+                {% for part in path_parts %}
+                    {% set current.val = current.val + part + '/' %}
+                    {% set ns.items = ns.items + [{'name': part, 'href': '/' + current.val[:-1]}] %}
+                {% endfor %}
+            {% endif %}
+            {% if page == 'upload' %}
+                {% set ns.items = ns.items + [{'name': 'new', 'href': '/new'}] %}
+            {% elif page == 'search' %}
+                {% set ns.items = ns.items + [{'name': 'find', 'href': '/find'}] %}
+            {% elif page == 'file' %}
+                {% set ns.items = ns.items + [{'name': filename, 'href': none}] %}
+            {% endif %}
+
+            {% if ns.items|length > 4 %}
+                {% set hidden = ns.items[1:-2] %}
+                <a href="{{ ns.items[0].href }}">{{ ns.items[0].name }}</a>
+                <div class="breadcrumb-collapsed">
+                    <button type="button" class="breadcrumb-ellipsis" onclick="toggleBreadcrumbMenu(this)" aria-label="Show hidden path segments">&hellip;</button>
+                    <div class="breadcrumb-menu">
+                        {% for c in hidden %}
+                        <a href="{{ c.href }}">{{ c.name }}</a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% for c in ns.items[-2:] %}
+                / {% if c.href %}<a href="{{ c.href }}">{{ c.name }}</a>{% else %}{{ c.name }}{% endif %}
+                {% endfor %}
+            {% else %}
+                {% for c in ns.items %}
+                    {% if loop.first %}<a href="{{ c.href }}">{{ c.name }}</a>
+                    {% else %}/ {% if c.href %}<a href="{{ c.href }}">{{ c.name }}</a>{% else %}{{ c.name }}{% endif %}
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+
+            {% if path or page == 'file' %}
+            <button type="button" class="copy-path-btn" title="Copy path" onclick="copyBreadcrumbPath(this)" data-path="{{ path }}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% if page == 'listing' %}
+        {% if items %}
+        <div class="listing-toolbar">
+            <div style="color: var(--text-dim); font-size: 0.9rem;">
+                {% set visible_items = items | rejectattr("name", "equalto", ".gitattributes") | list %}
+                {% set file_count = visible_items | rejectattr("is_dir") | list | length %}
+                {% set dir_count = visible_items | selectattr("is_dir") | list | length %}
+                
+                {% if dir_count > 0 %}
+                    {{ dir_count }} folder{{ 's' if dir_count != 1 else '' }}
+                {% endif %}
+                {% if dir_count > 0 and file_count > 0 %} &amp; {% endif %}
+                {% if file_count > 0 %}
+                    {{ file_count }} file{{ 's' if file_count != 1 else '' }}
+                {% endif %}
+                {% if dir_count == 0 and file_count == 0 %}
+                    0 items
+                {% endif %}
+            </div>
+            <button id="download-zip-btn" class="btn" data-path="{{ path }}" title="Download everything in this folder as a .zip">
+                <svg id="zip-spinner" class="spin-anim" style="display: none; width: 14px; height: 14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="2" x2="12" y2="6"></line>
+                    <line x1="12" y1="18" x2="12" y2="22"></line>
+                    <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+                    <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+                    <line x1="2" y1="12" x2="6" y2="12"></line>
+                    <line x1="18" y1="12" x2="22" y2="12"></line>
+                    <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+                    <line x1="16.24" y1="4.93" x2="19.07" y2="7.76"></line>
+                </svg>
+                <span id="zip-btn-text">Download all (.zip)</span>
+            </button>
+        </div>
+        {% endif %}
+        <div class="list-container">
+            <input type="text" id="filter-input" class="filter-input" placeholder="Narrow this listing... (press / to focus)" autocomplete="off" spellcheck="false">
+            
+            <div id="file-list">
+                {% if path %}
+                <div class="list-item" data-name="..">
+                    <div class="item-name">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 1 1 0 8h-1"/></svg>
+                        {% set parent_path = '/' %}
+                        {% set path_parts = path.split('/') %}
+                        {% if path_parts|length > 1 %}
+                            {% set parent_path = '/' + path_parts[:-1]|join('/') %}
+                        {% endif %}
+                        <a href="{{ parent_path }}">..</a>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% for item in items %}
+                {% if item.name != '.gitattributes' %}
+                <div class="list-item" data-name="{{ item.name }}">
+                    <div class="item-name">
+                        {% if item.is_dir %}
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                        <a href="/{{ item.path }}" data-full-name="{{ item.name }}/">{{ item.name }}/</a>
+                        {% else %}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/></svg>
+                        <a href="{{ raw_base_url }}/{{ item.path }}" data-turbo="false" data-full-name="{{ item.name }}">{{ item.name }}</a>
+                        {% endif %}
+                    </div>
+                    <div class="item-meta">
+                        {% if not item.is_dir %}
+                        <span>{{ item.size_str }}</span>
+                        <a href="/api/get/{{ item.path }}" class="download-icon" title="Download" data-turbo="false">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+                
+                {% set visible_items = items | rejectattr("name", "equalto", ".gitattributes") | list %}
+                {% if not visible_items %}
+                <div class="empty-state">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    <span>Empty directory</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% elif page == 'file' %}
+        <div class="file-card">
+            <div class="file-preview file-preview-none">
+                <div class="file-icon">
+                    {% if file_ext %}<span class="file-ext-tag">.{{ file_ext }}</span>{% endif %}
+                    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+                </div>
+            </div>
+
+            <div class="file-info">
+                <h2 class="file-name">{{ filename }}</h2>
+                <div class="file-meta-row">
+                    {% if file_ext %}<span class="file-pill">{{ file_ext | upper }}</span>{% endif %}
+                    {% if file_size_str and file_size_str != '-' %}<span class="file-pill">{{ file_size_str }}</span>{% endif %}
+                </div>
+                <p class="file-path">{{ path }}</p>
+
+                <div class="file-actions">
+                    <a href="/api/get/{{ path }}" class="btn btn-primary" data-turbo="false">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>
+                        Download
+                    </a>
+                    <a href="{{ raw_base_url }}/{{ path }}" class="btn" data-turbo="false">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Open Raw
+                    </a>
+                    <button onclick="copyToClipboard(window.location.origin + '/' + '{{ path }}', this)" class="btn">Copy Link</button>
+                    <button onclick="copyToClipboard('{{ raw_base_url }}/{{ path }}', this)" class="btn">Copy Raw Link</button>
+                </div>
+            </div>
+        </div>
+
+        {% elif page == 'batch' %}
+        <div class="listing-toolbar">
+            <div style="color: var(--text-dim); font-size: 0.9rem;">
+                {{ batch_files | length }} file{{ 's' if batch_files | length != 1 else '' }} in this batch
+            </div>
+            <div style="display:flex; gap:0.5rem;">
+                <button onclick="copyToClipboard(window.location.href, this)" class="btn">Copy Batch Link</button>
+                <button id="download-zip-btn" class="btn" data-batch-id="{{ batch_id }}" title="Download every file in this batch as a .zip">
+                    <svg id="zip-spinner" class="spin-anim" style="display: none; width: 14px; height: 14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="2" x2="12" y2="6"></line>
+                        <line x1="12" y1="18" x2="12" y2="22"></line>
+                        <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+                        <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+                        <line x1="2" y1="12" x2="6" y2="12"></line>
+                        <line x1="18" y1="12" x2="22" y2="12"></line>
+                        <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+                        <line x1="16.24" y1="4.93" x2="19.07" y2="7.76"></line>
+                    </svg>
+                    <span id="zip-btn-text">Download all (.zip)</span>
+                </button>
+            </div>
+        </div>
+        <div class="list-container">
+            <div id="file-list">
+                {% for f in batch_files %}
+                <div class="list-item" data-name="{{ f.filename }}">
+                    <div class="item-name">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/></svg>
+                        <a href="{{ f.raw_url }}" data-turbo="false" data-full-name="{{ f.filename }}">{{ f.filename }}</a>
+                    </div>
+                    <div class="item-meta">
+                        <span class="batch-size-label">{{ f.size_str }}</span>
+                        <a href="/api/get/{{ f.hf_path }}" class="download-icon" title="Download" data-turbo="false">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+
+                {% if not batch_files %}
+                <div class="empty-state">
+                    <span>This batch has no files.</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% elif page == '404' %}
+        <div class="list-container" style="padding: 4rem 1.5rem; text-align: center;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="1.5" style="margin-bottom: 1rem;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <h2 style="margin: 0 0 0.5rem 0; font-weight: normal; color: var(--danger);">404 - Not Found</h2>
+            <p style="color: var(--text-dim); margin-bottom: 2rem;">The file or directory you're looking for doesn't exist.</p>
+            <a href="/" class="btn">Go to Root</a>
+        </div>
+
+        {% elif page == 'upload' %}
+        <blockquote>
+            If you do not remember the link, go to the <a href="/uploads">uploads folder</a> to find your file.
+        </blockquote>
+
+        <div class="folder-picker" id="folder-picker">
+            <span class="folder-picker-label">Save to:</span>
+            <button type="button" class="folder-option active" data-folder="uploads">uploads</button>
+            <button type="button" class="folder-option" data-folder="third-party">third-party</button>
+        </div>
+
+        <div style="display:flex; gap:0.5rem; margin-bottom: 1rem;">
+            <input type="text" id="url-input" class="url-input" placeholder="paste a link to fetch and upload…">
+            <button type="button" class="icon-btn" id="url-upload-btn" title="Upload from URL" aria-label="Upload from URL">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07l-1.5 1.5"/>
+                    <path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07l1.5-1.5"/>
+                </svg>
+            </button>
+        </div>
+
+        <div id="dropzone">
+            <div>drag &amp; drop files here</div>
+            <div style="font-size: 0.8rem; margin-top: 0.5rem;">or click to select</div>
+            <input type="file" id="file-input" multiple style="display:none;">
+        </div>
+
+        <div id="error-box" style="display: none; color: var(--danger); margin-bottom: 1rem; padding: 0.75rem; border: 1px solid var(--danger); border-radius: 8px;"></div>
+        <div id="results"></div>
+
+        <script>
+            const dropzone = document.getElementById('dropzone');
+            const fileInput = document.getElementById('file-input');
+            const urlInput = document.getElementById('url-input');
+            const urlUploadBtn = document.getElementById('url-upload-btn');
+            const results = document.getElementById('results');
+            const errorBox = document.getElementById('error-box');
+            const folderPicker = document.getElementById('folder-picker');
+
+            const MAX_FILE_SIZE_BYTES = 200 * 1024 * 1024;
+
+            function selectedFolder() {
+                const active = folderPicker.querySelector('.folder-option.active');
+                return active ? active.dataset.folder : 'uploads';
+            }
+
+            folderPicker.querySelectorAll('.folder-option').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    folderPicker.querySelectorAll('.folder-option').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                });
+            });
+
+            dropzone.addEventListener('click', () => fileInput.click());
+            dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+            dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+            dropzone.addEventListener('drop', (e) => {
+                e.preventDefault(); dropzone.classList.remove('dragover');
+                if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+            });
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files.length) handleFiles(fileInput.files);
+            });
+
+            function showError(msg) {
+                errorBox.textContent = msg;
+                errorBox.style.display = 'block';
+            }
+
+            function formatBytes(bytes) {
+                if (bytes < 1024) return bytes + ' B';
+                if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+                return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+            }
+
+            function handleFiles(fileList) {
+                errorBox.style.display = 'none';
+
+                const allFiles = Array.from(fileList);
+                const files = [];
+                const rejected = [];
+
+                allFiles.forEach(f => {
+                    if (f.size > MAX_FILE_SIZE_BYTES) {
+                        rejected.push(f.name);
+                    } else {
+                        files.push(f);
+                    }
+                });
+
+                if (rejected.length) {
+                    showError(
+                        `Skipped ${rejected.length} file(s) over ${formatBytes(MAX_FILE_SIZE_BYTES)}: ${rejected.join(', ')}`
+                    );
+                }
+
+                if (!files.length) return;
+
+                const rows = {};
+                files.forEach(f => {
+                    const row = document.createElement('div');
+                    row.className = 'file-row';
+                    row.innerHTML = `<div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding-right:1rem;">${f.name}</div><div class="status" style="color:var(--text-dim); white-space:nowrap;">uploading...</div>`;
+                    results.prepend(row);
+                    rows[f.name] = row;
+                });
+
+                const formData = new FormData();
+                files.forEach(f => formData.append('files', f));
+                formData.append('folder', selectedFolder());
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/api/put', true);
+
+                xhr.upload.onprogress = (e) => {
+                    if (!e.lengthComputable) return;
+                    const pct = Math.round((e.loaded / e.total) * 100);
+                    files.forEach(f => { 
+                        const statusNode = rows[f.name].querySelector('.status');
+                        if (pct === 100) {
+                            statusNode.innerHTML = `<span class="upload-spinner spin-anim"></span><span style="color: var(--accent-pink);">saving to HF...</span>`;
+                        } else {
+                            statusNode.textContent = pct + '%'; 
+                        }
+                    });
+                };
+
+                xhr.onload = () => {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        try {
+                            const data = JSON.parse(xhr.responseText);
+                            data.files.forEach(item => {
+                                const row = rows[item.filename];
+                                if (!row) return;
+                                row.classList.add('done');
+                                const rawPath = item.raw_url;
+                                row.innerHTML = `
+                                    <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding-right:1rem; color: var(--accent-2);">${item.filename}</div>
+                                    <div style="white-space:nowrap; display:flex; gap:0.75rem;">
+                                        <a href="${rawPath}" target="_blank">raw</a>
+                                    </div>
+                                `;
+                            });
+                            if (data.batch_url) {
+                                const batchRow = document.createElement('div');
+                                batchRow.className = 'file-row done';
+                                batchRow.style.cssText = 'display:flex; flex-direction:column; align-items:flex-start; gap:0.35rem;';
+                                batchRow.innerHTML = `
+                                    <div style="color: var(--text-dim); font-size: 0.85rem;">All ${data.files.length} files, one link:</div>
+                                    <a href="${data.batch_url}" target="_blank" style="word-break: break-all;">${data.batch_url}</a>
+                                `;
+                                results.prepend(batchRow);
+                            }
+                        } catch (err) { showError('invalid response from server.'); }
+                    } else {
+                        let msg = 'upload failed.';
+                        try { msg = JSON.parse(xhr.responseText).detail || msg; } catch (e) {}
+                        showError(msg);
+                        files.forEach(f => {
+                            rows[f.name].classList.add('error');
+                            rows[f.name].querySelector('.status').textContent = 'failed';
+                            rows[f.name].querySelector('.status').style.color = 'var(--danger)';
+                        });
+                    }
+                    fileInput.value = '';
+                };
+                xhr.onerror = () => { showError('connection error.'); };
+                xhr.send(formData);
+            }
+
+            urlUploadBtn.addEventListener('click', () => {
+                const url = urlInput.value.trim();
+                errorBox.style.display = 'none';
+                if (!url) return;
+
+                let label;
+                try {
+                    label = decodeURIComponent(new URL(url).pathname.split('/').pop()) || url;
+                } catch (e) {
+                    showError('That doesn\'t look like a valid URL.');
+                    return;
+                }
+
+                const row = document.createElement('div');
+                row.className = 'file-row';
+                row.innerHTML = `<div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding-right:1rem;">${label}</div><div class="status" style="color:var(--text-dim); white-space:nowrap;"><span class="upload-spinner spin-anim"></span><span style="color: var(--accent-pink);">fetching & saving to HF...</span></div>`;
+                results.prepend(row);
+
+                urlUploadBtn.disabled = true;
+
+                fetch('/api/put-url', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, folder: selectedFolder() })
+                })
+                    .then(async (resp) => {
+                        const data = await resp.json().catch(() => ({}));
+                        if (!resp.ok) {
+                            throw new Error(data.detail || 'upload from URL failed.');
+                        }
+                        const item = data.files[0];
+                        row.classList.add('done');
+                        row.innerHTML = `
+                            <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding-right:1rem; color: var(--accent-2);">${item.filename}</div>
+                            <div style="white-space:nowrap; display:flex; gap:0.75rem;">
+                                <a href="${item.raw_url}" target="_blank">raw</a>
+                            </div>
+                        `;
+                        urlInput.value = '';
+                    })
+                    .catch((err) => {
+                        row.classList.add('error');
+                        row.querySelector('.status').textContent = 'failed';
+                        row.querySelector('.status').style.color = 'var(--danger)';
+                        showError(err.message);
+                    })
+                    .finally(() => { urlUploadBtn.disabled = false; });
+            });
+        </script>
+
+        {% elif page == 'search' %}
+        <input type="text" id="search-input" class="search-input" placeholder="Search filenames across the whole cdn..." autocomplete="off" spellcheck="false" autofocus>
+        <div id="search-status" class="search-status"></div>
+
+        <div class="list-container">
+            <div id="search-results"></div>
+        </div>
+
+        <script>
+        (function () {
+            const searchInput = document.getElementById('search-input');
+            const searchStatus = document.getElementById('search-status');
+            const searchResults = document.getElementById('search-results');
+            const RAW_BASE_URL = {{ raw_base_url | tojson }};
+
+            let debounceTimer = null;
+            let currentController = null;
+            let requestSeq = 0;
+
+            function escapeHtml(str) {
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+
+            function fileIconSvg() {
+                return '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/></svg>';
+            }
+
+            function folderIconSvg() {
+                return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
+            }
+
+            function downloadIconSvg() {
+                return '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>';
+            }
+
+            function renderResults(items) {
+                if (!items.length) {
+                    searchResults.innerHTML = '';
+                    searchStatus.textContent = 'No matches.';
+                    return;
+                }
+                searchStatus.textContent = items.length + ' result' + (items.length !== 1 ? 's' : '');
+                searchResults.innerHTML = items.map(item => {
+                    const href = item.is_dir ? ('/' + item.path) : (RAW_BASE_URL + '/' + item.path);
+                    const icon = item.is_dir ? folderIconSvg() : fileIconSvg();
+                    const displayName = item.is_dir ? item.name + '/' : item.name;
+                    const downloadBtn = item.is_dir ? '' :
+                        '<a href="/api/get/' + escapeHtml(item.path) + '" class="download-icon" title="Download" data-turbo="false">' + downloadIconSvg() + '</a>';
+                    const metaContent = item.is_dir ? '' : ('<span>' + escapeHtml(item.size_str) + '</span>' + downloadBtn);
+                    return '<div class="list-item search-result-item">' +
+                        '<div class="search-result-row">' +
+                        '<div class="item-name">' + icon +
+                        '<a href="' + escapeHtml(href) + '"' + (item.is_dir ? '' : ' data-turbo="false"') +
+                        ' data-full-name="' + escapeHtml(displayName) + '">' + escapeHtml(displayName) + '</a></div>' +
+                        '<div class="item-meta">' + metaContent + '</div>' +
+                        '</div>' +
+                        '<div class="result-path">' + escapeHtml(item.path) + '</div>' +
+                        '</div>';
+                }).join('');
+
+                if (window.scheduleTruncate) window.scheduleTruncate();
+            }
+
+            searchInput.addEventListener('input', () => {
+                const term = searchInput.value.trim();
+                clearTimeout(debounceTimer);
+
+                if (!term) {
+                    searchResults.innerHTML = '';
+                    searchStatus.textContent = '';
+                    return;
+                }
+
+                searchStatus.textContent = 'Searching...';
+
+                debounceTimer = setTimeout(() => {
+                    const seq = ++requestSeq;
+                    if (currentController) currentController.abort();
+                    currentController = new AbortController();
+
+                    fetch('/api/find?q=' + encodeURIComponent(term), { signal: currentController.signal })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (seq !== requestSeq) return;
+                            renderResults(data.results || []);
+                        })
+                        .catch(err => {
+                            if (err.name === 'AbortError') return;
+                            if (seq !== requestSeq) return;
+                            searchStatus.textContent = 'Search failed.';
+                            searchResults.innerHTML = '';
+                        });
+                }, 250);
+            });
+        })();
+        </script>
+        {% endif %}
+
+        <div id="zip-modal-overlay" class="modal-overlay" style="display: none;">
+            <div class="modal">
+                <h3>Confirm Download</h3>
+                <p id="zip-modal-text" style="color: var(--text-main); font-size: 0.95rem;"></p>
+                <div class="modal-actions">
+                    <button type="button" class="btn" id="zip-modal-cancel">Cancel</button>
+                    <a href="#" class="btn btn-primary" id="zip-modal-confirm" data-turbo="false">Download (.zip)</a>
+                </div>
+            </div>
+        </div>
+
+        <div id="error-modal-overlay" class="modal-overlay" style="display: none;">
+            <div class="modal">
+                <h3 style="color: var(--danger); margin-top: 0; margin-bottom: 1rem; font-size: 1.2rem; font-weight: 500;">Notice</h3>
+                <p id="error-modal-text" style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 1.5rem;"></p>
+                <div class="modal-actions">
+                    <button type="button" class="btn" id="error-modal-close">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <div>
+                amit/cdn · built by <a href="https://github.com/notamitgamer">notamitgamer</a><br>nothing here is a permanent fixture.
+            </div>
+            {% if repo_file_count is not none %}
+            <div title="Across the whole repo">
+                {{ repo_file_count }} file{{ '' if repo_file_count == 1 else 's' }} · {{ repo_size_str }} total
+            </div>
+            {% endif %}
+        </footer>
+    </div>
+
+    <script>
+        function copyToClipboard(text, btn) {
+            navigator.clipboard.writeText(text).then(() => {
+                if (!btn) return;
+                const original = btn.textContent;
+                btn.textContent = 'Copied!';
+                btn.disabled = true;
+                setTimeout(() => {
+                    btn.textContent = original;
+                    btn.disabled = false;
+                }, 1500);
+            }).catch(err => {
+                console.error('failed to copy: ', err);
+            });
+        }
+
+        function copyBreadcrumbPath(btn) {
+            const path = btn.getAttribute('data-path') || '';
+            navigator.clipboard.writeText(path).then(() => {
+                const original = btn.innerHTML;
+                btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+                setTimeout(() => { btn.innerHTML = original; }, 1200);
+            }).catch(err => {
+                console.error('failed to copy: ', err);
+            });
+        }
+
+        function toggleBreadcrumbMenu(btn) {
+            const menu = btn.nextElementSibling;
+            const isOpen = menu.classList.contains('open');
+            document.querySelectorAll('.breadcrumb-menu.open').forEach(m => m.classList.remove('open'));
+            if (!isOpen) menu.classList.add('open');
+        }
+
+        if (!window.__CDN_App_Initialized) {
+            window.__CDN_App_Initialized = true;
+
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.breadcrumb-collapsed')) {
+                    document.querySelectorAll('.breadcrumb-menu.open').forEach(m => m.classList.remove('open'));
+                }
+            });
+
+            document.addEventListener('input', (e) => {
+                if (e.target.id === 'filter-input') {
+                    const term = e.target.value.toLowerCase();
+                    const fileList = document.querySelectorAll('#file-list .list-item[data-name]');
+                    fileList.forEach(item => {
+                        const name = item.getAttribute('data-name').toLowerCase();
+                        if (name === '..') return;
+                        item.style.display = name.includes(term) ? 'flex' : 'none';
+                    });
+                }
+            });
+
+            document.addEventListener('click', async (e) => {
+                const zipBtn = e.target.closest('#download-zip-btn');
+                if (zipBtn) {
+                    e.preventDefault();
+                    if (zipBtn.disabled) return;
+
+                    const batchId = zipBtn.getAttribute('data-batch-id');
+                    const path = zipBtn.getAttribute('data-path') || '';
+                    const statsUrl = batchId ? ('/api/pack-info-batch/' + batchId) : ('/api/pack-info/' + path);
+                    const downloadUrl = batchId ? ('/api/pack-batch/' + batchId) : ('/api/pack/' + path);
+                    const zipSpinner = document.getElementById('zip-spinner');
+                    const zipBtnText = document.getElementById('zip-btn-text');
+                    const zipModalOverlay = document.getElementById('zip-modal-overlay');
+
+                    zipBtn.disabled = true;
+                    if (zipSpinner) zipSpinner.style.display = 'block';
+                    if (zipBtnText) zipBtnText.textContent = 'Calculating...';
+
+                    try {
+                        const res = await fetch(statsUrl);
+                        const data = await res.json();
+                        
+                        if (!res.ok) {
+                            throw new Error(data.detail || 'Failed to get file stats');
+                        }
+                        
+                        const label = batchId ? 'this batch' : (path ? path.split('/').pop() : 'root');
+                        document.getElementById('zip-modal-text').innerHTML = 
+                            `Are you sure you want to download <strong>${label}</strong>?<br><br>` +
+                            `This will package <strong>${data.file_count} file(s)</strong> totaling <strong>${data.size_str}</strong> into a .zip.`;
+                        
+                        document.getElementById('zip-modal-confirm').href = downloadUrl;
+                        zipModalOverlay.style.display = 'flex';
+                    } catch (err) {
+                        const errorModalOverlay = document.getElementById('error-modal-overlay');
+                        if (errorModalOverlay) {
+                            document.getElementById('error-modal-text').textContent = err.message;
+                            errorModalOverlay.style.display = 'flex';
+                        } else {
+                            alert(err.message);
+                        }
+                    } finally {
+                        zipBtn.disabled = false;
+                        if (zipSpinner) zipSpinner.style.display = 'none';
+                        if (zipBtnText) zipBtnText.textContent = 'Download all (.zip)';
+                    }
+                }
+
+                if (e.target.closest('#zip-modal-cancel') || e.target.closest('#zip-modal-confirm')) {
+                    const zipOverlay = document.getElementById('zip-modal-overlay');
+                    if (zipOverlay) zipOverlay.style.display = 'none';
+                }
+
+                if (e.target.closest('#error-modal-close')) {
+                    const errOverlay = document.getElementById('error-modal-overlay');
+                    if (errOverlay) errOverlay.style.display = 'none';
+                }
+            });
+
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/static/sw.js').catch(err => {
+                        console.error('service worker registration failed:', err);
+                    });
+                });
+            }
+
+            document.addEventListener('turbo:load', () => {
+                if (window.Turbo && window.Turbo.setProgressBarDelay) {
+                    window.Turbo.setProgressBarDelay(0);
+                }
+            }, { once: true });
+            document.addEventListener('turbo:visit', () => document.body.classList.add('turbo-loading'));
+            document.addEventListener('turbo:submit-start', () => document.body.classList.add('turbo-loading'));
+            document.addEventListener('turbo:before-render', () => document.body.classList.remove('turbo-loading'));
+            document.addEventListener('turbo:render', () => document.body.classList.remove('turbo-loading'));
+            document.addEventListener('turbo:load', () => document.body.classList.remove('turbo-loading'));
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key !== '/') return;
+                const tag = (document.activeElement && document.activeElement.tagName) || '';
+                if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+                const filterInput = document.getElementById('filter-input');
+                if (filterInput) {
+                    e.preventDefault();
+                    filterInput.focus();
+                }
+            });
+
+            const MOBILE_BREAKPOINT = 480;
+            let measureCanvas = null;
+
+            function getTextWidth(text, font) {
+                if (!measureCanvas) measureCanvas = document.createElement('canvas');
+                const ctx = measureCanvas.getContext('2d');
+                ctx.font = font;
+                return ctx.measureText(text).width;
+            }
+
+            function middleTruncate(fullName, maxWidth, font) {
+                if (getTextWidth(fullName, font) <= maxWidth) return fullName;
+
+                const dotIndex = fullName.lastIndexOf('.');
+                const hasExt = dotIndex > 0 && dotIndex < fullName.length - 1;
+                const ext = hasExt ? fullName.slice(dotIndex) : '';
+                const base = hasExt ? fullName.slice(0, dotIndex) : fullName;
+                const ellipsis = '...';
+
+                let head = base.length;
+                let tail = 0;
+                
+                while (head > 1) {
+                    const candidate = base.slice(0, head) + ellipsis + ext;
+                    if (getTextWidth(candidate, font) <= maxWidth) {
+                        return candidate;
+                    }
+                    head--;
+                }
+                
+                let end = fullName.length;
+                while (end > 1) {
+                    const candidate = fullName.slice(0, end) + ellipsis;
+                    if (getTextWidth(candidate, font) <= maxWidth) return candidate;
+                    end--;
+                }
+                return fullName.slice(0, 1) + ellipsis;
+            }
+
+            function applyMiddleTruncation() {
+                const items = document.querySelectorAll('.item-name');
+                if (!items.length) return;
+
+                const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
+
+                items.forEach((itemName) => {
+                    const a = itemName.querySelector('a[data-full-name]');
+                    if (!a) return;
+                    const fullName = a.getAttribute('data-full-name');
+                    if (!fullName) return;
+
+                    if (!isMobile) {
+                        if (a.textContent !== fullName) a.textContent = fullName;
+                        return;
+                    }
+
+                    const containerWidth = itemName.clientWidth;
+                    if (!containerWidth) return;
+
+                    const icon = itemName.querySelector('svg');
+                    const iconWidth = icon ? icon.getBoundingClientRect().width : 0;
+                    const containerStyle = window.getComputedStyle(itemName);
+                    const gap = parseFloat(containerStyle.columnGap || containerStyle.gap) || 0;
+                    const safetyBuffer = 4;
+
+                    const availableWidth = containerWidth - iconWidth - gap - safetyBuffer;
+                    if (availableWidth <= 0) return;
+
+                    const style = window.getComputedStyle(a);
+                    const font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+
+                    const truncated = middleTruncate(fullName, availableWidth, font);
+                    if (a.textContent !== truncated) a.textContent = truncated;
+                    if (!a.title) a.title = fullName;
+                });
+            }
+
+            let truncateRAF = null;
+            function scheduleTruncate() {
+                if (truncateRAF) cancelAnimationFrame(truncateRAF);
+                truncateRAF = requestAnimationFrame(() => {
+                    requestAnimationFrame(applyMiddleTruncation);
+                });
+            }
+
+            let resizeTimer = null;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(scheduleTruncate, 120);
+            });
+            document.addEventListener('turbo:load', scheduleTruncate);
+            document.addEventListener('turbo:render', scheduleTruncate);
+            document.addEventListener('input', (e) => {
+                if (e.target.id === 'filter-input') scheduleTruncate();
+            });
+            if (document.fonts && document.fonts.ready) {
+                document.fonts.ready.then(scheduleTruncate);
+            } else {
+                scheduleTruncate();
+            }
+
+            window.scheduleTruncate = scheduleTruncate;
+
+            function applyResponsivePlaceholders() {
+                const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
+                const filterInput = document.getElementById('filter-input');
+                if (filterInput) {
+                    filterInput.placeholder = isMobile
+                        ? 'Narrow this listing...'
+                        : 'Narrow this listing... (press / to focus)';
+                }
+                const searchInput = document.getElementById('search-input');
+                if (searchInput) {
+                    searchInput.placeholder = isMobile
+                        ? 'Search all files...'
+                        : 'Search filenames across the whole cdn...';
+                }
+            }
+            window.applyResponsivePlaceholders = applyResponsivePlaceholders;
+            applyResponsivePlaceholders();
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(applyResponsivePlaceholders, 120);
+            });
+            document.addEventListener('turbo:load', applyResponsivePlaceholders);
+        }
+    </script>
+</body>
+</html>
