@@ -94,6 +94,7 @@
             -webkit-backdrop-filter: blur(16px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
             margin-bottom: 2.75rem;
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.2);
         }
 
         .navbar {
@@ -279,11 +280,20 @@
             border-color: var(--border-hover);
             background: var(--surface-2);
         }
+        .copy-path-btn:active {
+            transform: scale(0.95);
+        }
 
         /* Inputs */
+        .input-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
         .filter-input, .search-input, .url-input {
             width: 100%;
-            padding: 0.85rem 1.25rem;
+            padding: 0.85rem 2.5rem 0.85rem 1.25rem; /* Extra right padding for clear button */
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: var(--radius-md);
@@ -294,7 +304,7 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.1) inset;
         }
         .filter-input { margin-bottom: 1.5rem; }
-        .search-input { margin-bottom: 1.25rem; font-size: 1rem; padding: 1rem 1.25rem;}
+        .search-input { margin-bottom: 1.25rem; font-size: 1rem; padding: 1rem 2.5rem 1rem 1.25rem;}
         
         .filter-input:focus, .search-input:focus, .url-input:focus {
             outline: none;
@@ -304,6 +314,35 @@
         }
         .filter-input::placeholder, .search-input::placeholder, .url-input::placeholder { 
             color: var(--text-dim); 
+        }
+
+        .input-clear-btn {
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            padding: 0.25rem;
+            display: none; /* Hidden by default */
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: color 0.2s, background 0.2s;
+        }
+        /* Show when parent has data-has-text attribute */
+        .input-group[data-has-text="true"] .input-clear-btn {
+            display: flex;
+        }
+        /* Adjust for inputs with margin-bottom */
+        .input-group:has(.filter-input) .input-clear-btn { top: calc(50% - 0.75rem); }
+        .input-group:has(.search-input) .input-clear-btn { top: calc(50% - 0.625rem); }
+
+        .input-clear-btn:hover {
+            color: var(--text-main);
+            background: var(--surface-3);
         }
 
         /* Lists & Items */
@@ -333,12 +372,15 @@
             color: var(--text-main);
             gap: 1rem;
             box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s, transform 0.1s;
         }
         .list-item:hover {
             background: var(--surface-2);
             border-color: var(--border-hover);
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .list-item:active {
+            transform: scale(0.99);
         }
 
         .item-name {
@@ -405,6 +447,9 @@
             color: var(--accent-primary);
             background: rgba(59, 130, 246, 0.1);
         }
+        .download-icon:active {
+            transform: scale(0.9);
+        }
 
         /* Buttons */
         .btn {
@@ -421,13 +466,16 @@
             font-family: var(--font-body);
             font-size: 0.9rem;
             font-weight: 500;
-            transition: all 0.2s ease;
+            transition: all 0.2s ease, transform 0.1s ease;
         }
         .btn:hover:not(:disabled) {
             background: var(--surface-3);
             border-color: var(--border-hover);
             text-decoration: none;
             color: var(--text-main);
+        }
+        .btn:active:not(:disabled) {
+            transform: scale(0.97);
         }
         .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
@@ -461,6 +509,7 @@
             border-color: var(--border-hover); 
         }
         .icon-btn:hover:not(:disabled) svg { stroke: var(--accent-primary); }
+        .icon-btn:active:not(:disabled) { transform: scale(0.95); }
 
         /* File Card */
         .file-card {
@@ -532,31 +581,39 @@
         }
         .file-meta-row {
             display: flex;
-            gap: 0.5rem;
+            gap: 0.75rem;
             justify-content: center;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
         }
         .file-pill {
             font-family: var(--font-mono);
             font-size: 0.75rem;
-            font-weight: 500;
-            color: var(--text-dim);
-            border: 1px solid var(--border);
-            background: var(--surface-2);
-            border-radius: 99px;
-            padding: 0.25rem 0.85rem;
+            font-weight: 600;
+            color: var(--accent-primary);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            background: rgba(59, 130, 246, 0.05);
+            border-radius: 6px;
+            padding: 0.35rem 0.85rem;
+            letter-spacing: 0.5px;
+        }
+        .file-pill:nth-child(2) {
+             color: var(--text-main);
+             border-color: var(--border);
+             background: var(--surface-2);
         }
         .file-path {
             font-family: var(--font-mono);
             color: var(--text-dim);
-            margin: 0 0 2rem 0;
+            margin: 0 auto 2.5rem auto;
             font-size: 0.85rem;
             word-break: break-all;
-            background: var(--bg);
+            background: rgba(0, 0, 0, 0.3);
             display: inline-block;
-            padding: 0.4rem 1rem;
+            padding: 0.75rem 1.25rem;
             border-radius: var(--radius-md);
             border: 1px solid var(--border);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+            max-width: 90%;
         }
         .file-actions {
             display: flex;
@@ -840,7 +897,12 @@
         </div>
         {% endif %}
         <div class="list-container">
-            <input type="text" id="filter-input" class="filter-input" placeholder="Search this folder... (press / to focus)" autocomplete="off" spellcheck="false">
+            <div class="input-group" id="filter-group">
+                <input type="text" id="filter-input" class="filter-input" placeholder="Search this folder... (press / to focus)" autocomplete="off" spellcheck="false">
+                <button type="button" class="input-clear-btn" id="filter-clear" aria-label="Clear filter">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
             
             <div id="file-list">
                 {% if path %}
@@ -1206,7 +1268,12 @@
 
         {% elif page == 'search' %}
         <div>
-            <input type="text" id="search-input" class="search-input" placeholder="Find a file anywhere in the CDN..." autocomplete="off" spellcheck="false" autofocus>
+            <div class="input-group" id="search-group">
+                <input type="text" id="search-input" class="search-input" placeholder="Find a file anywhere in the CDN..." autocomplete="off" spellcheck="false" autofocus>
+                <button type="button" class="input-clear-btn" id="search-clear" aria-label="Clear search">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
             <div id="search-status" style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 1rem; padding-left: 0.25rem;"></div>
 
             <div class="list-container">
@@ -1217,12 +1284,24 @@
         <script>
         (function () {
             const searchInput = document.getElementById('search-input');
+            const searchGroup = document.getElementById('search-group');
+            const searchClear = document.getElementById('search-clear');
             const searchStatus = document.getElementById('search-status');
             const searchResults = document.getElementById('search-results');
 
             let debounceTimer = null;
             let currentController = null;
             let requestSeq = 0;
+
+            if (searchClear) {
+                searchClear.addEventListener('click', () => {
+                    searchInput.value = '';
+                    searchGroup.removeAttribute('data-has-text');
+                    searchResults.innerHTML = '';
+                    searchStatus.textContent = '';
+                    searchInput.focus();
+                });
+            }
 
             function escapeHtml(str) {
                 return String(str)
@@ -1277,6 +1356,12 @@
             searchInput.addEventListener('input', () => {
                 const term = searchInput.value.trim();
                 clearTimeout(debounceTimer);
+                
+                if (searchInput.value.length > 0) {
+                    searchGroup.setAttribute('data-has-text', 'true');
+                } else {
+                    searchGroup.removeAttribute('data-has-text');
+                }
 
                 if (!term) {
                     searchResults.innerHTML = '';
@@ -1346,25 +1431,23 @@
         function copyToClipboard(text, btn) {
             navigator.clipboard.writeText(text).then(() => {
                 if (!btn) return;
-                const original = btn.textContent;
-                btn.textContent = 'Copied!';
+                const originalStyle = btn.style.cssText;
                 btn.style.borderColor = 'var(--success)';
                 btn.style.color = 'var(--success)';
-                btn.disabled = true;
+                
                 setTimeout(() => {
-                    btn.textContent = original;
-                    btn.style.borderColor = '';
-                    btn.style.color = '';
-                    btn.disabled = false;
-                }, 1500);
+                    btn.style.cssText = originalStyle;
+                }, 800);
             }).catch(err => {
                 console.error('failed to copy: ', err);
             });
         }
 
         function copyBreadcrumbPath(btn) {
-            const path = btn.getAttribute('data-path') || '';
-            navigator.clipboard.writeText(path).then(() => {
+            const rawPath = btn.getAttribute('data-path') || '';
+            const fullUrl = window.location.origin + '/' + rawPath;
+            
+            navigator.clipboard.writeText(fullUrl).then(() => {
                 const original = btn.innerHTML;
                 btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
                 setTimeout(() => { btn.innerHTML = original; }, 1200);
@@ -1393,6 +1476,16 @@
                 if (e.target.id === 'filter-input') {
                     const term = e.target.value.toLowerCase();
                     const fileList = document.querySelectorAll('#file-list .list-item[data-name]');
+                    const filterGroup = document.getElementById('filter-group');
+                    
+                    if (filterGroup) {
+                        if (e.target.value.length > 0) {
+                            filterGroup.setAttribute('data-has-text', 'true');
+                        } else {
+                            filterGroup.removeAttribute('data-has-text');
+                        }
+                    }
+
                     fileList.forEach(item => {
                         const name = item.getAttribute('data-name').toLowerCase();
                         if (name === '..') return;
@@ -1402,6 +1495,19 @@
             });
 
             document.addEventListener('click', async (e) => {
+                const filterClearBtn = e.target.closest('#filter-clear');
+                if (filterClearBtn) {
+                    const filterInput = document.getElementById('filter-input');
+                    const filterGroup = document.getElementById('filter-group');
+                    if (filterInput && filterGroup) {
+                        filterInput.value = '';
+                        filterGroup.removeAttribute('data-has-text');
+                        filterInput.dispatchEvent(new Event('input', { bubbles: true })); // Trigger the filter logic
+                        filterInput.focus();
+                    }
+                    return;
+                }
+
                 const zipBtn = e.target.closest('#download-zip-btn');
                 if (zipBtn) {
                     e.preventDefault();
