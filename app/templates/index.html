@@ -303,8 +303,7 @@
             transition: all 0.2s ease;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1) inset;
         }
-        .filter-input { margin-bottom: 1.5rem; }
-        .search-input { margin-bottom: 1.25rem; font-size: 1rem; padding: 1rem 2.5rem 1rem 1.25rem;}
+        .search-input { font-size: 1rem; padding: 1rem 2.5rem 1rem 1.25rem; }
         
         .filter-input:focus, .search-input:focus, .url-input:focus {
             outline: none;
@@ -336,10 +335,6 @@
         .input-group[data-has-text="true"] .input-clear-btn {
             display: flex;
         }
-        /* Adjust for inputs with margin-bottom */
-        .input-group:has(.filter-input) .input-clear-btn { top: calc(50% - 0.75rem); }
-        .input-group:has(.search-input) .input-clear-btn { top: calc(50% - 0.625rem); }
-
         .input-clear-btn:hover {
             color: var(--text-main);
             background: var(--surface-3);
@@ -360,27 +355,56 @@
             font-size: 0.85rem;
         }
 
+        /* Unified Container Style */
+        .list-group {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            overflow: hidden; /* Enforces rounded corners on children */
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.2);
+            margin-bottom: 2rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Adjust inputs specifically when inside the unified container */
+        .list-group .input-group {
+            border-bottom: 1px solid var(--border);
+            background: var(--surface-2);
+        }
+        
+        .list-group .filter-input, .list-group .search-input {
+            background: transparent;
+            box-shadow: none;
+            border-radius: 0;
+            border: none;
+        }
+
+        .list-group .filter-input:focus, .list-group .search-input:focus {
+            background: rgba(255, 255, 255, 0.02);
+            box-shadow: inset 3px 0 0 var(--accent-primary);
+        }
+
+        /* Standardized List Items inside Unified Container */
         .list-item {
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 0.85rem 1.25rem;
-            margin-bottom: 0.5rem;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-md);
-            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            background: transparent;
             color: var(--text-main);
             gap: 1rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s, transform 0.1s;
+            transition: background 0.15s ease;
+        }
+        .list-item:last-child {
+            border-bottom: none;
         }
         .list-item:hover {
-            background: var(--surface-2);
-            border-color: var(--border-hover);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            background: rgba(255, 255, 255, 0.03);
         }
         .list-item:active {
-            transform: scale(0.99);
+            background: rgba(255, 255, 255, 0.05);
         }
 
         .item-name {
@@ -691,16 +715,27 @@
             color: var(--accent-primary);
         }
 
+        #results:not(:empty) {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.2);
+        }
+
         .file-row {
             display: flex; justify-content: space-between; padding: 1rem 1.25rem;
-            border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 0.5rem;
-            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            background: transparent;
             align-items: center;
             font-family: var(--font-mono);
             font-size: 0.85rem;
         }
-        .file-row.done { border-color: var(--success); background: rgba(16, 185, 129, 0.05); }
-        .file-row.error { border-color: var(--danger); background: rgba(239, 68, 68, 0.05); }
+        .file-row:last-child {
+            border-bottom: none;
+        }
+        .file-row.done { background: rgba(16, 185, 129, 0.05); }
+        .file-row.error { background: rgba(239, 68, 68, 0.05); }
 
         /* States & Animations */
         .turbo-progress-bar {
@@ -722,6 +757,12 @@
             background: var(--surface);
             border: 1px dashed var(--border);
             border-radius: var(--radius-lg);
+        }
+        .list-group .empty-state {
+            border: none;
+            background: transparent;
+            padding: 4rem 2rem;
+            border-radius: 0;
         }
         .empty-state svg { opacity: 0.5; width: 48px; height: 48px; }
 
@@ -783,7 +824,7 @@
         /* Mobile Adjustments */
         @media (max-width: 480px) {
             .item-meta .size-label { display: none; }
-            .list-item { padding: 0.85rem 1rem; border-radius: 8px; }
+            .list-item { padding: 0.85rem 1rem; }
             .file-info { padding: 1.5rem 1.25rem; }
             .file-actions { display: grid; grid-template-columns: 1fr; gap: 0.75rem; }
             .file-actions .btn { width: 100%; }
@@ -897,59 +938,61 @@
         </div>
         {% endif %}
         <div class="list-container">
-            <div class="input-group" id="filter-group">
-                <input type="text" id="filter-input" class="filter-input" placeholder="Search this folder... (press / to focus)" autocomplete="off" spellcheck="false">
-                <button type="button" class="input-clear-btn" id="filter-clear" aria-label="Clear filter">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                </button>
-            </div>
-            
-            <div id="file-list">
-                {% if path %}
-                <div class="list-item" data-name="..">
-                    <div class="item-name">
-                        <svg class="folder-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-                        {% set parent_path = '/' %}
-                        {% set path_parts = path.split('/') %}
-                        {% if path_parts|length > 1 %}
-                            {% set parent_path = '/' + path_parts[:-1]|join('/') %}
-                        {% endif %}
-                        <a href="{{ parent_path }}" class="folder-link">Go up a directory</a>
-                    </div>
+            <div class="list-group">
+                <div class="input-group" id="filter-group">
+                    <input type="text" id="filter-input" class="filter-input" placeholder="Search this folder... (press / to focus)" autocomplete="off" spellcheck="false">
+                    <button type="button" class="input-clear-btn" id="filter-clear" aria-label="Clear filter">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
                 </div>
-                {% endif %}
-
-                {% for item in items %}
-                {% if item.name != '.gitattributes' %}
-                <div class="list-item" data-name="{{ item.name }}">
-                    <div class="item-name">
-                        {% if item.is_dir %}
-                        <svg class="folder-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                        <a href="/{{ item.path }}" class="folder-link" data-full-name="{{ item.name }}/">{{ item.name }}/</a>
-                        {% else %}
-                        <svg class="file-icon-list" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-                        <a href="/{{ item.path }}" class="file-link" data-full-name="{{ item.name }}">{{ item.name }}</a>
-                        {% endif %}
-                    </div>
-                    <div class="item-meta">
-                        {% if not item.is_dir %}
-                        <span class="size-label">{{ item.size_str }}</span>
-                        <a href="/api/get/{{ item.path }}" class="download-icon" title="Download" data-turbo="false">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>
-                        </a>
-                        {% endif %}
-                    </div>
-                </div>
-                {% endif %}
-                {% endfor %}
                 
-                {% set visible_items = items | rejectattr("name", "equalto", ".gitattributes") | list %}
-                {% if not visible_items %}
-                <div class="empty-state">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                    <span>This directory is empty. <a href="/new" style="text-decoration: underline;">Upload a file</a> to get started.</span>
+                <div id="file-list">
+                    {% if path %}
+                    <div class="list-item" data-name="..">
+                        <div class="item-name">
+                            <svg class="folder-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                            {% set parent_path = '/' %}
+                            {% set path_parts = path.split('/') %}
+                            {% if path_parts|length > 1 %}
+                                {% set parent_path = '/' + path_parts[:-1]|join('/') %}
+                            {% endif %}
+                            <a href="{{ parent_path }}" class="folder-link">Go up a directory</a>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% for item in items %}
+                    {% if item.name != '.gitattributes' %}
+                    <div class="list-item" data-name="{{ item.name }}">
+                        <div class="item-name">
+                            {% if item.is_dir %}
+                            <svg class="folder-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                            <a href="/{{ item.path }}" class="folder-link" data-full-name="{{ item.name }}/">{{ item.name }}/</a>
+                            {% else %}
+                            <svg class="file-icon-list" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            <a href="/{{ item.path }}" class="file-link" data-full-name="{{ item.name }}">{{ item.name }}</a>
+                            {% endif %}
+                        </div>
+                        <div class="item-meta">
+                            {% if not item.is_dir %}
+                            <span class="size-label">{{ item.size_str }}</span>
+                            <a href="/api/get/{{ item.path }}" class="download-icon" title="Download" data-turbo="false">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% set visible_items = items | rejectattr("name", "equalto", ".gitattributes") | list %}
+                    {% if not visible_items %}
+                    <div class="empty-state">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                        <span>This directory is empty. <a href="/new" style="text-decoration: underline;">Upload a file</a> to get started.</span>
+                    </div>
+                    {% endif %}
                 </div>
-                {% endif %}
             </div>
         </div>
 
@@ -1010,7 +1053,7 @@
             </div>
         </div>
         <div class="list-container">
-            <div id="file-list">
+            <div class="list-group" id="file-list">
                 {% for f in batch_files %}
                 <div class="list-item" data-name="{{ f.filename }}">
                     <div class="item-name">
@@ -1268,15 +1311,15 @@
 
         {% elif page == 'search' %}
         <div>
-            <div class="input-group" id="search-group">
-                <input type="text" id="search-input" class="search-input" placeholder="Find a file anywhere in the CDN..." autocomplete="off" spellcheck="false" autofocus>
-                <button type="button" class="input-clear-btn" id="search-clear" aria-label="Clear search">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                </button>
-            </div>
-            <div id="search-status" style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 1rem; padding-left: 0.25rem;"></div>
-
-            <div class="list-container">
+            <div class="list-group">
+                <div class="input-group" id="search-group">
+                    <input type="text" id="search-input" class="search-input" placeholder="Find a file anywhere in the CDN..." autocomplete="off" spellcheck="false" autofocus>
+                    <button type="button" class="input-clear-btn" id="search-clear" aria-label="Clear search">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+                <div id="search-status" style="color: var(--text-dim); font-size: 0.9rem; padding: 0.75rem 1.25rem; border-bottom: 1px solid var(--border); background: var(--surface-2); display: none;"></div>
+                
                 <div id="search-results"></div>
             </div>
         </div>
@@ -1299,6 +1342,7 @@
                     searchGroup.removeAttribute('data-has-text');
                     searchResults.innerHTML = '';
                     searchStatus.textContent = '';
+                    searchStatus.style.display = 'none';
                     searchInput.focus();
                 });
             }
@@ -1328,9 +1372,12 @@
                 if (!items.length) {
                     searchResults.innerHTML = '';
                     searchStatus.textContent = 'No matching files found. Try a different term.';
+                    searchStatus.style.display = 'block';
                     return;
                 }
                 searchStatus.innerHTML = `<strong style="color:var(--text-main);">${items.length}</strong> result${items.length !== 1 ? 's' : ''}`;
+                searchStatus.style.display = 'block';
+                
                 searchResults.innerHTML = items.map((item) => {
                     const href = '/' + item.path;
                     const icon = item.is_dir ? folderIconSvg() : fileIconSvg();
@@ -1366,10 +1413,12 @@
                 if (!term) {
                     searchResults.innerHTML = '';
                     searchStatus.textContent = '';
+                    searchStatus.style.display = 'none';
                     return;
                 }
 
                 searchStatus.innerHTML = '<span class="upload-spinner spin-anim" style="width:12px; height:12px; margin-right:6px;"></span> Searching...';
+                searchStatus.style.display = 'block';
 
                 debounceTimer = setTimeout(() => {
                     const seq = ++requestSeq;
