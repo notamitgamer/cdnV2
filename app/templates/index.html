@@ -34,14 +34,14 @@
     <style>
         :root {
             --bg: #000000;
-            --surface: #0c0c0c;
-            --surface-2: #161616;
+            --surface: #101010;
+            --surface-2: #191919;
             --text-main: #f2f2f0;
-            --text-dim: #868682;
+            --text-dim: #92928e;
             --accent-pink: #3272f0;
             --accent-2: #ff6a42;
             --success: #2fb872;
-            --border: #262624;
+            --border: #2d2d2a;
             --danger: #ff5c73;
             --font-heading: 'Zilla Slab', Georgia, 'Times New Roman', serif;
             --font-body: 'Work Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
@@ -74,9 +74,19 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 1.1rem 5%;
-            border-bottom: 1px solid var(--border);
-            margin-bottom: 2.5rem;
+            padding: 1.25rem 5%;
+            margin-bottom: 2.75rem;
+            position: relative;
+        }
+
+        .navbar::after {
+            content: "";
+            position: absolute;
+            left: 5%;
+            right: 5%;
+            bottom: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border) 15%, var(--border) 85%, transparent);
         }
         .wordmark {
             font-family: var(--font-mono);
@@ -122,23 +132,23 @@
 
         h1 {
             font-family: var(--font-heading);
-            font-size: 2rem;
-            letter-spacing: -0.01em;
+            font-size: clamp(2rem, 4vw, 2.7rem);
+            letter-spacing: -0.025em;
             color: #ffffff;
             font-weight: 600;
-            margin: 0 0 1.25rem 0;
-            line-height: 1.25;
+            margin: 0 0 1rem 0;
+            line-height: 1.12;
+            max-width: 18ch;
         }
 
         blockquote {
-            background: transparent;
-            border: none;
-            border-left: 2px solid var(--accent-pink);
-            border-radius: 0;
-            margin: 0 0 2.5rem 0;
-            padding: 0.15rem 0 0.15rem 1.1rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin: 0 0 2.25rem 0;
+            padding: 0.9rem 1rem;
             color: var(--text-dim);
-            max-width: 60ch;
+            max-width: 68ch;
         }
 
         .upload-notice {
@@ -150,49 +160,61 @@
         a:hover { text-decoration: underline; }
 
         .breadcrumb {
-            color: var(--accent-pink);
-            margin-bottom: 1rem;
+            color: var(--text-dim);
+            margin-bottom: 0.85rem;
             font-weight: 500;
             font-family: var(--font-mono);
-            font-size: 0.9rem;
+            font-size: 0.82rem;
         }
-        .breadcrumb a { color: inherit; }
+        .breadcrumb a {
+            color: var(--text-main);
+            text-decoration: none;
+        }
+
+        .breadcrumb a:hover {
+            color: var(--accent-pink);
+            text-decoration: none;
+        }
 
         .list-container {
-            border: 1px solid var(--border);
+            border: 0;
             border-radius: 0;
-            background: var(--surface);
+            background: transparent;
             box-shadow: none;
             margin-bottom: 2rem;
-            overflow: hidden;
+            overflow: visible;
         }
 
         .filter-input {
             width: 100%;
-            padding: 0.9rem 1.5rem;
-            background: transparent;
-            border: none;
-            border-bottom: 1px solid var(--border);
+            padding: 0.85rem 1rem;
+            margin-bottom: 0.85rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 9px;
             color: var(--text-main);
             font-family: var(--font-mono);
-            font-size: 0.9rem;
+            font-size: 0.88rem;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
         }
         .filter-input:focus {
             outline: none;
-            background: var(--surface-2);
+            background: var(--surface);
+            border-color: var(--accent-pink);
+            box-shadow: 0 0 0 3px rgba(50, 114, 240, 0.12);
         }
         .filter-input::placeholder { color: var(--text-dim); }
 
         .search-input {
             width: 100%;
-            padding: 0.9rem 1.5rem;
+            padding: 0.9rem 1rem;
             background: var(--surface);
             border: 1px solid var(--border);
-            border-radius: 0;
+            border-radius: 9px;
             color: var(--text-main);
             font-family: var(--font-mono);
-            font-size: 1rem;
-            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+            margin-bottom: 1.1rem;
         }
         .search-input:focus {
             outline: none;
@@ -228,37 +250,41 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0.85rem 1.5rem;
-            min-height: 44px;
-            border-bottom: 1px solid var(--border);
-            border-left: 2px solid transparent;
+            padding: 0.9rem 1rem;
+            min-height: 48px;
+            margin-bottom: 0.45rem;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            background: var(--surface);
             color: var(--text-main);
-            gap: 0.5rem;
-            transition: background 0.1s ease, border-color 0.1s ease;
+            gap: 0.75rem;
+            transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
         }
         .list-item:hover {
             background: var(--surface-2);
-            border-left-color: var(--accent-pink);
+            border-color: #4a4a46;
+            transform: translateX(3px);
         }
         .list-item:active {
             background: var(--surface-2);
-            border-left-color: var(--accent-pink);
+            transform: translateX(2px);
         }
-        .list-item:last-child { border-bottom: none; }
+        .list-item:last-child { margin-bottom: 0; }
 
         .item-name {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
+            gap: 0.65rem;
             word-break: break-all;
             min-width: 0;
             flex: 1;
             font-family: var(--font-mono);
-            font-size: 0.92rem;
+            font-size: 0.9rem;
         }
         .item-name svg {
-            color: var(--text-dim);
+            color: var(--accent-pink);
             flex-shrink: 0;
+            opacity: 0.8;
         }
         .item-name a {
             overflow: hidden;
@@ -273,10 +299,10 @@
         .item-meta {
             display: flex;
             align-items: center;
-            gap: 1rem;
+            gap: 0.75rem;
             color: var(--text-dim);
             font-family: var(--font-mono);
-            font-size: 0.78rem;
+            font-size: 0.76rem;
             white-space: nowrap;
             flex-shrink: 0;
         }
@@ -285,18 +311,29 @@
             .item-meta .size-label {
                 display: none;
             }
+
+            .list-item {
+                padding: 0.85rem 0.9rem;
+                border-radius: 8px;
+            }
+
+            h1 {
+                max-width: none;
+                font-size: 2rem;
+            }
         }
 
         .download-icon {
             color: var(--text-dim);
-            transition: color 0.15s;
+            transition: color 0.15s, background 0.15s;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 0.5rem;
-            min-width: 44px;
-            min-height: 44px;
-            margin: -0.5rem;
+            padding: 0.45rem;
+            min-width: 34px;
+            min-height: 34px;
+            margin: -0.25rem;
+            border-radius: 7px;
         }
         .download-icon:hover {
             color: var(--accent-pink);
@@ -310,19 +347,28 @@
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
-            background: transparent;
+            background: var(--surface);
             color: var(--text-main);
-            padding: 0.55rem 1.1rem;
+            padding: 0.6rem 1rem;
             border: 1px solid var(--border);
-            border-radius: 0;
+            border-radius: 8px;
             cursor: pointer;
             font-family: var(--font-body);
             font-size: 0.85rem;
             font-weight: 500;
-            transition: background 0.12s ease, border-color 0.12s ease;
+            transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease;
         }
-        .btn:hover:not(:disabled) { background: var(--surface-2); text-decoration: none; border-color: var(--text-dim); }
-        .btn:active:not(:disabled) { background: var(--surface-2); border-color: var(--text-dim); }
+        .btn:hover:not(:disabled) {
+            background: var(--surface-2);
+            text-decoration: none;
+            border-color: var(--text-dim);
+            transform: translateY(-1px);
+        }
+        .btn:active:not(:disabled) {
+            background: var(--surface-2);
+            border-color: var(--text-dim);
+            transform: translateY(0);
+        }
         .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
         .btn-primary {
@@ -330,7 +376,7 @@
             color: #000000;
             border-color: var(--accent-pink);
             font-weight: 600;
-            box-shadow: none;
+            box-shadow: 0 5px 18px rgba(50, 114, 240, 0.14);
         }
         .btn-primary:hover:not(:disabled) { background: #4c85f2; border-color: #4c85f2; }
         .btn-primary:active:not(:disabled) { background: #2a63d6; border-color: #2a63d6; }
@@ -338,9 +384,9 @@
 
         .file-card {
             border: 1px solid var(--border);
-            border-radius: 0;
+            border-radius: 12px;
             background: var(--surface);
-            box-shadow: none;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
             margin-bottom: 2rem;
             overflow: hidden;
         }
@@ -367,12 +413,13 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 72px;
-            height: 72px;
-            border-radius: 0;
+            width: 78px;
+            height: 78px;
+            border-radius: 14px;
             background: var(--bg);
             border: 1px solid var(--accent-pink);
             color: var(--accent-pink);
+            box-shadow: 0 10px 30px rgba(50, 114, 240, 0.12);
         }
         .file-ext-tag {
             position: absolute;
@@ -412,9 +459,9 @@
             letter-spacing: 0.5px;
             color: var(--text-dim);
             border: 1px solid var(--border);
-            background: transparent;
-            border-radius: 0;
-            padding: 0.25rem 0.6rem;
+            background: var(--surface-2);
+            border-radius: 999px;
+            padding: 0.28rem 0.65rem;
         }
         .file-path {
             font-family: var(--font-mono);
@@ -448,7 +495,7 @@
             padding: 0.7rem 1rem;
             background: var(--surface);
             border: 1px solid var(--border);
-            border-radius: 0;
+            border-radius: 8px;
             color: var(--text-main);
             font-family: var(--font-mono);
             font-size: 0.9rem;
@@ -471,15 +518,15 @@
             font-size: 0.85rem;
         }
         .folder-option {
-            background: transparent;
+            background: var(--surface);
             border: 1px solid var(--border);
             color: var(--text-dim);
-            border-radius: 0;
-            padding: 0.35rem 0.85rem;
+            border-radius: 999px;
+            padding: 0.4rem 0.9rem;
             font-family: var(--font-mono);
             font-size: 0.82rem;
             cursor: pointer;
-            transition: background 0.12s ease, border-color 0.12s ease;
+            transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
         }
         .folder-option:hover { border-color: var(--accent-pink); color: var(--text-main); }
         .folder-option.active {
@@ -493,9 +540,9 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            background: transparent;
+            background: var(--surface);
             border: 1px solid var(--border);
-            border-radius: 0;
+            border-radius: 8px;
             cursor: pointer;
             padding: 0.55rem 0.75rem;
             transition: background 0.12s ease, border-color 0.12s ease;
@@ -513,13 +560,13 @@
 
         #dropzone {
             border: 1px dashed var(--border);
-            border-radius: 0;
-            padding: 3rem 1.5rem;
+            border-radius: 12px;
+            padding: 3.5rem 1.5rem;
             text-align: center;
             cursor: pointer;
             color: var(--text-dim);
             margin-bottom: 1.5rem;
-            background: var(--surface);
+            background: radial-gradient(circle at center, var(--surface-2), var(--surface));
             transition: all 0.15s;
         }
         #dropzone:hover, #dropzone.dragover {
@@ -530,7 +577,7 @@
 
         .file-row {
             display: flex; justify-content: space-between; padding: 0.85rem 1rem;
-            border: 1px solid var(--border); border-radius: 0; margin-bottom: 0.5rem;
+            border: 1px solid var(--border); border-radius: 8px; margin-bottom: 0.5rem;
             background: var(--surface);
             align-items: center;
         }
@@ -579,11 +626,11 @@
             background: var(--surface);
             border: 1px solid var(--border);
             color: var(--text-dim);
-            border-radius: 0;
-            padding: 0.1rem 0.55rem;
+            border-radius: 6px;
+            padding: 0.12rem 0.55rem;
             cursor: pointer;
             font-family: var(--font-mono);
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             line-height: 1.4;
         }
         .breadcrumb-ellipsis:hover { color: var(--accent-pink); border-color: var(--accent-pink); }
@@ -598,16 +645,17 @@
             overflow-y: auto;
             background: var(--surface);
             border: 1px solid var(--border);
-            border-radius: 0;
-            padding: 0.3rem;
+            border-radius: 9px;
+            padding: 0.35rem;
             flex-direction: column;
             gap: 0.1rem;
             z-index: 20;
+            box-shadow: 0 14px 35px rgba(0, 0, 0, 0.35);
         }
         .breadcrumb-menu.open { display: flex; }
         .breadcrumb-menu a {
-            padding: 0.4rem 0.6rem;
-            border-radius: 0;
+            padding: 0.45rem 0.6rem;
+            border-radius: 6px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -634,12 +682,12 @@
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-bottom: 0.75rem;
-            padding-bottom: 0.75rem;
-            border-bottom: 1px solid var(--border);
+            gap: 0.75rem;
+            margin-bottom: 0.9rem;
+            padding: 0.15rem 0 0.75rem;
+            border-bottom: 0;
             font-family: var(--font-mono);
-            font-size: 0.85rem;
+            font-size: 0.82rem;
         }
 
         @keyframes spin {
@@ -658,11 +706,11 @@
         .modal {
             background: var(--surface);
             border: 1px solid var(--border);
-            border-radius: 0;
+            border-radius: 12px;
             padding: 1.5rem;
             max-width: 420px;
             width: 90%;
-            box-shadow: none;
+            box-shadow: 0 22px 60px rgba(0, 0, 0, 0.45);
         }
         .modal h3 {
             font-family: var(--font-heading);
@@ -687,21 +735,21 @@
 
         footer {
             margin-top: 4rem;
-            padding-top: 1rem;
+            padding-top: 1.25rem;
             border-top: 1px solid var(--border);
             color: var(--text-dim);
             font-family: var(--font-mono);
-            font-size: 0.78rem;
+            font-size: 0.76rem;
             display: flex;
             justify-content: space-between;
             flex-wrap: wrap;
-            gap: 0.5rem;
+            gap: 0.75rem;
         }
         footer a { color: var(--text-dim); }
         footer a:hover { color: var(--text-main); }
 
-        .list-container, .breadcrumb, h1, .site-notice {
-            animation: fadeIn 0.2s ease both;
+        .list-container, .breadcrumb, h1, .site-notice, .listing-toolbar {
+            animation: fadeIn 0.22s ease both;
         }
         @keyframes fadeIn {
             from { opacity: 0; }
@@ -719,9 +767,9 @@
     </header>
     <div class="container">
         {% if page == 'listing' and not path %}
-        <h1>A place to keep and share files for <a href="https://amit.is-a.dev">my</a> projects.</h1>
+        <h1>A small file shelf for <a href="https://amit.is-a.dev">my</a> projects.</h1>
         <blockquote class="site-notice">
-            Nothing here is guaranteed to stay put forever — treat any link you grab as borrowed, not owned. Poke around if you're curious, just don't build something load-bearing on top of it.
+            Project assets live here. Files and paths may change over time, so use direct links with that in mind.
         </blockquote>
         {% endif %}
 
@@ -810,7 +858,7 @@
         </div>
         {% endif %}
         <div class="list-container">
-            <input type="text" id="filter-input" class="filter-input" placeholder="Narrow this listing... (press / to focus)" autocomplete="off" spellcheck="false">
+            <input type="text" id="filter-input" class="filter-input" placeholder="Search this folder... (press / to focus)" autocomplete="off" spellcheck="false">
             
             <div id="file-list">
                 {% if path %}
@@ -1169,7 +1217,7 @@
         </script>
 
         {% elif page == 'search' %}
-        <input type="text" id="search-input" class="search-input" placeholder="Search filenames across the whole cdn..." autocomplete="off" spellcheck="false" autofocus>
+        <input type="text" id="search-input" class="search-input" placeholder="Find a file anywhere in the CDN..." autocomplete="off" spellcheck="false" autofocus>
         <div id="search-status" class="search-status"></div>
 
         <div class="list-container">
@@ -1556,14 +1604,14 @@
                 const filterInput = document.getElementById('filter-input');
                 if (filterInput) {
                     filterInput.placeholder = isMobile
-                        ? 'Narrow this listing...'
-                        : 'Narrow this listing... (press / to focus)';
+                        ? 'Search this folder...'
+                        : 'Search this folder... (press / to focus)';
                 }
                 const searchInput = document.getElementById('search-input');
                 if (searchInput) {
                     searchInput.placeholder = isMobile
-                        ? 'Search all files...'
-                        : 'Search filenames across the whole cdn...';
+                        ? 'Find files...'
+                        : 'Find a file anywhere in the CDN...';
                 }
             }
             window.applyResponsivePlaceholders = applyResponsivePlaceholders;
