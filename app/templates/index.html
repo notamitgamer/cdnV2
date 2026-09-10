@@ -412,11 +412,16 @@
             font-weight: 500;
             transition: all 0.2s ease;
         }
-        .btn:hover:not(:disabled) {
+        <comment-tag id="1">.btn:hover:not(:disabled) {
             background: var(--surface-3);
             border-color: var(--border-hover);
             text-decoration: none;
-        }
+        }</comment-tag id="1" text=".btn:hover:not(:disabled) {
+            background: var(--surface-3);
+            border-color: var(--border-hover);
+            text-decoration: none;
+            color: var(--text-main);
+        }" type="suggestion">
         .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
         .btn-primary {
@@ -425,10 +430,14 @@
             border-color: var(--accent-primary);
             font-weight: 600;
         }
-        .btn-primary:hover:not(:disabled) { 
+        <comment-tag id="2">.btn-primary:hover:not(:disabled) { 
             background: var(--accent-primary-hover); 
             border-color: var(--accent-primary-hover); 
-        }
+        }</comment-tag id="2" text=".btn-primary:hover:not(:disabled) { 
+            background: var(--accent-primary-hover); 
+            border-color: var(--accent-primary-hover); 
+            color: #ffffff;
+        }" type="suggestion">
         .btn-primary svg { stroke: #ffffff; }
 
         .icon-btn {
