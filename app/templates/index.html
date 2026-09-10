@@ -112,9 +112,8 @@
             color: var(--text-main) !important;
             text-decoration: none !important;
             letter-spacing: -0.01em;
-            transition: opacity 0.2s;
         }
-        .wordmark:hover { opacity: 0.8; }
+        .wordmark:hover { color: var(--text-dim) !important; }
         .wordmark-slash { color: var(--accent-primary); }
         
         .navlinks {
@@ -128,7 +127,6 @@
             text-decoration: none;
             padding: 0.4rem 0.8rem;
             border-radius: var(--radius-md);
-            transition: all 0.2s ease;
         }
         .navlinks a:hover {
             color: var(--text-main);
@@ -137,7 +135,7 @@
 
         .container {
             width: 90%;
-            max-width: 1000px; /* Reduced for better focus and readability */
+            max-width: 1000px;
             margin: 0 auto;
         }
 
@@ -172,13 +170,13 @@
             font-size: 0.95rem;
         }
 
-        a { color: var(--accent-primary); text-decoration: none; transition: color 0.15s;}
+        a { color: var(--accent-primary); text-decoration: none; }
         a:hover { color: var(--accent-primary-hover); text-decoration: underline; }
 
         /* Sticky Breadcrumbs */
         .breadcrumb-container {
             position: sticky;
-            top: 70px; /* Below navbar */
+            top: 70px;
             background: rgba(9, 9, 11, 0.9);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
@@ -203,7 +201,6 @@
             padding: 0.2rem 0.4rem;
             margin: -0.2rem -0.4rem;
             border-radius: 4px;
-            transition: background 0.15s, color 0.15s;
         }
         .breadcrumb a:hover {
             color: var(--accent-primary);
@@ -225,7 +222,6 @@
             font-family: var(--font-mono);
             font-size: 0.9rem;
             line-height: 1.4;
-            transition: all 0.2s;
         }
         .breadcrumb-ellipsis:hover { 
             color: var(--text-main); 
@@ -250,12 +246,7 @@
             z-index: 20;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
         }
-        .breadcrumb-menu.open { display: flex; animation: slideDown 0.2s ease; }
-        
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        .breadcrumb-menu.open { display: flex; }
 
         .breadcrumb-menu a {
             padding: 0.5rem 0.75rem;
@@ -277,7 +268,6 @@
             justify-content: center;
             padding: 0.4rem;
             margin-left: 0.5rem;
-            transition: all 0.2s;
         }
         .copy-path-btn:hover { 
             color: var(--text-main);
@@ -295,7 +285,6 @@
             color: var(--text-main);
             font-family: var(--font-mono);
             font-size: 0.9rem;
-            transition: all 0.2s ease;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1) inset;
         }
         .filter-input { margin-bottom: 1.5rem; }
@@ -337,18 +326,10 @@
             background: var(--surface);
             color: var(--text-main);
             gap: 1rem;
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .list-item:hover {
             background: var(--surface-2);
             border-color: var(--border-hover);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-            z-index: 2;
-            position: relative;
-        }
-        .list-item:active {
-            transform: translateY(0);
         }
 
         .item-name {
@@ -364,7 +345,6 @@
         .item-name svg {
             color: var(--text-dim);
             flex-shrink: 0;
-            transition: color 0.2s;
         }
         .list-item:hover .item-name svg {
             color: var(--accent-primary);
@@ -392,7 +372,6 @@
 
         .download-icon {
             color: var(--text-dim);
-            transition: all 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -423,16 +402,11 @@
             font-family: var(--font-body);
             font-size: 0.9rem;
             font-weight: 500;
-            transition: all 0.2s ease;
         }
         .btn:hover:not(:disabled) {
             background: var(--surface-3);
             border-color: var(--border-hover);
             text-decoration: none;
-            transform: translateY(-1px);
-        }
-        .btn:active:not(:disabled) {
-            transform: translateY(0);
         }
         .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
@@ -441,12 +415,10 @@
             color: #ffffff;
             border-color: var(--accent-primary);
             font-weight: 600;
-            box-shadow: 0 4px 14px rgba(59, 130, 246, 0.25);
         }
         .btn-primary:hover:not(:disabled) { 
             background: var(--accent-primary-hover); 
             border-color: var(--accent-primary-hover); 
-            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.35);
         }
         .btn-primary svg { stroke: #ffffff; }
 
@@ -459,7 +431,6 @@
             border-radius: var(--radius-md);
             cursor: pointer;
             padding: 0.65rem;
-            transition: all 0.2s ease;
         }
         .icon-btn:hover:not(:disabled) { 
             background: var(--surface-2); 
@@ -472,7 +443,6 @@
             border: 1px solid var(--border);
             border-radius: var(--radius-xl);
             background: var(--surface);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
             margin-bottom: 2.5rem;
             overflow: hidden;
         }
@@ -482,7 +452,6 @@
             align-items: center;
             justify-content: center;
             background-color: var(--surface-2);
-            /* Subtle modern grid */
             background-image: 
                 linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
@@ -505,11 +474,8 @@
             background: var(--surface);
             border: 1px solid var(--border-hover);
             color: var(--text-main);
-            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         .file-card:hover .file-icon {
-            transform: scale(1.05) translateY(-5px);
             border-color: var(--accent-primary);
             color: var(--accent-primary);
         }
@@ -526,7 +492,6 @@
             padding: 0.2rem 0.6rem;
             border-radius: 4px;
             text-transform: uppercase;
-            box-shadow: 0 4px 10px rgba(249, 115, 22, 0.3);
         }
 
         .file-info {
@@ -599,7 +564,6 @@
             font-family: var(--font-mono);
             font-size: 0.85rem;
             cursor: pointer;
-            transition: all 0.2s ease;
         }
         .folder-option:hover { 
             border-color: var(--text-main); 
@@ -621,7 +585,6 @@
             color: var(--text-dim);
             margin-bottom: 1.5rem;
             background: var(--surface);
-            transition: all 0.2s ease;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -633,7 +596,6 @@
             height: 48px;
             color: var(--border-hover);
             margin-bottom: 0.5rem;
-            transition: color 0.2s;
         }
         #dropzone:hover, #dropzone.dragover {
             border-color: var(--accent-primary);
@@ -659,10 +621,8 @@
         .turbo-progress-bar {
             height: 3px;
             background-color: var(--accent-primary);
-            box-shadow: 0 0 10px var(--accent-primary);
         }
 
-        .container { transition: opacity 0.2s ease; }
         body.turbo-loading .container { opacity: 0.6; pointer-events: none; }
 
         .empty-state {
@@ -698,13 +658,6 @@
             backdrop-filter: blur(4px);
             display: flex; align-items: center; justify-content: center;
             z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.2s ease;
-        }
-        .modal-overlay[style*="display: flex"] {
-            opacity: 1;
-            visibility: visible;
         }
         .modal {
             background: var(--surface);
@@ -714,11 +667,6 @@
             max-width: 440px;
             width: 90%;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            transform: scale(0.95);
-            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .modal-overlay[style*="display: flex"] .modal {
-            transform: scale(1);
         }
         .modal h3 {
             font-family: var(--font-heading);
@@ -746,14 +694,6 @@
         footer a { color: var(--text-main); font-weight: 500; }
         footer a:hover { color: var(--accent-primary); }
 
-        .fade-in-up {
-            animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
-        }
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
         /* Mobile Adjustments */
         @media (max-width: 480px) {
             .item-meta .size-label { display: none; }
@@ -775,7 +715,7 @@
         </header>
     </div>
 
-    <div class="container fade-in-up">
+    <div class="container">
         {% if page == 'listing' and not path %}
         <h1>A small file shelf for <a href="https://amit.is-a.dev">my</a> projects.</h1>
         <blockquote class="site-notice">
@@ -784,7 +724,7 @@
         {% endif %}
 
         {% if not (page == 'listing' and not path) %}
-        <div class="breadcrumb-container fade-in-up" style="animation-delay: 0.05s;">
+        <div class="breadcrumb-container">
             <div class="breadcrumb" id="breadcrumb">
                 {% set current = namespace(val='') %}
                 {% set ns = namespace(items=[{'name': 'root', 'href': '/'}]) %}
@@ -837,7 +777,7 @@
 
         {% if page == 'listing' %}
         {% if items %}
-        <div class="listing-toolbar fade-in-up" style="animation-delay: 0.1s;">
+        <div class="listing-toolbar">
             <div style="color: var(--text-dim);">
                 {% set visible_items = items | rejectattr("name", "equalto", ".gitattributes") | list %}
                 {% set file_count = visible_items | rejectattr("is_dir") | list | length %}
@@ -870,7 +810,7 @@
             </button>
         </div>
         {% endif %}
-        <div class="list-container fade-in-up" style="animation-delay: 0.15s;">
+        <div class="list-container">
             <input type="text" id="filter-input" class="filter-input" placeholder="Search this folder... (press / to focus)" autocomplete="off" spellcheck="false">
             
             <div id="file-list">
@@ -923,7 +863,7 @@
         </div>
 
         {% elif page == 'file' %}
-        <div class="file-card fade-in-up">
+        <div class="file-card">
             <div class="file-preview file-preview-none">
                 <div class="file-icon">
                     {% if file_ext %}<span class="file-ext-tag">.{{ file_ext }}</span>{% endif %}
@@ -955,7 +895,7 @@
         </div>
 
         {% elif page == 'batch' %}
-        <div class="listing-toolbar fade-in-up">
+        <div class="listing-toolbar">
             <div style="color: var(--text-dim); font-size: 0.95rem;">
                 <strong style="color: var(--text-main);">{{ batch_files | length }}</strong> file{{ 's' if batch_files | length != 1 else '' }} in this batch
             </div>
@@ -977,7 +917,7 @@
                 </button>
             </div>
         </div>
-        <div class="list-container fade-in-up" style="animation-delay: 0.1s;">
+        <div class="list-container">
             <div id="file-list">
                 {% for f in batch_files %}
                 <div class="list-item" data-name="{{ f.filename }}">
@@ -1003,7 +943,7 @@
         </div>
 
         {% elif page == '404' %}
-        <div class="list-container fade-in-up" style="padding: 6rem 1.5rem; text-align: center;">
+        <div class="list-container" style="padding: 6rem 1.5rem; text-align: center;">
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="1.5" style="margin-bottom: 1.5rem;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             <h1 style="margin: 0 0 1rem 0; color: var(--text-main);">404 - Not Found</h1>
             <p style="color: var(--text-dim); margin-bottom: 2.5rem; font-size: 1.1rem;">The file or directory you're looking for doesn't exist.</p>
@@ -1011,7 +951,7 @@
         </div>
 
         {% elif page == 'upload' %}
-        <div class="fade-in-up">
+        <div>
             <blockquote style="margin-bottom: 2.5rem;">
                 If you do not remember the link, go to the <a href="/uploads">uploads folder</a> to find your file.
             </blockquote>
@@ -1234,7 +1174,7 @@
         </script>
 
         {% elif page == 'search' %}
-        <div class="fade-in-up">
+        <div>
             <input type="text" id="search-input" class="search-input" placeholder="Find a file anywhere in the CDN..." autocomplete="off" spellcheck="false" autofocus>
             <div id="search-status" style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 1rem; padding-left: 0.25rem;"></div>
 
@@ -1282,7 +1222,7 @@
                     return;
                 }
                 searchStatus.innerHTML = `<strong style="color:var(--text-main);">${items.length}</strong> result${items.length !== 1 ? 's' : ''}`;
-                searchResults.innerHTML = items.map((item, index) => {
+                searchResults.innerHTML = items.map((item) => {
                     const href = item.is_dir ? ('/' + item.path) : (RAW_BASE_URL + '/' + item.path);
                     const icon = item.is_dir ? folderIconSvg() : fileIconSvg();
                     const displayName = item.is_dir ? item.name + '/' : item.name;
@@ -1290,10 +1230,7 @@
                         '<a href="/api/get/' + escapeHtml(item.path) + '" class="download-icon" title="Download" data-turbo="false">' + downloadIconSvg() + '</a>';
                     const metaContent = item.is_dir ? '' : ('<span class="size-label">' + escapeHtml(item.size_str) + '</span>' + downloadBtn);
                     
-                    // Staggered animation delay based on index
-                    const animDelay = Math.min(index * 0.05, 0.5); 
-                    
-                    return '<div class="list-item fade-in-up" style="animation-delay: ' + animDelay + 's; flex-direction: column; align-items: stretch; gap: 0.5rem; padding: 1rem 1.25rem;">' +
+                    return '<div class="list-item" style="flex-direction: column; align-items: stretch; gap: 0.5rem; padding: 1rem 1.25rem;">' +
                         '<div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem;">' +
                         '<div class="item-name">' + icon +
                         '<a href="' + escapeHtml(href) + '"' + (item.is_dir ? '' : ' data-turbo="false"') +
@@ -1342,7 +1279,7 @@
         </script>
         {% endif %}
 
-        <div id="zip-modal-overlay" class="modal-overlay">
+        <div id="zip-modal-overlay" class="modal-overlay" style="display: none;">
             <div class="modal">
                 <h3>Confirm Download</h3>
                 <p id="zip-modal-text" style="color: var(--text-main); font-size: 1rem; line-height: 1.5;"></p>
@@ -1353,7 +1290,7 @@
             </div>
         </div>
 
-        <div id="error-modal-overlay" class="modal-overlay">
+        <div id="error-modal-overlay" class="modal-overlay" style="display: none;">
             <div class="modal">
                 <h3 style="color: var(--danger); font-size: 1.3rem;">Notice</h3>
                 <p id="error-modal-text" style="color: var(--text-main); font-size: 1rem;"></p>
@@ -1363,7 +1300,7 @@
             </div>
         </div>
 
-        <footer class="fade-in-up" style="animation-delay: 0.2s;">
+        <footer>
             <div>
                 amit/cdn · built by <a href="https://github.com/notamitgamer">notamitgamer</a><br>nothing here is a permanent fixture.
             </div>
@@ -1408,9 +1345,9 @@
 
         function toggleBreadcrumbMenu(btn) {
             const menu = btn.nextElementSibling;
-            const isOpen = menu.classList.contains('open');
-            document.querySelectorAll('.breadcrumb-menu.open').forEach(m => m.classList.remove('open'));
-            if (!isOpen) menu.classList.add('open');
+            const isOpen = menu.style.display === 'flex';
+            document.querySelectorAll('.breadcrumb-menu').forEach(m => m.style.display = 'none');
+            if (!isOpen) menu.style.display = 'flex';
         }
 
         if (!window.__CDN_App_Initialized) {
@@ -1418,7 +1355,7 @@
 
             document.addEventListener('click', (e) => {
                 if (!e.target.closest('.breadcrumb-collapsed')) {
-                    document.querySelectorAll('.breadcrumb-menu.open').forEach(m => m.classList.remove('open'));
+                    document.querySelectorAll('.breadcrumb-menu').forEach(m => m.style.display = 'none');
                 }
             });
 
