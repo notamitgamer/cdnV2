@@ -33,21 +33,19 @@
 
     <style>
         :root {
-            /* Modern, softer dark mode palette (Zinc-inspired) */
             --bg: #09090b;
             --surface: #121214;
             --surface-2: #1e1e22;
             --surface-3: #27272a;
             --text-main: #f4f4f5;
-            --text-dim: #b8b8c0; /* Slightly brighter for better contrast */
+            --text-dim: #b8b8c0;
             
-            /* Brighter, more vibrant accents */
             --accent-primary: #3b82f6; 
             --accent-primary-hover: #60a5fa;
             --accent-secondary: #f97316;
             --success: #10b981;
             --danger: #ef4444;
-            --border: rgba(255, 255, 255, 0.08); /* Softer semi-transparent borders */
+            --border: rgba(255, 255, 255, 0.08);
             --border-hover: rgba(255, 255, 255, 0.15);
             
             --font-heading: 'Zilla Slab', Georgia, 'Times New Roman', serif;
@@ -84,7 +82,6 @@
             body { font-size: 0.95rem; }
         }
 
-        /* Glassmorphism Navbar */
         .navbar-wrapper {
             position: sticky;
             top: 0;
@@ -176,7 +173,6 @@
         a { color: var(--accent-primary); text-decoration: none; transition: color 0.15s;}
         a:hover { color: var(--accent-primary-hover); text-decoration: underline; }
 
-        /* Sticky Breadcrumbs */
         .breadcrumb-container {
             position: sticky;
             top: 70px;
@@ -221,7 +217,7 @@
             border: 1px solid var(--border);
             color: var(--text-dim);
             border-radius: 6px;
-            padding: 0.25rem 0.75rem; /* Increased padding for better touch target */
+            padding: 0.25rem 0.75rem;
             cursor: pointer;
             font-family: var(--font-mono);
             font-size: 0.9rem;
@@ -254,7 +250,7 @@
         .breadcrumb-menu.open { display: flex; }
 
         .breadcrumb-menu a {
-            padding: 0.75rem 1rem; /* Increased padding for larger mobile touch targets */
+            padding: 0.75rem 1rem;
             border-radius: 6px;
             white-space: nowrap;
             overflow: hidden;
@@ -284,7 +280,6 @@
             transform: scale(0.95);
         }
 
-        /* Inputs */
         .input-group {
             position: relative;
             display: flex;
@@ -293,7 +288,7 @@
         }
         .filter-input, .search-input, .url-input {
             width: 100%;
-            padding: 0.85rem 2.5rem 0.85rem 1.25rem; /* Extra right padding for clear button */
+            padding: 0.85rem 2.5rem 0.85rem 1.25rem;
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: var(--radius-md);
@@ -325,13 +320,12 @@
             color: var(--text-dim);
             cursor: pointer;
             padding: 0.25rem;
-            display: none; /* Hidden by default */
+            display: none;
             align-items: center;
             justify-content: center;
             border-radius: 50%;
             transition: color 0.2s, background 0.2s;
         }
-        /* Show when parent has data-has-text attribute */
         .input-group[data-has-text="true"] .input-clear-btn {
             display: flex;
         }
@@ -340,7 +334,6 @@
             background: var(--surface-3);
         }
 
-        /* Lists & Items */
         .list-container { margin-bottom: 2rem; }
 
         .listing-toolbar {
@@ -355,19 +348,17 @@
             font-size: 0.85rem;
         }
 
-        /* Unified Container Style */
         .list-group {
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: var(--radius-lg);
-            overflow: hidden; /* Enforces rounded corners on children */
+            overflow: hidden;
             box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.2);
             margin-bottom: 2rem;
             display: flex;
             flex-direction: column;
         }
 
-        /* Adjust inputs specifically when inside the unified container */
         .list-group .input-group {
             border-bottom: 1px solid var(--border);
             background: var(--surface-2);
@@ -385,7 +376,6 @@
             box-shadow: inset 3px 0 0 var(--accent-primary);
         }
 
-        /* Standardized List Items inside Unified Container */
         .list-item {
             display: flex;
             align-items: center;
@@ -422,7 +412,6 @@
             transition: color 0.2s;
         }
         
-        /* Distinct Folder & File Colors */
         .item-name svg.folder-icon { color: var(--accent-primary); }
         .item-name svg.file-icon-list { color: var(--text-dim); }
         
@@ -479,7 +468,6 @@
             transform: scale(0.9);
         }
 
-        /* Buttons */
         .btn {
             display: inline-flex;
             align-items: center;
@@ -512,7 +500,7 @@
             color: #ffffff !important;
             border-color: var(--accent-primary) !important;
             font-weight: 600;
-            transition: none !important; /* Force disabled transition to prevent sticky mobile hover */
+            transition: none !important;
         }
         .btn-primary:hover:not(:disabled), .btn-primary:focus:not(:disabled), .btn-primary:active:not(:disabled) { 
             background: var(--accent-primary) !important; 
@@ -539,7 +527,6 @@
         .icon-btn:hover:not(:disabled) svg { stroke: var(--accent-primary); }
         .icon-btn:active:not(:disabled) { transform: scale(0.95); }
 
-        /* File Card */
         .file-card {
             border: 1px solid var(--border);
             border-radius: var(--radius-xl);
@@ -650,7 +637,6 @@
             flex-wrap: wrap;
         }
 
-        /* Upload area */
         .folder-picker {
             display: flex;
             align-items: center;
@@ -711,7 +697,7 @@
         }
         #dropzone:hover, #dropzone.dragover {
             border-color: var(--accent-primary);
-            background: rgba(59, 130, 246, 0.08); /* More pronounced drag feedback */
+            background: rgba(59, 130, 246, 0.08);
             color: var(--accent-primary);
             box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
         }
@@ -741,7 +727,6 @@
         .file-row.done { background: rgba(16, 185, 129, 0.05); }
         .file-row.error { background: rgba(239, 68, 68, 0.05); }
 
-        /* States & Animations */
         .turbo-progress-bar {
             height: 3px;
             background-color: var(--accent-primary);
@@ -782,7 +767,6 @@
             vertical-align: middle;
         }
 
-        /* Modals */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.8);
@@ -825,12 +809,10 @@
         footer a { color: var(--text-main); font-weight: 500; }
         footer a:hover { color: var(--accent-primary); }
 
-        /* Mobile Adjustments */
         @media (max-width: 480px) {
             .list-item { padding: 0.85rem 1rem; }
             .file-info { padding: 1.5rem 1.25rem; }
             
-            /* Change button actions to a 2x2 grid on mobile */
             .file-actions { 
                 display: grid; 
                 grid-template-columns: 1fr 1fr; 
@@ -1023,7 +1005,6 @@
                 <p class="file-path">{{ path }}</p>
 
                 <div class="file-actions">
-                    <!-- .btn-primary hover disabled via css entirely to prevent mobile text overlapping issues -->
                     <a href="/api/get/{{ path }}" class="btn btn-primary" data-turbo="false">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>
                         Download File
@@ -1560,7 +1541,7 @@
                     if (filterInput && filterGroup) {
                         filterInput.value = '';
                         filterGroup.removeAttribute('data-has-text');
-                        filterInput.dispatchEvent(new Event('input', { bubbles: true })); // Trigger the filter logic
+                        filterInput.dispatchEvent(new Event('input', { bubbles: true }));
                         filterInput.focus();
                     }
                     return;
