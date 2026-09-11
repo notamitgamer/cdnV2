@@ -6,9 +6,6 @@ on:
       - "android-v*"
   workflow_dispatch: {}
 
-permissions:
-  contents: write
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -42,6 +39,6 @@ jobs:
         with:
           files: android/out/amit-cdn.apk
           name: "amit/cdn Android ${{ github.ref_name }}"
-          body: "Automated build of the amit/cdn Android app for ${{ github.ref_name }}."
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
