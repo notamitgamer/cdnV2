@@ -1209,7 +1209,7 @@
                                 const row = rows[item.filename];
                                 if (!row) return;
                                 row.classList.add('done');
-                                const filePath = selectedFolder() + '/' + item.filename;
+                                const filePath = item.hf_path;
                                 row.innerHTML = `
                                     <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding-right:1rem; color: var(--success); font-weight: 500;">${item.filename}</div>
                                     <div style="white-space:nowrap; display:flex; gap:0.75rem;">
@@ -1276,7 +1276,7 @@
                         }
                         const item = data.files[0];
                         row.classList.add('done');
-                        const filePath = selectedFolder() + '/' + item.filename;
+                        const filePath = item.hf_path;
                         row.innerHTML = `
                             <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding-right:1rem; color: var(--success); font-weight: 500;">${item.filename}</div>
                             <div style="white-space:nowrap; display:flex; gap:0.75rem;">
