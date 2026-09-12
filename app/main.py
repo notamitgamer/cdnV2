@@ -58,7 +58,7 @@ async def favicon():
         headers={"Cache-Control": "public, max-age=86400"},
     )
 
-CDN_BASE_URL = os.getenv("CDN_BASE_URL", "https://cdn-zt7p.onrender.com")
+CDN_BASE_URL = os.getenv("CDN_BASE_URL", "https://cdn.amit.is-a.dev")
 RAW_DOMAIN = os.getenv("RAW_DOMAIN", "raw.cdn.amit.is-a.dev")
 RAW_BASE_URL = os.getenv("RAW_BASE_URL", f"https://{RAW_DOMAIN}")
 RAW_PREFIX = "raw/"
@@ -68,6 +68,7 @@ async def render_context(extra: dict) -> dict:
     ctx = dict(extra)
     ctx["repo_file_count"] = stats["file_count"] if stats else None
     ctx["repo_size_str"] = stats["size_str"] if stats else None
+    ctx.setdefault("cdn_base_url", CDN_BASE_URL)
     ctx.setdefault("raw_base_url", RAW_BASE_URL)
     return ctx
 

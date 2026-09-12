@@ -40,7 +40,7 @@
 
   <h2>1. Add the workflow</h2>
   <p>Create <code>.github/workflows/cdn-sync.yml</code> in the repo you want mirrored:</p>
-<pre>name: Sync to CDN
+<pre>{% raw %}name: Sync to CDN
 
 on:
   push:
@@ -70,14 +70,14 @@ jobs:
 
       - name: Push to CDN
         run: |
-          curl -sf -X POST https://cdn-zt7p.onrender.com/api/gh-sync \
+          curl -sf -X POST https://cdn.amit.is-a.dev/api/gh-sync \
             -F "token=${{ steps.oidc.outputs.token }}" \
             -F "archive=@/tmp/payload.tar.gz"
-</pre>
+{% endraw %}</pre>
 
   <h2>2. Push</h2>
   <p>That's it — no repo secrets to create. On the next push, your files appear at:</p>
-  <pre>https://cdn-zt7p.onrender.com/&lt;your-username&gt;/&lt;repo-name&gt;/
+  <pre>https://cdn.amit.is-a.dev/&lt;your-username&gt;/&lt;repo-name&gt;/
 https://raw.cdn.amit.is-a.dev/&lt;your-username&gt;/&lt;repo-name&gt;/</pre>
 
   <h2>Notes</h2>

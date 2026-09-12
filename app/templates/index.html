@@ -838,7 +838,7 @@
         {% endif %}
 
         {% if not (page == 'listing' and not path) %}
-        <div class="breadcrumb-container">
+        <div class="breadcrumb-container" data-cdn-base="{{ cdn_base_url }}">
             <div class="breadcrumb" id="breadcrumb">
                 {% set current = namespace(val='') %}
                 {% set ns = namespace(items=[{'name': 'root', 'href': '/'}]) %}
@@ -1009,7 +1009,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                         Open Raw
                     </a>
-                    <button onclick="copyToClipboard(window.location.origin + '/' + '{{ path }}', this)" class="btn">Copy Link</button>
+                    <button onclick="copyToClipboard('{{ cdn_base_url }}/{{ path }}', this)" class="btn">Copy Link</button>
                     <button onclick="copyToClipboard('{{ raw_base_url }}/{{ path }}', this)" class="btn">Copy Raw Link</button>
                 </div>
             </div>
@@ -1480,7 +1480,9 @@
 
         function copyBreadcrumbPath(btn) {
             const rawPath = btn.getAttribute('data-path') || '';
-            const fullUrl = window.location.origin + '/' + rawPath;
+            const container = btn.closest('.breadcrumb-container');
+            const base = (container && container.getAttribute('data-cdn-base')) || window.location.origin;
+            const fullUrl = base + '/' + rawPath;
             
             navigator.clipboard.writeText(fullUrl).then(() => {
                 const original = btn.innerHTML;
