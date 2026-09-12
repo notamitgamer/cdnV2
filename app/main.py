@@ -286,7 +286,8 @@ async def gh_sync(request: Request, token: str = Form(...), archive: UploadFile 
     return {
         "synced_to": dest_prefix,
         "cdn_url": f"{CDN_BASE_URL}/{dest_prefix}/",
-        "raw_url": f"{RAW_BASE_URL}/{dest_prefix}/",
+        "raw_url_prefix": f"{RAW_BASE_URL}/{dest_prefix}/",
+        "note": "cdn_url is the browsable folder listing. raw_url_prefix isn't a link by itself - append an individual filename to it to get that file's direct raw URL.",
         "ref": claims["ref"],
     }
 
