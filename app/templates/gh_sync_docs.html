@@ -158,7 +158,11 @@
      for the destination path.</p>
 
   <h2>1. Add the workflow</h2>
-  <p>Create <code>.github/workflows/cdn-sync.yml</code> in the repo you want mirrored:</p>
+  <p>Create <code>.github/workflows/cdn-sync.yml</code> in the repo you want mirrored. The token is
+     short-lived and scoped to your repo already, but <code>core.setSecret()</code> tells GitHub to mask it
+     from the run's logs, and passing it through <code>env:</code> instead of straight into the shell
+     command keeps it out of the process list too — worth keeping both even though the token itself
+     is harmless if it leaks (it expires in minutes and only proves who you are, it can't push files on its own).</p>
 <pre>{% raw %}name: Sync to CDN
 
 on:
@@ -174,7 +178,7 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
 
       - name: Request GitHub OIDC token
         id: oidc
@@ -182,15 +186,18 @@ jobs:
         with:
           script: |
             const token = await core.getIDToken('cdn.amit.is-a.dev')
+            core.setSecret(token)
             core.setOutput('token', token)
 
       - name: Package repo contents
         run: tar --exclude='.git' -czf /tmp/payload.tar.gz .
 
       - name: Push to CDN
+        env:
+          OIDC_TOKEN: ${{ steps.oidc.outputs.token }}
         run: |
           curl -sf -X POST https://cdn.amit.is-a.dev/api/gh-sync \
-            -F "token=${{ steps.oidc.outputs.token }}" \
+            -F "token=$OIDC_TOKEN" \
             -F "archive=@/tmp/payload.tar.gz"
 {% endraw %}</pre>
 
