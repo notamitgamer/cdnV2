@@ -4,3 +4,4 @@ huggingface_hub
 httpx
 python-multipart
 jinja2
+pyjwt[crypto]

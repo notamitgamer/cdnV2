@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GitHub Actions Sync · amit/cdn</title>
+<meta name="description" content="Push any repo's files to the CDN automatically on every git push.">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<style>
+  :root{--bg:#09090b;--surface:#121214;--surface-2:#1e1e22;--border:#27272a;--text:#f4f4f5;--muted:#a1a1aa;--accent:#818cf8;}
+  *{box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Work Sans',system-ui,sans-serif;margin:0;line-height:1.6;}
+  .wrap{max-width:820px;margin:0 auto;padding:48px 20px 96px;}
+  h1{font-size:1.9rem;margin-bottom:.2em;}
+  h2{font-size:1.25rem;margin-top:2.4em;border-top:1px solid var(--border);padding-top:1.2em;}
+  p{color:var(--muted);}
+  code,pre{font-family:'JetBrains Mono',monospace;}
+  code{background:var(--surface-2);padding:.15em .4em;border-radius:4px;font-size:.9em;color:var(--text);}
+  pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;overflow-x:auto;font-size:.85rem;}
+  ul{color:var(--muted);}
+  .badge{display:inline-block;background:var(--surface-2);color:var(--accent);border-radius:6px;padding:2px 8px;font-size:.75rem;margin-left:8px;vertical-align:middle;}
+  a{color:var(--accent);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Auto-sync any repo to the CDN <span class="badge">GitHub Actions</span></h1>
+  <p>Add one workflow file to a repo. On every push, its contents land in the CDN under
+     <code>/&lt;your-github-username&gt;/&lt;repo-name&gt;/</code> — no PAT, no shared secret, and it's
+     physically impossible for your workflow to write into anyone else's folder.</p>
+
+  <h2>How it stays safe</h2>
+  <p>Instead of a token you paste in, your repo asks GitHub itself for a short-lived
+     <strong>OIDC identity token</strong> for the run. That token's "who and where" fields
+     (<code>repository_owner</code>, <code>repository</code>) are stamped by GitHub's own servers from the
+     real run context — a workflow file can't edit itself to lie about which repo it's running in.
+     The CDN backend verifies that token's signature, reads the owner/repo straight from it, and uses
+     <em>only that</em> to decide where your files go. Nothing in your request body or headers is trusted
+     for the destination path.</p>
+
+  <h2>1. Add the workflow</h2>
+  <p>Create <code>.github/workflows/cdn-sync.yml</code> in the repo you want mirrored:</p>
+<pre>{% raw %}name: Sync to CDN
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  id-token: write   # required — this is what lets us prove who you are
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Request GitHub OIDC token
+        id: oidc
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const token = await core.getIDToken('cdn.amit.is-a.dev')
+            core.setOutput('token', token)
+
+      - name: Package repo contents
+        run: tar --exclude='.git' -czf /tmp/payload.tar.gz .
+
+      - name: Push to CDN
+        run: |
+          curl -sf -X POST https://cdn.amit.is-a.dev/api/gh-sync \
+            -F "token=${{ steps.oidc.outputs.token }}" \
+            -F "archive=@/tmp/payload.tar.gz"
+{% endraw %}</pre>
+
+  <h2>2. Push</h2>
+  <p>That's it — no repo secrets to create. On the next push, your files appear at:</p>
+  <pre>https://cdn.amit.is-a.dev/&lt;your-username&gt;/&lt;repo-name&gt;/
+https://raw.cdn.amit.is-a.dev/&lt;your-username&gt;/&lt;repo-name&gt;/</pre>
+
+  <h2>Notes</h2>
+  <ul>
+    <li>Every file type is accepted — no extension allow-list, no per-file size cap.</li>
+    <li>Each sync fully replaces the contents of <em>your own</em> <code>username/repo</code> folder only
+        (delete-then-upload), so removed files disappear from the CDN too. No other folder is ever touched.</li>
+    <li>Change <code>branches: [ main ]</code> to whichever branch you want mirrored.</li>
+    <li>Want it on every branch/tag push instead? Adjust the <code>on:</code> block — the destination
+        folder is still locked to your username/repo either way.</li>
+  </ul>
+</div>
+</body>
+</html>

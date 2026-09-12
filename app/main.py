@@ -4,6 +4,8 @@ import time
 import uuid
 import io
 import zipfile
+import tarfile
+import tempfile
 import asyncio
 import socket
 import ipaddress
@@ -16,7 +18,8 @@ from fastapi import FastAPI, Request, File, UploadFile, HTTPException, Form
 from fastapi.responses import StreamingResponse, HTMLResponse, PlainTextResponse, RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 
-from .storage import is_file, get_file_info, list_directory, list_files_recursive, upload_temp_file, repo_stats, search_files, write_batch_manifest, get_batch_manifest, HF_REPO_ID, format_size
+from .storage import is_file, get_file_info, list_directory, list_files_recursive, upload_temp_file, upload_folder_scoped, repo_stats, search_files, write_batch_manifest, get_batch_manifest, HF_REPO_ID, format_size
+from .gh_oidc import verify_actions_token
 
 app = FastAPI()
 
@@ -55,7 +58,7 @@ async def favicon():
         headers={"Cache-Control": "public, max-age=86400"},
     )
 
-CDN_BASE_URL = os.getenv("CDN_BASE_URL", "https://cdn-zt7p.onrender.com")
+CDN_BASE_URL = os.getenv("CDN_BASE_URL", "https://cdn.amit.is-a.dev")
 RAW_DOMAIN = os.getenv("RAW_DOMAIN", "raw.cdn.amit.is-a.dev")
 RAW_BASE_URL = os.getenv("RAW_BASE_URL", f"https://{RAW_DOMAIN}")
 RAW_PREFIX = "raw/"
@@ -65,6 +68,7 @@ async def render_context(extra: dict) -> dict:
     ctx = dict(extra)
     ctx["repo_file_count"] = stats["file_count"] if stats else None
     ctx["repo_size_str"] = stats["size_str"] if stats else None
+    ctx.setdefault("cdn_base_url", CDN_BASE_URL)
     ctx.setdefault("raw_base_url", RAW_BASE_URL)
     return ctx
 
@@ -229,6 +233,62 @@ async def handle_upload(request: Request, files: list[UploadFile] = File(...), f
         response["batch_url"] = f"{CDN_BASE_URL}/pack/{batch_id}"
 
     return response
+
+GH_SYNC_LIMIT_PER_HOUR = 2 * 1024 * 1024 * 1024  # per-repo abuse guard only, not a content-size cap
+_gh_sync_limiter = _UploadRateLimiter()
+
+def _safe_extract_tar(tar: tarfile.TarFile, dest: str):
+    dest_real = os.path.realpath(dest)
+    for member in tar.getmembers():
+        member_path = os.path.realpath(os.path.join(dest, member.name))
+        if not member_path.startswith(dest_real + os.sep) and member_path != dest_real:
+            raise HTTPException(status_code=400, detail="Archive contains an unsafe path.")
+        if member.issym() or member.islnk():
+            raise HTTPException(status_code=400, detail="Archive contains symlinks, which are not allowed.")
+    tar.extractall(dest)
+
+@app.get("/gh-sync")
+async def gh_sync_docs(request: Request):
+    return templates.TemplateResponse(request, "gh_sync_docs.html", {})
+
+@app.post("/api/gh-sync")
+async def gh_sync(request: Request, token: str = Form(...), archive: UploadFile = File(...)):
+    """
+    Backend endpoint for the reusable GitHub Actions workflow.
+
+    Identity is derived ONLY from a verified GitHub Actions OIDC token
+    (see app/gh_oidc.py) - never from anything the client puts in the
+    request body/path/headers. That token's `repository_owner`/`repository`
+    claims are set by GitHub itself for the run and cannot be forged by the
+    calling repo's own workflow file, so a repo can only ever sync into its
+    own "<github-username>/<repo-name>/" folder, no matter what it sends.
+    """
+    claims = verify_actions_token(token)
+    owner, repo = claims["owner"], claims["repo"]
+
+    client_ip = request.client.host if request.client else "unknown"
+    contents = await archive.read()
+    _gh_sync_limiter.check_and_record(f"gh-sync:{owner}/{repo}:{client_ip}", len(contents))
+
+    with tempfile.TemporaryDirectory() as tmp_upload, tempfile.TemporaryDirectory() as tmp_extract:
+        archive_path = os.path.join(tmp_upload, "payload.tar.gz")
+        with open(archive_path, "wb") as f:
+            f.write(contents)
+
+        try:
+            with tarfile.open(archive_path, "r:gz") as tar:
+                _safe_extract_tar(tar, tmp_extract)
+        except tarfile.TarError:
+            raise HTTPException(status_code=400, detail="Could not read archive (expected a .tar.gz).")
+
+        dest_prefix = await upload_folder_scoped(tmp_extract, owner, repo)
+
+    return {
+        "synced_to": dest_prefix,
+        "cdn_url": f"{CDN_BASE_URL}/{dest_prefix}/",
+        "raw_url": f"{RAW_BASE_URL}/{dest_prefix}/",
+        "ref": claims["ref"],
+    }
 
 _MAX_URL_UPLOAD_BYTES = UPLOAD_LIMIT_PER_HOUR
 
