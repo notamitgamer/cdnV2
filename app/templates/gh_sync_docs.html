@@ -6,6 +6,16 @@
 <title>GitHub Actions Sync · amit/cdn</title>
 <meta name="description" content="Push any repo's files to the CDN automatically on every git push.">
 <link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16x16.png">
+<link rel="icon" type="image/svg+xml" href="/static/icons/logo.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="/static/icons/apple-touch-icon.png">
+<meta name="theme-color" content="#09090b">
+<meta name="color-scheme" content="dark">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root{--bg:#09090b;--surface:#121214;--surface-2:#1e1e22;--border:#27272a;--text:#f4f4f5;--muted:#a1a1aa;--accent:#818cf8;}
   *{box-sizing:border-box;}
@@ -20,10 +30,14 @@
   ul{color:var(--muted);}
   .badge{display:inline-block;background:var(--surface-2);color:var(--accent);border-radius:6px;padding:2px 8px;font-size:.75rem;margin-left:8px;vertical-align:middle;}
   a{color:var(--accent);}
+  .top-wordmark{display:block;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:1.1rem;color:var(--text)!important;text-decoration:none!important;letter-spacing:-0.01em;margin-bottom:2rem;}
+  .top-wordmark:hover{opacity:.8;}
+  .top-wordmark-slash{color:var(--accent);}
 </style>
 </head>
 <body>
 <div class="wrap">
+  <a href="/" class="top-wordmark">amit<span class="top-wordmark-slash">/</span>cdn</a>
   <h1>Auto-sync any repo to the CDN <span class="badge">GitHub Actions</span></h1>
   <p>Add one workflow file to a repo. On every push, its contents land in the CDN under
      <code>/&lt;your-github-username&gt;/&lt;repo-name&gt;/</code> — no PAT, no shared secret, and it's
