@@ -258,6 +258,26 @@ async def upload_temp_file(temp_path: str, filename: str, folder: str = "uploads
     _cache.clear()
     return hf_path
 
+def _do_upload_folder_scoped(local_dir: str, dest_prefix: str):
+    # path_in_repo + delete_patterns are both scoped to dest_prefix, so this call
+    # can only ever create/update/delete files under that one folder - it never
+    # touches anything outside of it in the dataset repo.
+    api.upload_folder(
+        repo_id=HF_REPO_ID,
+        repo_type="dataset",
+        folder_path=local_dir,
+        path_in_repo=dest_prefix,
+        delete_patterns="*",
+        commit_message=f"gh-sync: update {dest_prefix}",
+        token=HF_TOKEN,
+    )
+
+async def upload_folder_scoped(local_dir: str, owner: str, repo: str) -> str:
+    dest_prefix = f"{owner}/{repo}"
+    await asyncio.to_thread(_do_upload_folder_scoped, local_dir, dest_prefix)
+    _cache.clear()
+    return dest_prefix
+
 async def write_batch_manifest(batch_id: str, files: list[dict]) -> None:
     manifest = {
         "batch_id": batch_id,
