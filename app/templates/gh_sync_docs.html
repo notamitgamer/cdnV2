@@ -16,7 +16,13 @@
   p{color:var(--muted);}
   code,pre{font-family:'JetBrains Mono',monospace;}
   code{background:var(--surface-2);padding:.15em .4em;border-radius:4px;font-size:.9em;color:var(--text);}
+  .code-block{position:relative;}
+  .code-block pre{margin:0;padding-right:48px;}
   pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;overflow-x:auto;font-size:.85rem;}
+  .copy-btn{position:absolute;top:10px;right:10px;display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer;padding:0;}
+  .copy-btn:hover{color:var(--text);border-color:var(--accent);}
+  .copy-btn:active{transform:scale(0.94);}
+  .copy-btn svg{width:16px;height:16px;pointer-events:none;}
   ul{color:var(--muted);}
   .badge{display:inline-block;background:var(--surface-2);color:var(--accent);border-radius:6px;padding:2px 8px;font-size:.75rem;margin-left:8px;vertical-align:middle;}
   a{color:var(--accent);}
@@ -40,6 +46,10 @@
 
   <h2>1. Add the workflow</h2>
   <p>Create <code>.github/workflows/cdn-sync.yml</code> in the repo you want mirrored:</p>
+<div class="code-block">
+  <button type="button" class="copy-btn" onclick="copyCodeBlock(this)" aria-label="Copy to clipboard">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+  </button>
 <pre>{% raw %}name: Sync to CDN
 
 on:
@@ -74,11 +84,17 @@ jobs:
             -F "token=${{ steps.oidc.outputs.token }}" \
             -F "archive=@/tmp/payload.tar.gz"
 {% endraw %}</pre>
+</div>
 
   <h2>2. Push</h2>
   <p>That's it — no repo secrets to create. On the next push, your files appear at:</p>
-  <pre>https://cdn.amit.is-a.dev/&lt;your-username&gt;/&lt;repo-name&gt;/
+  <div class="code-block">
+    <button type="button" class="copy-btn" onclick="copyCodeBlock(this)" aria-label="Copy to clipboard">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+    </button>
+    <pre>https://cdn.amit.is-a.dev/&lt;your-username&gt;/&lt;repo-name&gt;/
 https://raw.cdn.amit.is-a.dev/&lt;your-username&gt;/&lt;repo-name&gt;/</pre>
+  </div>
 
   <h2>Notes</h2>
   <ul>
@@ -90,5 +106,42 @@ https://raw.cdn.amit.is-a.dev/&lt;your-username&gt;/&lt;repo-name&gt;/</pre>
         folder is still locked to your username/repo either way.</li>
   </ul>
 </div>
+<script>
+  const CHECK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="var(--success, #22c55e)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+
+  function copyCodeBlock(btn) {
+    const pre = btn.parentElement.querySelector('pre');
+    const text = pre.textContent;
+
+    const showCopied = () => {
+      const original = btn.innerHTML;
+      btn.innerHTML = CHECK_SVG;
+      setTimeout(() => { btn.innerHTML = original; }, 1200);
+    };
+
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(showCopied).catch(() => fallbackCopy(text, showCopied));
+    } else {
+      fallbackCopy(text, showCopied);
+    }
+  }
+
+  function fallbackCopy(text, onSuccess) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try {
+      document.execCommand('copy');
+      onSuccess();
+    } catch (err) {
+      console.error('copy failed:', err);
+    }
+    document.body.removeChild(ta);
+  }
+</script>
 </body>
 </html>
