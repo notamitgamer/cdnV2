@@ -540,7 +540,14 @@ async def serve(request: Request, path: str):
     if request.url.hostname == RAW_DOMAIN:
         if not clean_path:
             return HTMLResponse("Specify a file path.", status_code=200)
-        return await stream_raw(clean_path, request)
+        try:
+            return await stream_raw(clean_path, request)
+        except HTTPException as e:
+            if e.status_code == 404:
+                entries = await list_directory(clean_path)
+                if entries:
+                    return RedirectResponse(f"{CDN_BASE_URL}/{clean_path}/")
+            raise
 
     if clean_path == RAW_PREFIX.rstrip("/") or clean_path.startswith(RAW_PREFIX):
         raw_path = clean_path[len(RAW_PREFIX):]
