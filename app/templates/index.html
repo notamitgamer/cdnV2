@@ -170,6 +170,8 @@
             font-size: 0.95rem;
         }
 
+        .site-notice { margin-top: 0.5rem; }
+
         a { color: var(--accent-primary); text-decoration: none; transition: color 0.15s;}
         a:hover { color: var(--accent-primary-hover); text-decoration: underline; }
 
@@ -834,7 +836,9 @@
         {% if page == 'listing' and not path %}
         <h1>A small file shelf for <a href="https://amit.is-a.dev">my</a> projects.</h1>
         <blockquote class="site-notice">
-            Project assets live here. Files and paths may change over time, so use direct links with that in mind.
+            Files here can now be synced straight from GitHub on every push — click
+            <a href="/gh-sync">Sync</a> at the top to see how to set it up. Project assets live here;
+            files and paths may change over time, so use direct links with that in mind.
         </blockquote>
         {% endif %}
 
