@@ -251,6 +251,10 @@ def _safe_extract_tar(tar: tarfile.TarFile, dest: str):
 async def gh_sync_docs(request: Request):
     return templates.TemplateResponse(request, "gh_sync_docs.html", {})
 
+@app.get("/documentation")
+async def documentation(request: Request):
+    return templates.TemplateResponse(request, "documentation.html", {})
+
 @app.post("/api/gh-sync")
 async def gh_sync(request: Request, token: str = Form(...), archive: UploadFile = File(...)):
     """

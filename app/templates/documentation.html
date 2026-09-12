@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Documentation · amit/cdn</title>
+<meta name="description" content="Full endpoint reference for cdn.amit.is-a.dev - what each route does, what it needs, what it returns, and how it works.">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16x16.png">
+<link rel="icon" type="image/svg+xml" href="/static/icons/logo.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="/static/icons/apple-touch-icon.png">
+<meta name="theme-color" content="#09090b">
+<meta name="color-scheme" content="dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#09090b;--surface:#121214;--surface-2:#1e1e22;--border:#27272a;--text:#f4f4f5;--muted:#a1a1aa;--accent:#818cf8;--get:#4ade80;--post:#818cf8;--err:#f87171;}
+  *{box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Work Sans',system-ui,sans-serif;margin:0;line-height:1.6;}
+  .wrap{max-width:1000px;margin:0 auto;padding:48px 20px 96px;}
+  h1{font-family:'Zilla Slab',Georgia,serif;font-weight:600;font-size:1.9rem;margin-bottom:.2em;}
+  h2{font-size:1.15rem;margin:0 0 1rem;font-family:'JetBrains Mono',monospace;}
+  h3{font-size:.95rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:1.1em 0 .4em;}
+  p{color:var(--muted);margin:.4em 0;}
+  code{font-family:'JetBrains Mono',monospace;background:var(--surface-2);padding:.15em .4em;border-radius:4px;font-size:.85em;color:var(--text);}
+  pre{font-family:'JetBrains Mono',monospace;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;overflow-x:auto;font-size:.82rem;margin:.5em 0;}
+  a{color:var(--accent);}
+  .top-wordmark{display:block;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:1.1rem;color:var(--text)!important;text-decoration:none!important;letter-spacing:-0.01em;margin-bottom:1.5rem;}
+  .top-wordmark:hover{opacity:.8;}
+  .top-wordmark-slash{color:var(--accent);}
+  .lede{max-width:70ch;}
+  .toc{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.3rem;margin:1.6rem 0 2.4rem;}
+  .toc h3{margin-top:0;}
+  .toc ol{margin:0;padding-left:1.2em;color:var(--muted);columns:2;font-size:.92rem;}
+  .toc a{color:var(--text);text-decoration:none;}
+  .toc a:hover{color:var(--accent);}
+  .endpoint{border:1px solid var(--border);border-radius:10px;padding:1.4rem 1.5rem;margin-bottom:1.6rem;background:var(--surface);scroll-margin-top:20px;}
+  .route-row{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:.6rem;}
+  .method{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:.78rem;padding:.2rem .5rem;border-radius:5px;letter-spacing:.03em;}
+  .method.get{background:rgba(74,222,128,.12);color:var(--get);}
+  .method.post{background:rgba(129,140,248,.15);color:var(--post);}
+  .route-path{font-family:'JetBrains Mono',monospace;font-size:1rem;color:var(--text);}
+  .domain-tag{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--muted);background:var(--surface-2);border:1px solid var(--border);border-radius:5px;padding:.15rem .4rem;}
+  .endpoint > p:first-of-type{margin-top:0;}
+  table{width:100%;border-collapse:collapse;margin:.5em 0;font-size:.88rem;}
+  th,td{text-align:left;padding:.4em .6em;border-bottom:1px solid var(--border);vertical-align:top;}
+  th{color:var(--muted);font-weight:500;font-size:.8rem;text-transform:uppercase;letter-spacing:.03em;}
+  td{color:var(--text);}
+  td.desc{color:var(--muted);}
+  .err-list{list-style:none;padding:0;margin:.4em 0;}
+  .err-list li{display:flex;gap:.6em;padding:.3em 0;font-size:.88rem;}
+  .err-code{font-family:'JetBrains Mono',monospace;color:var(--err);font-weight:600;flex-shrink:0;width:3.2em;}
+  section{margin-top:2.6rem;}
+  section > h2 { font-family:'Zilla Slab',Georgia,serif; font-size:1.4rem; font-weight:600; color:var(--text); }
+  .footnote{font-size:.82rem;color:var(--muted);margin-top:3rem;border-top:1px solid var(--border);padding-top:1.2rem;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a href="/" class="top-wordmark">amit<span class="top-wordmark-slash">/</span>cdn</a>
+  <h1>Documentation</h1>
+  <p class="lede">Every route this service exposes: what it's for, what it needs, what it returns, what makes it fail, and
+     how it actually works under the hood. This page is generated from reading the live source, not from memory or
+     guesswork — if something here is wrong, the code is the tie-breaker, and this page should get fixed to match it.</p>
+
+  <div class="toc">
+    <h3>Jump to</h3>
+    <ol>
+      <li><a href="#browsing">Browsing &amp; viewing</a></li>
+      <li><a href="#gh-sync">GitHub Actions sync</a></li>
+      <li><a href="#uploading">Uploading files</a></li>
+      <li><a href="#downloading">Downloading &amp; zips</a></li>
+      <li><a href="#batches">Multi-file batches</a></li>
+      <li><a href="#search">Search</a></li>
+      <li><a href="#raw-domain">The raw domain</a></li>
+      <li><a href="#utility">Utility</a></li>
+      <li><a href="#architecture">How storage works</a></li>
+    </ol>
+  </div>
+
+  <section id="browsing">
+    <h2>Browsing &amp; viewing</h2>
+
+    <div class="endpoint">
+      <div class="route-row"><span class="method get">GET</span><span class="route-path">/{path}</span></div>
+      <p>The catch-all route behind the whole browsing UI on <code>cdn.amit.is-a.dev</code>. What it renders depends on
+         what <code>path</code> resolves to:</p>
+      <table>
+        <tr><th>If path is...</th><th class="desc">Renders</th></tr>
+        <tr><td>empty (<code>/</code>)</td><td class="desc">Root folder listing, plus the homepage hero/notice.</td></tr>
+        <tr><td>an existing file</td><td class="desc">A file detail page (preview where possible, size, copy-link/copy-raw buttons, download).</td></tr>
+        <tr><td>an existing folder</td><td class="desc">A folder listing (files and sub-folders, with search-this-folder and "Download all" zip).</td></tr>
+        <tr><td>nonexistent</td><td class="desc">404 page.</td></tr>
+      </table>
+      <h3>How it decides</h3>
+      <p>It calls <code>get_file_info(path)</code> first (a HEAD request against the Hugging Face dataset repo's
+         <code>resolve/main/</code> URL for that path). If that says the path exists as a file, it renders the file
+         page. Otherwise it calls <code>list_directory(path)</code> (a tree listing from the HF API); a non-empty
+         result renders the folder listing, an empty result on a non-root path is a 404.</p>
+      <h3>Errors</h3>
+      <ul class="err-list"><li><span class="err-code">404</span> Path doesn't exist as a file or a non-empty folder.</li></ul>
+    </div>
+
+    <div class="endpoint">
+      <div class="route-row"><span class="method get">GET</span><span class="route-path">/new</span> <span class="method get">GET</span><span class="route-path">/find</span></div>
+      <p><code>/new</code> renders the upload UI (drag-and-drop → calls <code>/api/put</code> under the hood).
+         <code>/find</code> renders the search UI (calls <code>/api/find</code> as you type). Both are just the same
+         <code>index.html</code> template rendered with a different <code>page</code> context value — no separate
+         backend logic beyond that.</p>
+    </div>
+  </section>
+
+  <section id="gh-sync">
+    <h2>GitHub Actions sync</h2>
+
+    <div class="endpoint">
+      <div class="route-row"><span class="method get">GET</span><span class="route-path">/gh-sync</span></div>
+      <p>Renders the human-readable setup guide for the feature below, including a copy-pasteable workflow file.
+         No parameters, no backend logic beyond rendering the template.</p>
+    </div>
+
+    <div class="endpoint" id="post-gh-sync">
+      <div class="route-row"><span class="method post">POST</span><span class="route-path">/api/gh-sync</span></div>
+      <p>Lets a GitHub Actions workflow push a repo's files to the CDN on every push, landing at
+         <code>/&lt;github-username&gt;/&lt;repo-name&gt;/</code> — with no PAT or shared secret required. Full setup
+         instructions (including the exact workflow YAML to copy) are at <a href="/gh-sync">/gh-sync</a>.</p>
+
+      <h3>Request</h3>
+      <p><code>multipart/form-data</code> with two fields:</p>
+      <table>
+        <tr><th>Field</th><th class="desc">What it is</th></tr>
+        <tr><td><code>token</code></td><td class="desc">A GitHub Actions OIDC identity token, requested by the calling workflow via <code>core.getIDToken('cdn.amit.is-a.dev')</code>. This is the <em>only</em> source of identity this endpoint trusts.</td></tr>
+        <tr><td><code>archive</code></td><td class="desc">A <code>.tar.gz</code> of the repo's contents (the workflow builds this with <code>tar --exclude='.git' -czf ...</code>).</td></tr>
+      </table>
+
+      <h3>How it works, step by step</h3>
+      <ol style="color:var(--muted)">
+        <li>Verifies the token's signature against GitHub's own public keys (<code>token.actions.githubusercontent.com/.well-known/jwks</code>), checks it isn't expired, and checks the <code>aud</code> claim matches this service.</li>
+        <li>Reads <code>repository_owner</code> and <code>repository</code> straight out of the <em>verified</em> token claims — this is the destination folder, and it is never taken from anything else in the request. A workflow file cannot forge these claims because GitHub itself stamps them for the run.</li>
+        <li>Runs a per-repo, per-IP rate check (2&nbsp;GB/hour) as an abuse guard — this is not a content-size cap, just throttling.</li>
+        <li>Extracts the tar archive into a temp directory, rejecting anything that tries to write outside that directory (path traversal) or that is a symlink.</li>
+        <li>Uploads that folder to the underlying Hugging Face dataset repo with <code>path_in_repo</code> <strong>and</strong> <code>delete_patterns</code> both scoped to exactly <code>&lt;owner&gt;/&lt;repo&gt;/</code> — so the call can create, update, or delete files only inside that one folder, never anywhere else. Deleted files in the source repo are removed from the CDN folder too (this is a mirror, not an accumulate-forever upload).</li>
+      </ol>
+
+      <h3>Response <code>200</code></h3>
+      <pre>{
+  "synced_to": "jaasx009/College",
+  "cdn_url": "https://cdn.amit.is-a.dev/jaasx009/College/",
+  "raw_url_prefix": "https://raw.cdn.amit.is-a.dev/jaasx009/College/",
+  "note": "cdn_url is the browsable folder listing. raw_url_prefix isn't a link by itself - append an individual filename to it to get that file's direct raw URL.",
+  "ref": "refs/heads/main"
+}</pre>
+
+      <h3>Errors</h3>
+      <ul class="err-list">
+        <li><span class="err-code">401</span> Token missing, expired, badly signed, wrong audience, or its owner/repository claims don't line up (malformed token).</li>
+        <li><span class="err-code">400</span> Archive isn't a readable <code>.tar.gz</code>, or it contains an unsafe path / a symlink.</li>
+        <li><span class="err-code">429</span> Per-repo/IP hourly byte limit (2&nbsp;GB) exceeded.</li>
+      </ul>
+
+      <h3>Limits, currently</h3>
+      <p>No file-type restriction and no per-file or total size cap beyond the 2&nbsp;GB/hour abuse-rate guard above.
+         This is intentional for now, not an oversight.</p>
+    </div>
+  </section>
+
+  <section id="uploading">
+    <h2>Uploading files</h2>
+
+    <div class="endpoint">
+      <div class="route-row"><span class="method post">POST</span><span class="route-path">/api/put</span></div>
+      <p>Direct multipart file upload — what the <a href="/new">/new</a> page's drag-and-drop calls. For uploading
+         from a GitHub repo automatically, use <a href="#post-gh-sync">/api/gh-sync</a> instead; this endpoint is for
+         one-off manual uploads.</p>
+      <h3>Request</h3>
+      <table>
+        <tr><th>Field</th><th class="desc">What it is</th></tr>
+        <tr><td><code>files</code></td><td class="desc">One or more files (multipart, repeatable field).</td></tr>
+        <tr><td><code>folder</code></td><td class="desc">Optional. Must be exactly <code>uploads</code> or <code>third-party</code> — these are the only two folders this endpoint is allowed to write to. Defaults to <code>uploads</code>.</td></tr>
+      </table>
+      <h3>How it works</h3>
+      <p>Each file is streamed to a local temp path, checked against the rate limiter (50&nbsp;MB/minute, 300&nbsp;MB/hour
+         per client IP), then uploaded to Hugging Face at <code>&lt;folder&gt;/&lt;8-char-uuid&gt;-&lt;original-filename&gt;</code>
+         (spaces in the filename become underscores). The random prefix means two uploads can never collide, and the
+         filename portion is still readable. If 2 or more files were uploaded together, a <em>batch</em> is also created
+         (see <a href="#batches">Batches</a> below) so the whole set can be shared/downloaded as one link.</p>
+      <h3>Response <code>200</code></h3>
+      <pre>{
+  "files": [
+    {"filename": "photo.png", "hf_path": "uploads/ab12cd34-photo.png",
+     "size": 48213, "cdn_url": "...", "raw_url": "..."}
+  ],
+  "batch_id": "a1b2c3d4e5",     // only present if 2+ files
+  "batch_url": "https://cdn.amit.is-a.dev/pack/a1b2c3d4e5"
+}</pre>
+      <h3>Errors</h3>
+      <ul class="err-list">
+        <li><span class="err-code">400</span> <code>folder</code> isn't <code>uploads</code> or <code>third-party</code>.</li>
+        <li><span class="err-code">429</span> Per-IP rate limit exceeded (50&nbsp;MB/min or 300&nbsp;MB/hour).</li>
+      </ul>
+    </div>
+
+    <div class="endpoint">
+      <div class="route-row"><span class="method post">POST</span><span class="route-path">/api/put-url</span></div>
+      <p>Uploads a file the server fetches from a URL you give it, instead of one you send directly. Same destination
+         rules and rate limiter as <code>/api/put</code>.</p>
+      <h3>Request</h3>
+      <p>JSON body:</p>
+      <pre>{ "url": "https://example.com/file.png", "folder": "uploads" }</pre>
+      <h3>How it works / safety</h3>
+      <p>Only <code>https://</code> URLs are accepted. Before fetching, the hostname is resolved and every returned
+         IP is checked — private, loopback, link-local, reserved, multicast, or unspecified addresses are all
+         rejected. This is an SSRF guard: without it, this endpoint could otherwise be used to make the server fetch
+         internal/local network addresses on the caller's behalf. The download is streamed with a size cap enforced
+         both from the <code>Content-Length</code> header (if present) and live as bytes come in, so a server lying
+         about its own content-length can't bypass the cap.</p>
+      <h3>Response <code>200</code></h3>
+      <p>Same single-file shape as one file from <code>/api/put</code>'s response (no batch, since it's always exactly one file).</p>
+      <h3>Errors</h3>
+      <ul class="err-list">
+        <li><span class="err-code">400</span> Not <code>https://</code>, hostname doesn't resolve, resolves to a private/internal address, or the source returned a non-200.</li>
+        <li><span class="err-code">413</span> File exceeds the fetch size limit (currently the same 300&nbsp;MB/hour figure used as the upload cap).</li>
+        <li><span class="err-code">429</span> Per-IP rate limit exceeded.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="downloading">
+    <h2>Downloading &amp; zips</h2>
+
+    <div class="endpoint">
+      <div class="route-row"><span class="method get">GET</span><span class="route-path">/api/get/{path}</span></div>
+      <p>Forces a browser download of a single file (sends <code>Content-Disposition: attachment</code>), unlike
+         viewing the raw domain which lets the browser render the file inline if it can. Streams the file through
+         this server rather than redirecting to Hugging Face directly, and supports <code>Range</code> requests
+         (so video/audio seeking and resumable downloads work).</p>
+      <h3>Errors</h3>
+      <ul class="err-list"><li><span class="err-code">404</span> File doesn't exist.</li></ul>
+    </div>
+
+    <div class="endpoint">
+      <div class="route-row"><span class="method get">GET</span><span class="route-path">/api/pack-info/{path}</span> <span class="method get">GET</span><span class="route-path">/api/pack/{path}</span></div>
+      <p><code>pack-info</code> returns the file count and total size a folder would zip to, without actually
+         building the zip — used by the UI to show a size estimate before you commit to downloading. <code>pack</code>
+         builds and streams the actual zip.</p>
+      <h3>How it works</h3>
+      <p>Lists every file under <code>path</code> recursively via the HF API, fetches up to 8 of them concurrently,
+         and streams them into a zip in memory (paths inside the zip are relative to the folder you asked for, not
+         absolute). There's a hard limit of <strong>300 files / 500&nbsp;MB total</strong> per zip — past that it
+         refuses rather than trying to build an enormous zip in memory.</p>
+      <h3>Errors</h3>
+      <ul class="err-list">
+        <li><span class="err-code">404</span> Folder is empty or doesn't exist.</li>
+        <li><span class="err-code">413</span> Folder exceeds the 300-file / 500&nbsp;MB zip limit.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="batches">
+    <h2>Multi-file batches</h2>
+    <p>When <a href="#uploading">/api/put</a> is given 2 or more files in one request, it also writes a small
+       "batch manifest" (just the list of resulting files) under a random 10-character batch ID, so that whole set
+       can be shared and managed as a single link instead of separate ones.</p>
+    <div class="endpoint">
+      <div class="route-row"><span class="method get">GET</span><span class="route-path">/pack/{batch_id}</span></div>
+      <p>Renders a page listing every file in that batch, with per-file and "download all as zip" options.</p>
+      <h3>Errors</h3><ul class="err-list"><li><span class="err-code">404</span> No batch with that ID.</li></ul>
+    </div>
+    <div class="endpoint">
+      <div class="route-row"><span class="method get">GET</span><span class="route-path">/api/pack-info-batch/{batch_id}</span> <span class="method get">GET</span><span class="route-path">/api/pack-batch/{batch_id}</span></div>
+      <p>Same idea as <code>/api/pack-info</code> / <code>/api/pack</code> above, but operating over the batch's file
+         list instead of a folder path. No 300-file/500MB check here since a batch is inherently one upload's worth
+         of files, not an arbitrary folder walk.</p>
+      <h3>Errors</h3>
+      <ul class="err-list"><li><span class="err-code">404</span> Batch doesn't exist, or exists but is empty.</li></ul>
+    </div>
+  </section>
+
+  <section id="search">
+    <h2>Search</h2>
+    <div class="endpoint">
+      <div class="route-row"><span class="method get">GET</span><span class="route-path">/api/find?q=...</span></div>
+      <p>Powers the <a href="/find">/find</a> page. Takes a query string <code>q</code>, returns matching files
+         across the whole repo.</p>
+      <h3>Response <code>200</code></h3>
+      <pre>{ "results": [ { "...": "file entries" } ] }</pre>
+      <p>An empty or missing <code>q</code> is valid input, not an error — it just returns however
+         <code>search_files("")</code> resolves that (effectively little/nothing to match against, no exception thrown).</p>
+    </div>
+  </section>
+
+  <section id="raw-domain">
+    <h2>The raw domain</h2>
+    <div class="endpoint">
+      <div class="route-row"><span class="method get">GET</span><span class="route-path">/{path}</span> <span class="domain-tag">raw.cdn.amit.is-a.dev</span></div>
+      <p>A separate hostname, not a path prefix on the main domain. Requests here are proxied straight through to
+         the underlying Hugging Face file (<code>resolve/main/&lt;path&gt;</code>), with no HTML wrapper — this is
+         meant for direct file links (<code>&lt;img src&gt;</code>, downloads, embeds), not browsing.</p>
+      <h3>If the path is a folder, not a file</h3>
+      <p>The direct file fetch 404s (Hugging Face's <code>resolve</code> only serves blobs). Before giving up, this
+         checks whether that path is actually a non-empty folder — if so, it 307-redirects to the equivalent listing
+         page on the main domain (<code>cdn.amit.is-a.dev/&lt;path&gt;/</code>) instead of just saying not-found.
+         A genuinely nonexistent path still 404s.</p>
+      <h3>Errors</h3>
+      <ul class="err-list"><li><span class="err-code">404</span> Path doesn't exist as a file or a non-empty folder. Response body is plain text, not the HTML 404 page (deliberately - this is meant to be machine/embed-friendly, not a browsing experience).</li></ul>
+    </div>
+    <div class="endpoint">
+      <div class="route-row"><span class="method get">GET</span><span class="route-path">/raw/{path}</span> <span class="domain-tag">cdn.amit.is-a.dev</span></div>
+      <p>A convenience prefix on the <em>main</em> domain that just 307-redirects to the real raw domain — i.e.
+         <code>cdn.amit.is-a.dev/raw/foo.png</code> → <code>raw.cdn.amit.is-a.dev/foo.png</code>. Not itself a proxy.</p>
+    </div>
+  </section>
+
+  <section id="utility">
+    <h2>Utility</h2>
+    <div class="endpoint">
+      <div class="route-row"><span class="method get">GET</span><span class="route-path">/ping</span></div>
+      <p>Health check. Always returns <code>200 "Server is awake!"</code> as plain text. Used to keep the instance
+         warm on host platforms that spin down idle services — has no other side effects.</p>
+    </div>
+    <div class="endpoint">
+      <div class="route-row"><span class="method get">GET</span><span class="route-path">/static/{filename}</span> <span class="method get">GET</span><span class="route-path">/static/icons/{filename}</span> <span class="method get">GET</span><span class="route-path">/favicon.ico</span></div>
+      <p>Serve the site's own static assets (CSS-adjacent files, icons, favicon) straight off disk. Not related to
+         anything stored in the CDN's file repo — these ship with the app itself.</p>
+    </div>
+  </section>
+
+  <section id="architecture">
+    <h2>How storage actually works</h2>
+    <p class="lede">Everything above talks about "the CDN" as one thing, but there's no custom database or file
+       server behind it — every file this service serves, lists, or accepts lives in a single
+       <strong>Hugging Face dataset repository</strong>. This app is a FastAPI backend in front of that repo:</p>
+    <ul style="color:var(--muted)">
+      <li>File listings (folders, search, file-exists checks) come from Hugging Face's repo-tree API, with a short-lived in-memory cache on this server's side so repeated browsing doesn't re-hit that API constantly.</li>
+      <li>Serving an actual file's bytes (viewing, raw links, downloads, zips) streams from the dataset repo's public <code>resolve/main/&lt;path&gt;</code> URL — this server proxies that stream rather than storing a separate copy.</li>
+      <li>Uploads (<code>/api/put</code>, <code>/api/put-url</code>, <code>/api/gh-sync</code>) all ultimately call the Hugging Face Hub API to commit files into that same dataset repo, each scoped to whatever folder/path rules that endpoint enforces.</li>
+      <li>There is one HF write token, held only by this server - never handed to uploaders, contributors, or GitHub Actions runs. Everything that writes to storage goes through this backend's own validation first (folder allow-lists, OIDC identity checks, rate limits) precisely because the write credential itself has no per-user restriction built in - the backend <em>is</em> the access control.</li>
+    </ul>
+  </section>
+
+  <p class="footnote">If something on this page doesn't match what the service actually does, trust the code
+     (<code>app/main.py</code>, <code>app/storage.py</code>, <code>app/gh_oidc.py</code> in
+     <a href="https://github.com/notamitgamer/cdnV2">notamitgamer/cdnV2</a>) over this page, and open an issue/PR
+     so this page gets corrected.</p>
+</div>
+</body>
+</html>
