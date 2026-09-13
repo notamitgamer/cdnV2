@@ -117,7 +117,8 @@
         
         .navlinks {
             display: flex;
-            gap: 0.4rem;
+            align-items: center;
+            gap: 0.6rem;
         }
         .navlinks a {
             color: var(--text-dim);
@@ -133,6 +134,19 @@
             color: var(--text-main);
             background: rgba(255, 255, 255, 0.05);
         }
+        .nav-icon-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.1rem;
+            height: 2.1rem;
+            padding: 0 !important;
+        }
+        .nav-history-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
 
         .container {
             width: 90%;
@@ -146,7 +160,7 @@
                 padding: 0 1.25rem;
             }
             .navbar { padding: 1rem 1.25rem; }
-            .navlinks { gap: 0.1rem; }
+            .navlinks { gap: 0.25rem; }
             .navlinks a { font-size: 0.85rem; padding: 0.35rem 0.4rem; }
         }
 
@@ -218,6 +232,7 @@
             font-size: 0.9rem;
         }
         .recent-activity-list li:first-child { border-top: none; }
+        .recent-activity-list li[hidden] { display: none; }
         .recent-activity-list a { text-decoration: none; }
         .recent-activity-list a:hover { text-decoration: underline; }
         .recent-activity-time {
@@ -227,7 +242,6 @@
             flex-shrink: 0;
         }
 
-        .nav-history-wrap { position: relative; }
         .nav-history-panel {
             display: none;
             position: absolute;
@@ -914,12 +928,22 @@
         <header class="navbar">
             <a href="/" class="wordmark">amit<span class="wordmark-slash">/</span>cdn</a>
             <nav class="navlinks">
-                <a href="/find">Find</a>
-                <a href="/new">New</a>
-                <a href="/gh-sync">Sync</a>
-                <a href="/documentation">Docs</a>
+                <a href="/find" class="nav-icon-btn" title="Find" aria-label="Find">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </a>
+                <a href="/new" class="nav-icon-btn" title="New / Upload" aria-label="New / Upload">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                </a>
+                <a href="/gh-sync" class="nav-icon-btn" title="GitHub Actions Sync" aria-label="GitHub Actions Sync">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                </a>
+                <a href="/documentation" class="nav-icon-btn" title="Documentation" aria-label="Documentation">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                </a>
                 <div class="nav-history-wrap">
-                    <a href="#" id="nav-history-toggle" title="Recently viewed">History</a>
+                    <a href="#" id="nav-history-toggle" class="nav-icon-btn" title="Recently viewed" aria-label="Recently viewed">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/></svg>
+                    </a>
                     <div class="nav-history-panel" id="nav-history-panel"></div>
                 </div>
             </nav>
