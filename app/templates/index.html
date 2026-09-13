@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% if page == 'file' %}{{ filename }} · amit/cdn{% elif page == 'upload' %}New · amit/cdn{% elif page == 'search' %}Find · amit/cdn{% else %}amit/cdn · {{ page | capitalize }}{% endif %}</title>
+    <title>{% if page == 'file' %}{{ filename }} · amit/cdn{% elif page == 'upload' %}New · amit/cdn{% elif page == 'search' %}Find · amit/cdn{% elif page == 'history' %}History · amit/cdn{% else %}amit/cdn · {{ page | capitalize }}{% endif %}</title>
     <meta name="description" content="Static file host for amit's projects. Browse, upload, and grab direct links.">
 
     <link rel="icon" href="/favicon.ico" sizes="any">
@@ -19,7 +19,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="amit/cdn">
 
-    <meta property="og:title" content="{% if page == 'upload' %}New · amit/cdn{% elif page == 'search' %}Find · amit/cdn{% else %}amit/cdn · {{ page | capitalize }}{% endif %}">
+    <meta property="og:title" content="{% if page == 'upload' %}New · amit/cdn{% elif page == 'search' %}Find · amit/cdn{% elif page == 'history' %}History · amit/cdn{% else %}amit/cdn · {{ page | capitalize }}{% endif %}">
     <meta property="og:description" content="Static file host for amit's projects. Browse, upload, and grab direct links.">
     <meta property="og:image" content="/static/icons/og-logo.png">
     <meta property="og:type" content="website">
@@ -865,6 +865,38 @@
             }
             .file-actions .btn { width: 100%; padding: 0.65rem 0.5rem; font-size: 0.85rem;}
         }
+
+        .history-section {
+            margin-bottom: 2.5rem;
+        }
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .history-title {
+            font-family: var(--font-heading);
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin: 0;
+            color: #ffffff;
+        }
+        .clear-history-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            font-family: var(--font-mono);
+            padding: 0.3rem 0.6rem;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .clear-history-btn:hover {
+            color: var(--danger);
+            border-color: var(--danger);
+        }
     </style>
 </head>
 <body>
@@ -883,6 +915,9 @@
                 </a>
                 <a href="/documentation" class="nav-icon-btn" title="Documentation" aria-label="Documentation">
                     <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                </a>
+                <a href="/history" class="nav-icon-btn" title="History" aria-label="History">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 </a>
             </nav>
         </header>
@@ -903,6 +938,8 @@
                     {% set ns.items = ns.items + [{'name': 'new', 'href': '/new'}] %}
                 {% elif page == 'search' %}
                     {% set ns.items = ns.items + [{'name': 'find', 'href': '/find'}] %}
+                {% elif page == 'history' %}
+                    {% set ns.items = ns.items + [{'name': 'history', 'href': '/history'}] %}
                 {% elif page == 'file' %}
                     {% set ns.items = ns.items + [{'name': filename, 'href': none}] %}
                 {% endif %}
@@ -1191,6 +1228,24 @@
 
             const MAX_FILE_SIZE_BYTES = 200 * 1024 * 1024;
 
+            // Records an upload to this browser's local /history log
+            function recordUpload(item) {
+                try {
+                    var KEY = 'cdn_uploads_v1';
+                    var MAX = 50;
+                    var entries = JSON.parse(localStorage.getItem(KEY) || '[]');
+                    entries.unshift({
+                        filename: item.filename,
+                        hf_path: item.hf_path,
+                        size: item.size,
+                        cdn_url: item.cdn_url,
+                        raw_url: item.raw_url,
+                        ts: Date.now()
+                    });
+                    localStorage.setItem(KEY, JSON.stringify(entries.slice(0, MAX)));
+                } catch (e) {}
+            }
+
             function selectedFolder() {
                 const active = folderPicker.querySelector('.folder-option.active');
                 return active ? active.dataset.folder : 'uploads';
@@ -1283,6 +1338,7 @@
                             const data = JSON.parse(xhr.responseText);
                             data.files.forEach(item => {
                                 const row = rows[item.filename];
+                                recordUpload(item);
                                 if (!row) return;
                                 row.classList.add('done');
                                 const filePath = item.hf_path;
@@ -1351,6 +1407,7 @@
                             throw new Error(data.detail || 'Upload from URL failed.');
                         }
                         const item = data.files[0];
+                        recordUpload(item);
                         row.classList.add('done');
                         const filePath = item.hf_path;
                         row.innerHTML = `
@@ -1369,6 +1426,113 @@
                     })
                     .finally(() => { urlUploadBtn.disabled = false; });
             });
+        </script>
+
+        {% elif page == 'history' %}
+        <div class="history-container">
+            <div class="history-section">
+                <div class="history-header">
+                    <h2 class="history-title">Recent Uploads</h2>
+                    <button type="button" class="clear-history-btn" onclick="clearLocalHistory('cdn_uploads_v1', 'history-uploads-list')">Clear Uploads</button>
+                </div>
+                <div class="list-group" id="history-uploads-list"></div>
+            </div>
+        
+            <div class="history-section">
+                <div class="history-header">
+                    <h2 class="history-title">Visited Files & Folders</h2>
+                    <button type="button" class="clear-history-btn" onclick="clearLocalHistory('cdn_visited_v1', 'history-visited-list')">Clear Visits</button>
+                </div>
+                <div class="list-group" id="history-visited-list"></div>
+            </div>
+        </div>
+        
+        <script>
+            function renderHistory() {
+                function formatRelative(ts) {
+                    if (!ts) return '';
+                    var diff = Math.round((Date.now() - ts) / 60000);
+                    if (diff < 1) return 'just now';
+                    if (diff < 60) return diff + 'm ago';
+                    if (diff < 1440) return Math.round(diff / 60) + 'h ago';
+                    return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                }
+        
+                function formatBytes(bytes) {
+                    if (!bytes || bytes === '-') return '-';
+                    if (bytes < 1024) return bytes + ' B';
+                    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+                    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+                }
+        
+                // Uploads
+                var uploadContainer = document.getElementById('history-uploads-list');
+                var uploads = JSON.parse(localStorage.getItem('cdn_uploads_v1') || '[]');
+                if (!uploads.length) {
+                    uploadContainer.innerHTML = '<div class="empty-state"><span>No uploads logged yet on this browser.</span></div>';
+                } else {
+                    uploadContainer.innerHTML = uploads.map(function(item) {
+                        return `
+                            <div class="list-item">
+                                <div class="item-name">
+                                    <svg class="file-icon-list" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                    <a href="/${item.hf_path}" class="file-link" data-full-name="${item.filename}">${item.filename}</a>
+                                </div>
+                                <div class="item-meta">
+                                    <span class="size-label">${formatBytes(item.size)}</span>
+                                    <span style="color: var(--text-dim); font-size: 0.8rem;">${formatRelative(item.ts)}</span>
+                                    <a href="/api/get/${item.hf_path}" class="download-icon" title="Download" data-turbo="false">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>
+                                    </a>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+        
+                // Visited
+                var visitedContainer = document.getElementById('history-visited-list');
+                var visited = JSON.parse(localStorage.getItem('cdn_visited_v1') || '[]');
+                if (!visited.length) {
+                    visitedContainer.innerHTML = '<div class="empty-state"><span>No visited links logged yet.</span></div>';
+                } else {
+                    visitedContainer.innerHTML = visited.map(function(item) {
+                        var isDir = item.type === 'folder';
+                        var icon = isDir
+                            ? '<svg class="folder-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'
+                            : '<svg class="file-icon-list" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>';
+                        var name = isDir ? item.path.split('/').pop() + '/' : (item.filename || item.path.split('/').pop());
+                        var link = '/' + item.path;
+        
+                        return `
+                            <div class="list-item">
+                                <div class="item-name">
+                                    ${icon}
+                                    <a href="${link}" class="${isDir ? 'folder-link' : 'file-link'}" data-full-name="${name}">${name}</a>
+                                </div>
+                                <div class="item-meta">
+                                    <span style="color: var(--text-dim); font-size: 0.8rem;">${formatRelative(item.ts)}</span>
+                                    ${!isDir ? `
+                                        <a href="/api/get/${item.path}" class="download-icon" title="Download" data-turbo="false">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>
+                                        </a>` : ''}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
+        
+            function clearLocalHistory(key, containerId) {
+                localStorage.removeItem(key);
+                var container = document.getElementById(containerId);
+                if (container) {
+                    container.innerHTML = '<div class="empty-state"><span>Cleared.</span></div>';
+                }
+            }
+        
+            renderHistory();
+            document.addEventListener('turbo:load', renderHistory);
         </script>
 
         {% elif page == 'search' %}
@@ -1857,6 +2021,33 @@
                 el.title = d.toLocaleString();
             });
         })();
+
+        // --- Visited history: silently logs file/folder pages viewed on this browser,
+        // shown on /history. localStorage only - there's no account system, so this is
+        // per-browser, same limitation as ordinary browser history.
+        {% if page in ('file', 'listing') and path %}
+        (function () {
+            try {
+                var KEY = 'cdn_visited_v1';
+                var MAX = 50;
+                var entry = {
+                    type: {{ ('file' if page == 'file' else 'folder')|tojson }},
+                    path: {{ path|tojson }},
+                    {% if page == 'file' %}
+                    filename: {{ filename|tojson }},
+                    cdn_url: {{ (cdn_base_url ~ '/' ~ path)|tojson }},
+                    raw_url: {{ (raw_base_url ~ '/' ~ path)|tojson }},
+                    {% else %}
+                    cdn_url: {{ (cdn_base_url ~ '/' ~ path ~ '/')|tojson }},
+                    {% endif %}
+                    ts: Date.now()
+                };
+                var entries = JSON.parse(localStorage.getItem(KEY) || '[]').filter(function (e) { return e.path !== entry.path; });
+                entries.unshift(entry);
+                localStorage.setItem(KEY, JSON.stringify(entries.slice(0, MAX)));
+            } catch (e) {}
+        })();
+        {% endif %}
     </script>
 </body>
 </html>
