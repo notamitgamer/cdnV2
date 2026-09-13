@@ -568,6 +568,10 @@ async def serve(request: Request, path: str):
         ctx = await render_context({"page": "search"})
         return templates.TemplateResponse(request, "index.html", ctx)
 
+    if clean_path == "history":
+        ctx = await render_context({"page": "history"})
+        return templates.TemplateResponse(request, "index.html", ctx)
+
     if clean_path:
         info = await get_file_info(clean_path)
         if info["exists"]:
