@@ -866,19 +866,49 @@
             .file-actions .btn { width: 100%; padding: 0.65rem 0.5rem; font-size: 0.85rem;}
         }
 
-        .history-container {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 2.5rem;
+        .history-tabs {
+            display: flex;
+            width: 100%;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 1.5rem;
         }
-        @media (min-width: 768px) {
-            .history-container {
-                grid-template-columns: 1fr 1fr;
-                gap: 2rem;
-            }
+        .history-tab {
+            flex: 1;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--text-dim);
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            font-weight: 500;
+            padding: 0.85rem 1rem;
+            cursor: pointer;
+            transition: color 0.2s, border-color 0.2s, background 0.2s;
+        }
+        .history-tab:hover {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .history-tab.active {
+            color: var(--text-main);
+            border-bottom-color: var(--accent-primary);
+        }
+        .history-slider-viewport {
+            width: 100%;
+            overflow: hidden;
+        }
+        .history-slider {
+            display: flex;
+            width: 200%;
+            transform: translateX(0);
+            transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+            will-change: transform;
         }
         .history-section {
-            margin-bottom: 2.5rem;
+            width: 50%;
+            flex: 0 0 50%;
+            margin-bottom: 0;
+            min-width: 0;
         }
         .history-header {
             display: flex;
@@ -909,36 +939,11 @@
             border-color: var(--danger);
         }
 
-        .history-section {
-            margin-bottom: 2.5rem;
-        }
-        .history-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-        .history-title {
-            font-family: var(--font-heading);
-            font-size: 1.4rem;
-            font-weight: 600;
-            margin: 0;
-            color: #ffffff;
-        }
-        .clear-history-btn {
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text-dim);
-            font-size: 0.8rem;
-            font-family: var(--font-mono);
-            padding: 0.3rem 0.6rem;
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .clear-history-btn:hover {
-            color: var(--danger);
-            border-color: var(--danger);
+        @media (max-width: 480px) {
+            .history-tab {
+                font-size: 0.85rem;
+                padding: 0.75rem 0.5rem;
+            }
         }
     </style>
 </head>
@@ -1482,21 +1487,28 @@
         </script>
 
         {% elif page == 'history' %}
-        <div class="history-container">
-            <div class="history-section">
-                <div class="history-header">
-                    <h2 class="history-title">Recent Uploads</h2>
-                    <button type="button" class="clear-history-btn" onclick="clearLocalHistory('cdn_uploads_v1', 'history-uploads-list')">Clear Uploads</button>
+        <div class="history-tabs" role="tablist" aria-label="History sections">
+            <button type="button" class="history-tab active" id="history-tab-uploads" role="tab" aria-selected="true" aria-controls="history-uploads-panel" data-history-tab="0">Recent Uploads</button>
+            <button type="button" class="history-tab" id="history-tab-visited" role="tab" aria-selected="false" aria-controls="history-visited-panel" data-history-tab="1">Visited Files &amp; Folders</button>
+        </div>
+
+        <div class="history-slider-viewport">
+            <div class="history-slider" id="history-slider">
+                <div class="history-section" id="history-uploads-panel" role="tabpanel" aria-labelledby="history-tab-uploads">
+                    <div class="history-header">
+                        <h2 class="history-title">Recent Uploads</h2>
+                        <button type="button" class="clear-history-btn" onclick="clearLocalHistory('cdn_uploads_v1', 'history-uploads-list')">Clear Uploads</button>
+                    </div>
+                    <div class="list-group" id="history-uploads-list"></div>
                 </div>
-                <div class="list-group" id="history-uploads-list"></div>
-            </div>
-        
-            <div class="history-section">
-                <div class="history-header">
-                    <h2 class="history-title">Visited Files & Folders</h2>
-                    <button type="button" class="clear-history-btn" onclick="clearLocalHistory('cdn_visited_v1', 'history-visited-list')">Clear Visits</button>
+            
+                <div class="history-section" id="history-visited-panel" role="tabpanel" aria-labelledby="history-tab-visited">
+                    <div class="history-header">
+                        <h2 class="history-title">Visited Files &amp; Folders</h2>
+                        <button type="button" class="clear-history-btn" onclick="clearLocalHistory('cdn_visited_v1', 'history-visited-list')">Clear Visits</button>
+                    </div>
+                    <div class="list-group" id="history-visited-list"></div>
                 </div>
-                <div class="list-group" id="history-visited-list"></div>
             </div>
         </div>
         
@@ -1584,8 +1596,31 @@
                 }
             }
         
+            function switchHistoryTab(index) {
+                var slider = document.getElementById('history-slider');
+                var tabs = document.querySelectorAll('.history-tab');
+                if (!slider || !tabs.length) return;
+
+                slider.style.transform = index === 1 ? 'translateX(-50%)' : 'translateX(0)';
+
+                tabs.forEach(function(tab, tabIndex) {
+                    var active = tabIndex === index;
+                    tab.classList.toggle('active', active);
+                    tab.setAttribute('aria-selected', active ? 'true' : 'false');
+                });
+            }
+
+            document.querySelectorAll('.history-tab').forEach(function(tab) {
+                tab.addEventListener('click', function() {
+                    switchHistoryTab(Number(tab.dataset.historyTab));
+                });
+            });
+
             renderHistory();
-            document.addEventListener('turbo:load', renderHistory);
+            document.addEventListener('turbo:load', function() {
+                switchHistoryTab(0);
+                renderHistory();
+            });
         </script>
 
         {% elif page == 'search' %}
