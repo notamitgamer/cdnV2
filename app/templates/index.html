@@ -153,6 +153,7 @@
                 padding: 0 1.25rem;
             }
             .navbar { padding: 1rem 1.25rem; }
+            .breadcrumb-container { padding: 0 1.25rem 1rem; }
             .navlinks { gap: 0.25rem; }
             .navlinks a { font-size: 0.85rem; padding: 0.35rem 0.4rem; }
         }
@@ -226,12 +227,10 @@
         a:hover { color: var(--accent-primary-hover); text-decoration: underline; }
 
         .breadcrumb-container {
-            position: sticky;
-            top: 70px;
             background: var(--bg);
-            z-index: 90;
-            padding: 1rem 0;
-            margin: -1rem 0 1rem 0;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 5% 1rem 5%;
         }
 
         .breadcrumb {
@@ -887,34 +886,6 @@
                 </a>
             </nav>
         </header>
-    </div>
-
-    <div class="container">
-        {% if page == 'listing' and not path %}
-        <h1>A small file shelf for <a href="https://amit.is-a.dev">my</a> projects.</h1>
-        <blockquote class="site-notice">
-            Files here can now be synced straight from GitHub on every push — click
-            <a href="/gh-sync">Sync</a> at the top to see how to set it up. Project assets live here;
-            files and paths may change over time, so use direct links with that in mind.
-        </blockquote>
-        {% if recent_activity %}
-        <div class="recent-activity" id="recent-activity">
-            <div class="recent-activity-heading">
-                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                <span>Recently modified</span>
-            </div>
-            <ul class="recent-activity-list">
-                {% for entry in recent_activity %}
-                <li>
-                    <a href="/{{ entry.path }}/">{{ entry.path }}/</a>
-                    {% if entry.iso_time %}<time class="recent-activity-time" datetime="{{ entry.iso_time }}">{{ entry.iso_time }}</time>{% endif %}
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
-        {% endif %}
-        {% endif %}
-
         {% if not (page == 'listing' and not path) %}
         <div class="breadcrumb-container" data-cdn-base="{{ cdn_base_url }}">
             <div class="breadcrumb" id="breadcrumb">
@@ -966,7 +937,34 @@
             </div>
         </div>
         {% endif %}
+    </div>
 
+    <div class="container">
+        {% if page == 'listing' and not path %}
+        <h1>A small file shelf for <a href="https://amit.is-a.dev">my</a> projects.</h1>
+        <blockquote class="site-notice">
+            Files here can now be synced straight from GitHub on every push — click
+            <a href="/gh-sync">Sync</a> at the top to see how to set it up. Project assets live here;
+            files and paths may change over time, so use direct links with that in mind.
+        </blockquote>
+        {% if recent_activity %}
+        <div class="recent-activity" id="recent-activity">
+            <div class="recent-activity-heading">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span>Recently modified</span>
+            </div>
+            <ul class="recent-activity-list">
+                {% for entry in recent_activity %}
+                <li>
+                    <a href="/{{ entry.path }}/">{{ entry.path }}/</a>
+                    {% if entry.iso_time %}<time class="recent-activity-time" datetime="{{ entry.iso_time }}">{{ entry.iso_time }}</time>{% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        {% endif %}
+        
         {% if page == 'listing' %}
         {% if items %}
         <div class="listing-toolbar">
