@@ -27,9 +27,6 @@
   code{font-family:'JetBrains Mono',monospace;background:var(--surface-2);padding:.15em .4em;border-radius:4px;font-size:.85em;color:var(--text);word-break:break-word;overflow-wrap:anywhere;}
   pre{font-family:'JetBrains Mono',monospace;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;overflow-x:auto;font-size:.82rem;margin:.5em 0;}
   a{color:var(--accent);}
-  .top-wordmark{display:block;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:1.1rem;color:var(--text)!important;text-decoration:none!important;letter-spacing:-0.01em;margin-bottom:1.5rem;}
-  .top-wordmark:hover{opacity:.8;}
-  .top-wordmark-slash{color:var(--accent);}
   .lede{max-width:70ch;}
   .toc{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.3rem;margin:1.6rem 0 2.4rem;}
   .toc h3{margin-top:0;}
@@ -56,11 +53,35 @@
   section > h2 { font-family:'Zilla Slab',Georgia,serif; font-size:1.4rem; font-weight:600; color:var(--text); }
   .footnote{font-size:.82rem;color:var(--muted);margin-top:3rem;border-top:1px solid var(--border);padding-top:1.2rem;}
   footer{margin-top:4rem;padding-top:1.5rem;border-top:1px solid var(--border);font-size:.85rem;color:var(--muted);}
+
+  .site-navbar{display:flex;align-items:center;justify-content:space-between;max-width:1000px;margin:0 auto;padding:1.25rem 20px;}
+  .site-navbar .wordmark{font-family:'JetBrains Mono',monospace;font-weight:500;font-size:1.1rem;color:var(--text)!important;text-decoration:none!important;letter-spacing:-0.01em;}
+  .site-navbar .wordmark-slash{color:var(--accent);}
+  .site-navlinks{display:flex;align-items:center;gap:.6rem;}
+  .site-navlinks a{display:flex;align-items:center;justify-content:center;width:2.1rem;height:2.1rem;border-radius:8px;color:var(--muted);transition:all .2s ease;}
+  .site-navlinks a:hover{color:var(--text);background:rgba(255,255,255,.05);}
+  .site-navlinks a.active{color:var(--accent);background:rgba(129,140,248,.12);}
 </style>
 </head>
 <body>
+<nav class="site-navbar">
+  <a href="/" class="wordmark">amit<span class="wordmark-slash">/</span>cdn</a>
+  <div class="site-navlinks">
+    <a href="/find" title="Find" aria-label="Find">
+      <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </a>
+    <a href="/new" title="New / Upload" aria-label="New / Upload">
+      <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    </a>
+    <a href="/gh-sync" title="GitHub Actions Sync" aria-label="GitHub Actions Sync">
+      <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+    </a>
+    <a href="/documentation" class="active" title="Documentation" aria-label="Documentation" aria-current="page">
+      <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    </a>
+  </div>
+</nav>
 <div class="wrap">
-  <a href="/" class="top-wordmark">amit<span class="top-wordmark-slash">/</span>cdn</a>
   <h1>Documentation</h1>
   <p class="lede">Every route this service exposes: what it's for, what it needs, what it returns, what makes it fail, and
      how it actually works under the hood. This page is generated from reading the live source, not from memory or

@@ -230,7 +230,7 @@ _GH_SYNC_RE = re.compile(r"^gh-sync: update (.+)$")
 def _do_list_repo_commits():
     return list(api.list_repo_commits(repo_id=HF_REPO_ID, repo_type="dataset"))
 
-async def get_recent_activity(limit: int = 15):
+async def get_recent_activity(limit: int = 3):
     """Recently changed top-level paths, newest first, deduped by path.
 
     Derived from commit titles (list_repo_commits doesn't return changed
