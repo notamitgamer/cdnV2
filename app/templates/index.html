@@ -175,6 +175,92 @@
 
         .site-notice { margin-top: 0.5rem; }
 
+        .recent-activity {
+            margin-bottom: 2.25rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            background: var(--surface);
+            overflow: hidden;
+        }
+        .recent-activity-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            width: 100%;
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            font: inherit;
+            font-size: 0.9rem;
+            font-weight: 500;
+            padding: 0.7rem 1rem;
+            cursor: pointer;
+            text-align: left;
+        }
+        .recent-activity-toggle:hover { color: var(--text-main); }
+        .recent-activity-toggle .chevron {
+            margin-left: auto;
+            transition: transform 0.2s ease;
+        }
+        .recent-activity-toggle[aria-expanded="true"] .chevron { transform: rotate(180deg); }
+        .recent-activity-list {
+            list-style: none;
+            margin: 0;
+            padding: 0 1rem 0.6rem;
+        }
+        .recent-activity-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 1rem;
+            padding: 0.35rem 0;
+            border-top: 1px solid var(--border);
+            font-size: 0.9rem;
+        }
+        .recent-activity-list li:first-child { border-top: none; }
+        .recent-activity-list a { text-decoration: none; }
+        .recent-activity-list a:hover { text-decoration: underline; }
+        .recent-activity-time {
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .nav-history-wrap { position: relative; }
+        .nav-history-panel {
+            display: none;
+            position: absolute;
+            top: calc(100% + 0.5rem);
+            right: 0;
+            min-width: 220px;
+            max-width: 280px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+            padding: 0.4rem;
+            z-index: 50;
+        }
+        .nav-history-panel.open { display: block; }
+        .nav-history-panel .nav-history-empty {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            padding: 0.5rem 0.6rem;
+        }
+        .nav-history-panel a {
+            display: block;
+            padding: 0.45rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.88rem;
+            color: var(--text-main);
+            text-decoration: none;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .nav-history-panel a:hover { background: rgba(255,255,255,0.06); }
+
         a { color: var(--accent-primary); text-decoration: none; transition: color 0.15s;}
         a:hover { color: var(--accent-primary-hover); text-decoration: underline; }
 
@@ -832,6 +918,10 @@
                 <a href="/new">New</a>
                 <a href="/gh-sync">Sync</a>
                 <a href="/documentation">Docs</a>
+                <div class="nav-history-wrap">
+                    <a href="#" id="nav-history-toggle" title="Recently viewed">History</a>
+                    <div class="nav-history-panel" id="nav-history-panel"></div>
+                </div>
             </nav>
         </header>
     </div>
@@ -844,6 +934,23 @@
             <a href="/gh-sync">Sync</a> at the top to see how to set it up. Project assets live here;
             files and paths may change over time, so use direct links with that in mind.
         </blockquote>
+        {% if recent_activity %}
+        <div class="recent-activity" id="recent-activity">
+            <button type="button" class="recent-activity-toggle" id="recent-activity-toggle" aria-expanded="{{ 'true' if recent_activity|length <= 5 else 'false' }}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span>Recently modified</span>
+                <svg class="chevron" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <ul class="recent-activity-list" id="recent-activity-list" {% if recent_activity|length > 5 %}data-collapsed="true"{% endif %}>
+                {% for entry in recent_activity %}
+                <li{% if loop.index > 5 %} class="recent-activity-extra" hidden{% endif %}>
+                    <a href="/{{ entry.path }}/">{{ entry.path }}/</a>
+                    {% if entry.iso_time %}<time class="recent-activity-time" datetime="{{ entry.iso_time }}">{{ entry.iso_time }}</time>{% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
         {% endif %}
 
         {% if not (page == 'listing' and not path) %}
@@ -1768,6 +1875,101 @@
             });
             document.addEventListener('turbo:load', applyResponsivePlaceholders);
         }
+    <script>
+        // --- Recently modified: convert timestamps to the visitor's own timezone,
+        // and let the "show more" toggle reveal entries past the first 5. ---
+        (function () {
+            document.querySelectorAll('.recent-activity-time[datetime]').forEach(function (el) {
+                var d = new Date(el.getAttribute('datetime'));
+                if (isNaN(d.getTime())) return;
+                var now = new Date();
+                var diffMs = now - d;
+                var diffMin = Math.round(diffMs / 60000);
+                var label;
+                if (diffMin < 1) label = 'just now';
+                else if (diffMin < 60) label = diffMin + 'm ago';
+                else if (diffMin < 60 * 24) label = Math.round(diffMin / 60) + 'h ago';
+                else label = d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+                el.textContent = label;
+                el.title = d.toLocaleString();
+            });
+
+            var toggle = document.getElementById('recent-activity-toggle');
+            var list = document.getElementById('recent-activity-list');
+            if (toggle && list) {
+                toggle.addEventListener('click', function () {
+                    var expanded = toggle.getAttribute('aria-expanded') === 'true';
+                    toggle.setAttribute('aria-expanded', String(!expanded));
+                    list.querySelectorAll('.recent-activity-extra').forEach(function (li) {
+                        li.hidden = expanded;
+                    });
+                });
+            }
+        })();
+
+        // --- History: remembers recently visited pages on this browser (localStorage
+        // only - there's no account system, so this can't sync across devices). ---
+        (function () {
+            var STORAGE_KEY = 'cdn_history_v1';
+            var MAX_ENTRIES = 10;
+
+            function loadHistory() {
+                try {
+                    var raw = localStorage.getItem(STORAGE_KEY);
+                    return raw ? JSON.parse(raw) : [];
+                } catch (e) { return []; }
+            }
+
+            function saveHistory(entries) {
+                try { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); } catch (e) {}
+            }
+
+            function recordVisit() {
+                var path = window.location.pathname;
+                // Don't clutter history with the upload/search/sync/docs utility pages -
+                // this is meant for "folders and files I was just looking at".
+                var skip = ['/new', '/find', '/gh-sync', '/documentation', '/'];
+                if (skip.indexOf(path) !== -1) return;
+
+                var title = (document.title || path).replace(/\s*[·|-]\s*amit\/cdn\s*$/i, '').trim() || path;
+                var entries = loadHistory().filter(function (e) { return e.path !== path; });
+                entries.unshift({ path: path, title: title, ts: Date.now() });
+                saveHistory(entries.slice(0, MAX_ENTRIES));
+            }
+
+            function renderPanel() {
+                var panel = document.getElementById('nav-history-panel');
+                if (!panel) return;
+                var entries = loadHistory();
+                if (!entries.length) {
+                    panel.innerHTML = '<div class="nav-history-empty">Nothing visited yet.</div>';
+                    return;
+                }
+                panel.innerHTML = entries.map(function (e) {
+                    var safePath = e.path.replace(/"/g, '&quot;');
+                    var safeTitle = (e.title || e.path).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    return '<a href="' + safePath + '">' + safeTitle + '</a>';
+                }).join('');
+            }
+
+            recordVisit();
+
+            var toggle = document.getElementById('nav-history-toggle');
+            var panel = document.getElementById('nav-history-panel');
+            if (toggle && panel) {
+                toggle.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    var willOpen = !panel.classList.contains('open');
+                    if (willOpen) renderPanel();
+                    panel.classList.toggle('open', willOpen);
+                });
+                document.addEventListener('click', function (e) {
+                    if (!panel.contains(e.target) && e.target !== toggle) {
+                        panel.classList.remove('open');
+                    }
+                });
+            }
+        })();
     </script>
 </body>
 </html>

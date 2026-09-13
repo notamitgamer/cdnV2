@@ -18,7 +18,7 @@ from fastapi import FastAPI, Request, File, UploadFile, HTTPException, Form
 from fastapi.responses import StreamingResponse, HTMLResponse, PlainTextResponse, RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 
-from .storage import is_file, get_file_info, list_directory, list_files_recursive, upload_temp_file, upload_folder_scoped, repo_stats, search_files, write_batch_manifest, get_batch_manifest, HF_REPO_ID, format_size
+from .storage import is_file, get_file_info, list_directory, list_files_recursive, upload_temp_file, upload_folder_scoped, repo_stats, get_recent_activity, search_files, write_batch_manifest, get_batch_manifest, HF_REPO_ID, format_size
 from .gh_oidc import verify_actions_token
 
 app = FastAPI()
@@ -588,10 +588,14 @@ async def serve(request: Request, path: str):
     if clean_path and not items:
         raise HTTPException(status_code=404, detail="Not Found")
 
-    ctx = await render_context({
+    extra_ctx = {
         "page": "listing",
         "path": clean_path,
         "items": items,
         "raw_base_url": RAW_BASE_URL
-    })
+    }
+    if not clean_path:
+        extra_ctx["recent_activity"] = await get_recent_activity()
+
+    ctx = await render_context(extra_ctx)
     return templates.TemplateResponse(request, "index.html", ctx)
