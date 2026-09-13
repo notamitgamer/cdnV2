@@ -866,6 +866,49 @@
             .file-actions .btn { width: 100%; padding: 0.65rem 0.5rem; font-size: 0.85rem;}
         }
 
+        .history-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2.5rem;
+        }
+        @media (min-width: 768px) {
+            .history-container {
+                grid-template-columns: 1fr 1fr;
+                gap: 2rem;
+            }
+        }
+        .history-section {
+            margin-bottom: 2.5rem;
+        }
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .history-title {
+            font-family: var(--font-heading);
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin: 0;
+            color: #ffffff;
+        }
+        .clear-history-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            font-family: var(--font-mono);
+            padding: 0.3rem 0.6rem;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .clear-history-btn:hover {
+            color: var(--danger);
+            border-color: var(--danger);
+        }
+
         .history-section {
             margin-bottom: 2.5rem;
         }
@@ -1285,20 +1328,30 @@
 
                 const allFiles = Array.from(fileList);
                 const files = [];
-                const rejected = [];
+                const rejectedSize = [];
+                const rejectedName = [];
+                const allowedNameRegex = /^[a-zA-Z0-9_.\-]+$/;
 
                 allFiles.forEach(f => {
                     if (f.size > MAX_FILE_SIZE_BYTES) {
-                        rejected.push(f.name);
+                        rejectedSize.push(f.name);
+                    } else if (!allowedNameRegex.test(f.name)) {
+                        rejectedName.push(f.name);
                     } else {
                         files.push(f);
                     }
                 });
 
-                if (rejected.length) {
-                    showError(
-                        `Skipped ${rejected.length} file(s) over ${formatBytes(MAX_FILE_SIZE_BYTES)}: ${rejected.join(', ')}`
-                    );
+                const errorMessages = [];
+                if (rejectedSize.length) {
+                    errorMessages.push(`Skipped ${rejectedSize.length} file(s) over ${formatBytes(MAX_FILE_SIZE_BYTES)}: ${rejectedSize.join(', ')}`);
+                }
+                if (rejectedName.length) {
+                    errorMessages.push(`Skipped ${rejectedName.length} file(s) with invalid characters (only a-z, A-Z, 0-9, _, -, . allowed): ${rejectedName.join(', ')}`);
+                }
+
+                if (errorMessages.length) {
+                    showError(errorMessages.join(' | '));
                 }
 
                 if (!files.length) return;
