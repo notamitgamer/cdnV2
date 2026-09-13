@@ -265,12 +265,12 @@ def _safe_extract_tar(tar: tarfile.TarFile, dest: str):
 
 @app.get("/gh-sync")
 async def gh_sync_docs(request: Request):
-    return templates.TemplateResponse(request, "gh_sync_docs.html", {})
+    return templates.TemplateResponse(request, "gh_sync_docs.html", {"page": "gh-sync"})
 
 
 @app.get("/documentation")
 async def documentation(request: Request):
-    return templates.TemplateResponse(request, "documentation.html", {})
+    return templates.TemplateResponse(request, "documentation.html", {"page": "documentation"})
 
 
 @app.post("/api/gh-sync")

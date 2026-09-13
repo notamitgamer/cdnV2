@@ -82,69 +82,6 @@
             body { font-size: 0.95rem; }
         }
 
-        .navbar-wrapper {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            background: var(--bg);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            margin-bottom: 2.75rem;
-            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.2);
-        }
-
-        .navbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 1.25rem 5%;
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-
-        .wordmark {
-            font-family: var(--font-mono);
-            font-weight: 500;
-            font-size: 1.1rem;
-            color: var(--text-main) !important;
-            text-decoration: none !important;
-            letter-spacing: -0.01em;
-            transition: opacity 0.2s;
-        }
-        .wordmark:hover { opacity: 0.8; }
-        .wordmark-slash { color: var(--accent-primary); }
-        
-        .navlinks {
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-        }
-        .navlinks a {
-            color: var(--text-dim);
-            font-size: 0.95rem;
-            font-weight: 500;
-            text-decoration: none;
-            padding: 0.4rem 0.6rem;
-            border-radius: var(--radius-md);
-            transition: all 0.2s ease;
-            white-space: nowrap;
-        }
-        .navlinks a:hover {
-            color: var(--text-main);
-            background: rgba(255, 255, 255, 0.05);
-        }
-        .nav-icon-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 2.1rem;
-            height: 2.1rem;
-            padding: 0 !important;
-        }
-        .nav-icon-btn.active {
-            color: var(--accent-primary);
-            background: rgba(129, 140, 248, 0.12);
-        }
-
         .container {
             width: 90%;
             max-width: 1000px;
@@ -156,10 +93,7 @@
                 width: 100%;
                 padding: 0 1.25rem;
             }
-            .navbar { padding: 1rem 1.25rem; }
             .breadcrumb-container { padding: 0 1.25rem 1rem; }
-            .navlinks { gap: 0.25rem; }
-            .navlinks a { font-size: 0.85rem; padding: 0.35rem 0.4rem; }
         }
 
         h1 {
@@ -952,80 +886,7 @@
     </style>
 </head>
 <body>
-    <div class="navbar-wrapper">
-        <header class="navbar">
-            <a href="/" class="wordmark">amit<span class="wordmark-slash">/</span>cdn</a>
-            <nav class="navlinks">
-                <a href="/find" class="nav-icon-btn{{ ' active' if page == 'search' }}" title="Find" aria-label="Find"{{ ' aria-current="page"'|safe if page == 'search' }}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                </a>
-                <a href="/new" class="nav-icon-btn{{ ' active' if page == 'upload' }}" title="New / Upload" aria-label="New / Upload"{{ ' aria-current="page"'|safe if page == 'upload' }}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                </a>
-                <a href="/gh-sync" class="nav-icon-btn" title="GitHub Actions Sync" aria-label="GitHub Actions Sync">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-                </a>
-                <a href="/documentation" class="nav-icon-btn" title="Documentation" aria-label="Documentation">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-                </a>
-                <a href="/history" class="nav-icon-btn{{ ' active' if page == 'history' }}" title="History" aria-label="History"{{ ' aria-current="page"'|safe if page == 'history' }}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                </a>
-            </nav>
-        </header>
-        {% if not (page == 'listing' and not path) %}
-        <div class="breadcrumb-container" data-cdn-base="{{ cdn_base_url }}">
-            <div class="breadcrumb" id="breadcrumb">
-                {% set current = namespace(val='') %}
-                {% set ns = namespace(items=[{'name': 'root', 'href': '/'}]) %}
-                {% if path %}
-                    {% set path_parts = path.split('/') %}
-                    {% if page == 'file' %}{% set path_parts = path_parts[:-1] %}{% endif %}
-                    {% for part in path_parts %}
-                        {% set current.val = current.val + part + '/' %}
-                        {% set ns.items = ns.items + [{'name': part, 'href': '/' + current.val[:-1]}] %}
-                    {% endfor %}
-                {% endif %}
-                {% if page == 'upload' %}
-                    {% set ns.items = ns.items + [{'name': 'new', 'href': '/new'}] %}
-                {% elif page == 'search' %}
-                    {% set ns.items = ns.items + [{'name': 'find', 'href': '/find'}] %}
-                {% elif page == 'history' %}
-                    {% set ns.items = ns.items + [{'name': 'history', 'href': '/history'}] %}
-                {% elif page == 'file' %}
-                    {% set ns.items = ns.items + [{'name': filename, 'href': none}] %}
-                {% endif %}
-
-                {% if ns.items|length > 4 %}
-                    {% set hidden = ns.items[1:-2] %}
-                    <a href="{{ ns.items[0].href }}">{{ ns.items[0].name }}</a>
-                    <div class="breadcrumb-collapsed">
-                        <button type="button" class="breadcrumb-ellipsis" onclick="event.stopPropagation(); toggleBreadcrumbMenu(this)" aria-label="Show hidden path segments">&hellip;</button>
-                        <div class="breadcrumb-menu">
-                            {% for c in hidden %}
-                            <a href="{{ c.href }}">{{ c.name }}</a>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% for c in ns.items[-2:] %}
-                    / {% if c.href %}<a href="{{ c.href }}">{{ c.name }}</a>{% else %}{{ c.name }}{% endif %}
-                    {% endfor %}
-                {% else %}
-                    {% for c in ns.items %}
-                        {% if loop.first %}<a href="{{ c.href }}">{{ c.name }}</a>
-                        {% else %}/ {% if c.href %}<a href="{{ c.href }}">{{ c.name }}</a>{% else %}{{ c.name }}{% endif %}
-                        {% endif %}
-                    {% endfor %}
-                {% endif %}
-
-                {% if path or page == 'file' %}
-                <button type="button" class="copy-path-btn" title="Copy path" onclick="copyBreadcrumbPath(this)" data-path="{{ path }}">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                </button>
-                {% endif %}
-            </div>
-        </div>
-        {% endif %}
+    {% include "_navbar.html" %}
     </div>
 
     <div class="container">
