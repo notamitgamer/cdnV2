@@ -911,7 +911,7 @@
                     {% set hidden = ns.items[1:-2] %}
                     <a href="{{ ns.items[0].href }}">{{ ns.items[0].name }}</a>
                     <div class="breadcrumb-collapsed">
-                        <button type="button" class="breadcrumb-ellipsis" onclick="toggleBreadcrumbMenu(this)" aria-label="Show hidden path segments">&hellip;</button>
+                        <button type="button" class="breadcrumb-ellipsis" onclick="event.stopPropagation(); toggleBreadcrumbMenu(this)" aria-label="Show hidden path segments">&hellip;</button>
                         <div class="breadcrumb-menu">
                             {% for c in hidden %}
                             <a href="{{ c.href }}">{{ c.name }}</a>
@@ -1571,9 +1571,12 @@
 
         function toggleBreadcrumbMenu(btn) {
             const menu = btn.nextElementSibling;
-            const isOpen = menu.style.display === 'flex';
-            document.querySelectorAll('.breadcrumb-menu').forEach(m => m.style.display = 'none');
-            if (!isOpen) menu.style.display = 'flex';
+            if (!menu) return;
+            const isOpen = menu.classList.contains('open');
+            document.querySelectorAll('.breadcrumb-menu.open').forEach(m => m.classList.remove('open'));
+            if (!isOpen) {
+                menu.classList.add('open');
+            }
         }
 
         if (!window.__CDN_App_Initialized) {
@@ -1581,7 +1584,7 @@
 
             document.addEventListener('click', (e) => {
                 if (!e.target.closest('.breadcrumb-collapsed')) {
-                    document.querySelectorAll('.breadcrumb-menu').forEach(m => m.style.display = 'none');
+                    document.querySelectorAll('.breadcrumb-menu.open').forEach(m => m.classList.remove('open'));
                 }
             });
 
@@ -1835,6 +1838,7 @@
             });
             document.addEventListener('turbo:load', applyResponsivePlaceholders);
         }
+    </script>
     <script>
         // --- Recently modified: convert timestamps to the visitor's own timezone. ---
         (function () {
