@@ -99,6 +99,10 @@
                     {% set ns.items = ns.items + [{'name': 'find', 'href': '/find'}] %}
                 {% elif page == 'history' %}
                     {% set ns.items = ns.items + [{'name': 'history', 'href': '/history'}] %}
+                {% elif page == 'documentation' %}
+                    {% set ns.items = ns.items + [{'name': 'documentation', 'href': '/documentation'}] %}
+                {% elif page == 'gh-sync' %}
+                    {% set ns.items = ns.items + [{'name': 'gh-sync', 'href': '/gh-sync'}] %}
                 {% elif page == 'file' %}
                     {% set ns.items = ns.items + [{'name': filename, 'href': none}] %}
                 {% endif %}
