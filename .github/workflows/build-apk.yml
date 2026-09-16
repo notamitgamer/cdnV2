@@ -72,8 +72,10 @@ jobs:
           BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           set -o pipefail
-          bubblewrap build --skipPwaValidation 2>&1 | tee build.log
-          exit_code=${PIPESTATUS[0]}
+          # bubblewrap prompts "install its own JDK?" with no TTY in CI.
+          # Answer "n" to use the JDK already set up by actions/setup-java.
+          echo "n" | bubblewrap build --skipPwaValidation 2>&1 | tee build.log
+          exit_code=${PIPESTATUS[1]}
           if [ "$exit_code" -ne 0 ]; then
             echo "## Bubblewrap build failed - last 100 lines" >> "$GITHUB_STEP_SUMMARY"
             echo '```' >> "$GITHUB_STEP_SUMMARY"
