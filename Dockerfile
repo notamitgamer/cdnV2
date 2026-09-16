@@ -1,6 +1,9 @@
 FROM node:24-bookworm-slim
 
-WORKDIR /app
+WORKDIR /opt/cobalt
+
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
 
 # Install Python and build dependencies required by Cobalt
 RUN apt-get update \
@@ -12,27 +15,24 @@ RUN apt-get update \
         build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Enable pnpm
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-
-RUN corepack enable \
-    && corepack prepare pnpm@12.4.2 --activate
+# Enable Corepack
+RUN corepack enable
 
 # Clone the exact Cobalt 11.5 release commit
 RUN git clone https://github.com/imputnet/cobalt.git /opt/cobalt \
     && cd /opt/cobalt \
     && git checkout 47d8ccbc17aeeac6cb754c8b721c2148f007c103
 
-WORKDIR /opt/cobalt
-
-# Install Cobalt production dependencies
+# Install Cobalt dependencies from the complete workspace
 RUN pnpm install --prod --frozen-lockfile
 
-# Deploy only the Cobalt API package
+# Deploy the Cobalt API together with its workspace dependencies
 RUN pnpm deploy --filter=@imput/cobalt-api --prod /opt/cobalt-api
 
-# Install Python dependencies
+# ---------------------------------------------------------
+# FastAPI application
+# ---------------------------------------------------------
+
 WORKDIR /app
 
 COPY requirements.txt .
@@ -42,16 +42,12 @@ RUN pip3 install \
     --break-system-packages \
     -r requirements.txt
 
-# Copy the FastAPI application
 COPY app/ ./app/
 
-# Copy startup script
 COPY start.sh /start.sh
 
 RUN chmod +x /start.sh
 
-# Render exposes the FastAPI process.
-# Cobalt itself remains internal on port 9000.
 EXPOSE 8000
 
 CMD ["/start.sh"]
