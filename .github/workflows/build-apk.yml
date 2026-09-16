@@ -40,6 +40,17 @@ jobs:
       - name: Install Bubblewrap CLI
         run: npm install -g @bubblewrap/cli
 
+      - name: Pre-configure Bubblewrap (skip interactive JDK/SDK prompts)
+        run: |
+          mkdir -p "$HOME/.bubblewrap"
+          python3 - << PYEOF
+          import json
+          config = {"jdkPath": "$JAVA_HOME", "androidSdkPath": "$ANDROID_HOME"}
+          with open("$HOME/.bubblewrap/config.json", "w") as f:
+              json.dump(config, f, indent=2)
+          PYEOF
+          cat "$HOME/.bubblewrap/config.json"
+
       - name: Restore signing keystore
         working-directory: android
         run: |
@@ -72,11 +83,11 @@ jobs:
           BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           set -o pipefail
-          # bubblewrap prompts interactively with no TTY in CI:
-          #   1) "install its own JDK?" -> answer "n" to use actions/setup-java's JDK
-          #   2) "Path to your existing JDK 17:" -> answer with $JAVA_HOME
-          printf 'n\n%s\n' "$JAVA_HOME" | bubblewrap build --skipPwaValidation 2>&1 | tee build.log
-          exit_code=${PIPESTATUS[1]}
+          # ~/.bubblewrap/config.json (written in the "Pre-configure Bubblewrap"
+          # step) already has valid jdkPath/androidSdkPath, so bubblewrap won't
+          # prompt interactively here.
+          bubblewrap build --skipPwaValidation 2>&1 | tee build.log
+          exit_code=${PIPESTATUS[0]}
           if [ "$exit_code" -ne 0 ]; then
             echo "## Bubblewrap build failed - last 100 lines" >> "$GITHUB_STEP_SUMMARY"
             echo '```' >> "$GITHUB_STEP_SUMMARY"
