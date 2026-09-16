@@ -305,8 +305,14 @@
     </div>
 
     <footer>
-        <div>amit/cdn · built by <a href="https://github.com/notamitgamer">notamitgamer</a><br>nothing here is a permanent fixture.</div>
-        <div class="footer-copyright">&copy; 2025 - 2026 notamitgamer. All rights reserved.</div>
+            <div>
+                amit/cdn · built by <a href="https://github.com/notamitgamer">notamitgamer</a><br>nothing here is a permanent fixture.
+            </div>
+            {% if repo_file_count is not none %}
+            <div title="Across the whole repo">
+                <strong style="color: var(--text-main);">{{ repo_file_count }}</strong> file{{ '' if repo_file_count == 1 else 's' }} · {{ repo_size_str }} total
+            </div>
+            {% endif %}
     </footer>
 
     <script>
