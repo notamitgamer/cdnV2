@@ -439,35 +439,41 @@
                         activeEventSource = eventSource;
 
                         let finished = false;
-                        const finalize = () => {
+                        const finalize = (err, result) => {
                             if (!finished) {
                                 finished = true;
                                 cleanupEventSource();
+                                if (err) reject(err);
+                                else resolve(result);
                             }
                         };
 
-                        eventSource.addEventListener('success', event => {
+                        const handleData = (raw) => {
                             try {
-                                const data = JSON.parse(event.data);
+                                const data = JSON.parse(raw);
                                 if (data.status === 'success' && data.download_link) {
-                                    finalize();
-                                    resolve(data.download_link);
+                                    finalize(null, data.download_link);
+                                } else if (data.status === 'failed' || data.error) {
+                                    finalize(new Error(data.message || data.error || 'Conversion failed.'));
                                 }
-                            } catch (error) {
-                                finalize();
-                                reject(new Error('Invalid response from VidsSave.'));
+                            } catch (e) {
+                                // Ignore heartbeat or unformatted keep-alives
                             }
-                        });
+                        };
+
+                        eventSource.onmessage = (event) => handleData(event.data);
+                        eventSource.addEventListener('success', (event) => handleData(event.data));
 
                         eventSource.addEventListener('error', () => {
-                            finalize();
-                            reject(new Error('VidsSave download status connection failed.'));
+                            if (eventSource.readyState === EventSource.CLOSED) {
+                                finalize(new Error('VidsSave download status stream closed unexpectedly.'));
+                            }
                         });
 
-                        eventSource.onerror = () => {
-                            finalize();
-                            reject(new Error('VidsSave download status connection failed.'));
-                        };
+                        // 90 second fallback timeout
+                        setTimeout(() => {
+                            finalize(new Error('Conversion timed out. Please try again.'));
+                        }, 90000);
                     });
                 }
 
