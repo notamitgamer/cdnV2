@@ -36,7 +36,8 @@ jobs:
             set -e
             mkdir -p "$ANDROID_HOME/cmdline-tools"
             cd "$ANDROID_HOME/cmdline-tools"
-            curl -sSL -o cmdline-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+            curl -sSL -o cmdline-tools.zip \
+              https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
             unzip -q cmdline-tools.zip
             rm cmdline-tools.zip
             mv cmdline-tools latest
@@ -45,29 +46,32 @@ jobs:
             echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
             echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
             yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || [ $? -eq 141 ]
-            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+              "platform-tools" \
+              "platforms;android-34" \
+              "build-tools;34.0.0"
           } 2>&1 | tee sdk-setup.log
           exit_code=${PIPESTATUS[0]}
-          if [ $exit_code -ne 0 ]; then
+          if [ "$exit_code" -ne 0 ]; then
             echo "## Android SDK setup failed - last 60 lines" >> "$GITHUB_STEP_SUMMARY"
             echo '```' >> "$GITHUB_STEP_SUMMARY"
             tail -60 sdk-setup.log >> "$GITHUB_STEP_SUMMARY"
             echo '```' >> "$GITHUB_STEP_SUMMARY"
-            exit $exit_code
+            exit "$exit_code"
           fi
-        shell: bash
 
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Install Bubblewrap CLI
         run: npm install -g @bubblewrap/cli
 
       - name: Restore signing keystore
         working-directory: android
-        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android.keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android.keystore
 
       - name: Compute version code
         id: version
@@ -97,23 +101,37 @@ jobs:
         run: |
           set -o pipefail
           bubblewrap build --skipPwaValidation 2>&1 | tee build.log
-          exit_code=$?
-          if [ $exit_code -ne 0 ]; then
-            echo "## Bubblewrap build failed - last 60 lines" >> "$GITHUB_STEP_SUMMARY"
+          exit_code=${PIPESTATUS[0]}
+          if [ "$exit_code" -ne 0 ]; then
+            echo "## Bubblewrap build failed - last 100 lines" >> "$GITHUB_STEP_SUMMARY"
             echo '```' >> "$GITHUB_STEP_SUMMARY"
-            tail -60 build.log >> "$GITHUB_STEP_SUMMARY"
+            tail -100 build.log >> "$GITHUB_STEP_SUMMARY"
             echo '```' >> "$GITHUB_STEP_SUMMARY"
-            exit $exit_code
+            exit "$exit_code"
           fi
+
+      - name: Verify APK
+        working-directory: android
+        run: |
+          if [ ! -f app-release-signed.apk ]; then
+            echo "ERROR: app-release-signed.apk was not created."
+            echo "Files in android directory:"
+            ls -lah
+            exit 1
+          fi
+          ls -lh app-release-signed.apk
 
       - name: Rename artifact
         working-directory: android
-        run: cp app-release-signed.apk "amit-cdn-v${{ steps.version.outputs.name }}-${{ steps.version.outputs.code }}.apk"
+        run: |
+          cp app-release-signed.apk \
+            "amit-cdn-v${{ steps.version.outputs.name }}-${{ steps.version.outputs.code }}.apk"
 
       - name: Clean up keystore
         if: always()
         working-directory: android
-        run: rm -f android.keystore
+        run: |
+          rm -f android.keystore
 
       - name: Upload release
         uses: softprops/action-gh-release@v2
@@ -122,11 +140,7 @@ jobs:
           name: amit/cdn Android app v${{ steps.version.outputs.name }} (${{ steps.version.outputs.code }})
           body: |
             Android app build (Trusted Web Activity wrapping cdn.amit.is-a.dev).
-
-            Install: download the APK below, enable "install from unknown sources"
-            for your browser/file manager if prompted, then open it.
-
-            This is not distributed via the Play Store, so updates won't
-            auto-install - grab the latest release here when a new one ships.
+            Install: download the APK below, enable "install from unknown sources" for your browser/file manager if prompted, then open it.
+            This is not distributed via the Play Store, so updates won't auto-install - grab the latest release here when a new one ships.
           files: android/amit-cdn-v${{ steps.version.outputs.name }}-${{ steps.version.outputs.code }}.apk
           make_latest: true
