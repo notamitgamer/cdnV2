@@ -299,6 +299,10 @@ async def gh_sync(request: Request, token: str = Form(...), archive: UploadFile 
         "ref": claims["ref"],
     }
 
+@app.get("/ytmusic")
+async def url_shortener_page(request: Request):
+    ctx = await render_context({"page": "ytmusic"})
+    return templates.TemplateResponse(request, "ytmusic.html", ctx)
 
 @app.get("/shorten")
 async def url_shortener_page(request: Request):
