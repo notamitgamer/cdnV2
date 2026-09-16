@@ -2,24 +2,87 @@
 
 set -e
 
+echo "========================================"
+echo "Starting CDN + Cobalt"
+echo "========================================"
+
+echo ""
+echo "========== PROXY ENV =========="
+echo "HTTP_PROXY=${HTTP_PROXY:+SET}"
+echo "HTTPS_PROXY=${HTTPS_PROXY:+SET}"
+echo "ALL_PROXY=${ALL_PROXY:+SET}"
+echo "NO_PROXY=${NO_PROXY:+SET}"
+echo "http_proxy=${http_proxy:+SET}"
+echo "https_proxy=${https_proxy:+SET}"
+echo "all_proxy=${all_proxy:+SET}"
+echo "no_proxy=${no_proxy:+SET}"
+echo "==============================="
+echo ""
+
+echo "========== COBALT ENV =========="
+echo "API_URL=${API_URL:-NOT_SET}"
+echo "API_PORT=${API_PORT:-9000}"
+echo "COOKIE_PATH=${COOKIE_PATH:-NOT_SET}"
+echo "YOUTUBE_SESSION_SERVER=${YOUTUBE_SESSION_SERVER:-NOT_SET}"
+echo "YOUTUBE_SESSION_INNERTUBE_CLIENT=${YOUTUBE_SESSION_INNERTUBE_CLIENT:-NOT_SET}"
+echo "YOUTUBE_PLAYER_ID=${YOUTUBE_PLAYER_ID:-NOT_SET}"
+echo "ENABLE_DEPRECATED_YOUTUBE_HLS=${ENABLE_DEPRECATED_YOUTUBE_HLS:-NOT_SET}"
+echo "================================"
+echo ""
+
 echo "Starting Cobalt..."
 
-cd /opt/cobalt/api
+cd /opt/cobalt-api
 
-API_URL="${COBALT_API_URL:-https://cdn.amit.is-a.dev/cobalt/}"
-API_PORT="${COBALT_PORT:-9000}"
+API_URL="http://127.0.0.1:9000/" \
+API_PORT=9000 \
+node src/index.js &
 
-export API_URL
-export API_PORT
-export API_LISTEN_ADDRESS="127.0.0.1"
-
-pnpm start &
 COBALT_PID=$!
 
-echo "Cobalt started with PID ${COBALT_PID}"
+echo "Cobalt PID: $COBALT_PID"
+
+echo ""
+echo "Waiting for Cobalt to start..."
+
+for i in $(seq 1 30); do
+    if python3 -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9000/', timeout=1)" >/dev/null 2>&1; then
+        echo "Cobalt is ready."
+        break
+    fi
+
+    if ! kill -0 "$COBALT_PID" 2>/dev/null; then
+        echo "ERROR: Cobalt process stopped unexpectedly."
+        wait "$COBALT_PID"
+        exit 1
+    fi
+
+    sleep 1
+done
+
+if ! kill -0 "$COBALT_PID" 2>/dev/null; then
+    echo "ERROR: Cobalt failed to start."
+    exit 1
+fi
+
+echo ""
+echo "Starting FastAPI..."
 
 cd /app
 
-echo "Starting FastAPI..."
+exec uvicorn app.main:app \
+    --host 0.0.0.0 \
+    --port "${PORT:-8000}" &
 
-exec uvicorn app.main:app --host 0.0.0.0 --port "${PORT:-8000}"
+FASTAPI_PID=$!
+
+echo "FastAPI PID: $FASTAPI_PID"
+
+wait -n "$COBALT_PID" "$FASTAPI_PID"
+
+echo ""
+echo "ERROR: One of the services stopped."
+echo "Cobalt PID: $COBALT_PID"
+echo "FastAPI PID: $FASTAPI_PID"
+
+exit 1
