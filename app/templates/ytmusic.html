@@ -264,7 +264,7 @@
                 <a href="#" id="masked-link" target="_blank" rel="noreferrer" referrerpolicy="no-referrer"></a>
                 <button type="button" class="btn" id="copy-btn">Copy</button>
             </div>
-            <p class="info-text">This link redirects to the direct audio download stream.</p>
+            <p class="info-text">This link redirects to the official VidsSave download stream.</p>
         </div>
     </main>
     
@@ -274,6 +274,9 @@
 
     <script>
         (function() {
+            const AUTH = '20250901majwlqo';
+            const DOMAIN = 'api-ak.vidssave.com';
+
             function isYouTubeUrl(rawUrl) {
                 try {
                     const parsed = new URL(rawUrl);
@@ -326,7 +329,7 @@
                     downloadBtnLabel.textContent = loading ? 'Working...' : 'Get Download Link';
                 }
 
-                async function fetchCobaltDownload(url) {
+                async function getDownloadLink(url) {
                     const response = await fetch('/api/yt/download', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -334,10 +337,10 @@
                     });
 
                     const data = await response.json();
-                    if (!response.ok || data.status !== 'success' || !data.download_link) {
-                        throw new Error(data.detail || data.message || 'Failed to process video via Cobalt API.');
+                    if (!response.ok || !data.url) {
+                        throw new Error(data.detail || 'Failed to extract download link.');
                     }
-                    return data.download_link;
+                    return data.url;
                 }
 
                 async function shortenUrl(url) {
@@ -370,8 +373,8 @@
                     setLoading(true);
 
                     try {
-                        setStatus('Processing video via Cobalt API...');
-                        const downloadUrl = await fetchCobaltDownload(url);
+                        setStatus('Extracting direct audio link natively...');
+                        const downloadUrl = await getDownloadLink(url);
 
                         setStatus('Shortening link...');
                         const maskedUrl = await shortenUrl(downloadUrl);

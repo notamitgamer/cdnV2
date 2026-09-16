@@ -308,81 +308,49 @@ async def url_ytmusic_page(request: Request):
     return templates.TemplateResponse(request, "ytmusic.html", ctx)
 
 # ---------------------------------------------------------------------------------
-# YTMusic routes: Handles parsing and downloading via Cobalt API
+# YTMusic routes: Local extraction using yt-dlp (No Third-Party APIs)
 # ---------------------------------------------------------------------------------
+import yt_dlp
 
-class YtDownloadRequest(BaseModel):
+class YtRequest(BaseModel):
     url: str
 
 @app.post("/api/yt/download")
-async def yt_download(request: Request, body: YtDownloadRequest):
+async def yt_download_local(request: Request, body: YtRequest):
     url = body.url.strip()
     if not url:
-        raise HTTPException(status_code=400, detail="URL is required.")
+        raise HTTPException(status_code=400, detail="Missing YouTube URL.")
 
-    # Cobalt API payload for audio extraction (v11 spec)
-    payload = {
-        "url": url,
-        "downloadMode": "audio",
-        "audioFormat": "mp3",
-        "filenameStyle": "basic"
+    # Configure yt-dlp to extract the best audio-only URL without downloading
+    ydl_opts = {
+        'format': 'm4a/bestaudio/best', 
+        'quiet': True,
+        'no_warnings': True,
+        'skip_download': True,
+        'noplaylist': True,
     }
 
-    # Spoof headers as if we are the official Cobalt web app
-    headers = {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        "Origin": "https://cobalt.tools",
-        "Referer": "https://cobalt.tools/"
-    }
+    def _extract():
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            return ydl.extract_info(url, download=False)
 
-    # Public Cobalt instances. 
-    # Optionally specify a custom URL via the COBALT_API_URL environment variable on Render!
-    instances = [
-        os.getenv("COBALT_API_URL"),
-        "https://api.cobalt.tools/",
-    ]
-    
-    last_error = "Could not process the video. Public API instances might be rate-limited or down."
+    try:
+        # Run in a thread pool so it doesn't freeze the FastAPI async event loop
+        info = await asyncio.to_thread(_extract)
+        
+        dl_url = info.get('url')
+        if not dl_url and 'requested_formats' in info:
+            dl_url = info['requested_formats'][0]['url']
+            
+        if not dl_url:
+            raise ValueError("No audio stream URL could be found in the video metadata.")
+            
+        return {"url": dl_url, "title": info.get("title", "Audio")}
 
-    async with httpx.AsyncClient(timeout=45.0) as client:
-        for instance in instances:
-            if not instance:
-                continue
-            instance_url = instance.rstrip("/") + "/"
-            try:
-                res = await client.post(instance_url, json=payload, headers=headers)
-                
-                # Check for rate limits or turnstile blocks
-                if res.status_code in (401, 403, 429):
-                    last_error = f"Instance {instance} returned {res.status_code}. It may be rate-limited."
-                    continue
-
-                if res.status_code != 200 and res.status_code != 202:
-                    last_error = f"Instance {instance} returned error {res.status_code}."
-                    continue
-
-                data = res.json()
-                
-                # Handle Cobalt error response
-                if data.get("status") == "error":
-                    last_error = data.get("error", {}).get("code", "Cobalt API Error")
-                    continue
-                
-                # Success! Extract the download URL
-                download_url = data.get("url")
-                if download_url:
-                    return {"status": "success", "download_link": download_url}
-                    
-            except httpx.RequestError as exc:
-                last_error = f"Error connecting to {instance}: {exc}"
-                continue
-            except json.JSONDecodeError:
-                last_error = f"Invalid JSON from {instance}"
-                continue
-
-    raise HTTPException(status_code=500, detail=last_error)
+    except yt_dlp.utils.DownloadError as e:
+        raise HTTPException(status_code=400, detail=f"Extraction failed: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 # ---------------------------------------------------------------------------------
 
 @app.get("/shorten")
