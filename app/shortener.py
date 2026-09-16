@@ -1,36 +1,78 @@
 import os
+import io
 import random
 import string
-from pathlib import Path
+import asyncio
+import re
+import httpx
+from huggingface_hub import HfApi
 
-SHORTENED_DIR = Path(__file__).parent / "shortened"
-SHORTENED_DIR.mkdir(exist_ok=True)
+HF_REPO_ID = os.getenv("HF_REPO_ID", "notamitgamer/cdn")
+HF_TOKEN = os.getenv("HF_TOKEN")
+api = HfApi(token=HF_TOKEN) if HF_TOKEN else None
 
+# Reusable HTTP client for fast connection pooling & HTTP keep-alive
+_client = httpx.AsyncClient(follow_redirects=True, timeout=10.0)
 
-def generate_id(length=8):
+# Alphanumeric validator to guard against path traversal attempts
+_ID_REGEX = re.compile(r"^[a-z0-9]{4,16}$")
+
+def generate_id(length: int = 8) -> str:
     chars = string.ascii_lowercase + string.digits
-    return "".join(random.choice(chars) for _ in range(length))
+    return "".join(random.choices(chars, k=length))
 
+async def shorten_url(destination_url: str) -> str:
+    """Save a destination URL under an in-memory byte payload to Hugging Face."""
+    if not api:
+        raise RuntimeError("HF_TOKEN is not configured.")
 
-def shorten_url(destination_url: str) -> str:
-    """Save a destination URL under a random ID and return that ID."""
+    destination_url = destination_url.strip()
+
+    # Collision-check loop with a safeguard cutoff
+    attempts = 0
     while True:
         short_id = generate_id()
-        filepath = SHORTENED_DIR / short_id
-        if not filepath.exists():
+        hf_url = f"https://huggingface.co/datasets/{HF_REPO_ID}/resolve/main/_shortened/{short_id}"
+        r = await _client.head(hf_url)
+        if r.status_code == 404:
             break
-    filepath.write_text(destination_url, encoding="utf-8")
+        attempts += 1
+        if attempts > 5:
+            # Fallback to longer ID if collisions occur
+            short_id = generate_id(length=12)
+            break
+
+    # Upload directly from memory without writing to disk
+    payload = io.BytesIO(destination_url.encode("utf-8"))
+
+    def _upload():
+        api.upload_file(
+            path_or_fileobj=payload,
+            path_in_repo=f"_shortened/{short_id}",
+            repo_id=HF_REPO_ID,
+            repo_type="dataset",
+            token=HF_TOKEN,
+            commit_message=f"shorten: {short_id}",
+        )
+
+    await asyncio.to_thread(_upload)
     return short_id
 
+async def get_destination_url(short_id: str) -> str | None:
+    """Look up the destination URL directly from Hugging Face resolve endpoints."""
+    short_id = short_id.strip().lower()
+    if not _ID_REGEX.match(short_id):
+        return None
 
-def get_destination_url(short_id: str) -> str | None:
-    """Look up the destination URL for a given short ID."""
-    filepath = SHORTENED_DIR / short_id
-    if filepath.exists():
-        return filepath.read_text(encoding="utf-8").strip()
+    hf_url = f"https://huggingface.co/datasets/{HF_REPO_ID}/resolve/main/_shortened/{short_id}"
+    try:
+        r = await _client.get(hf_url)
+        if r.status_code == 200:
+            return r.text.strip()
+    except httpx.RequestError:
+        return None
     return None
 
-
 def list_all_ids() -> list[str]:
-    """Return all stored short IDs (server-side only, not for frontend)."""
-    return sorted(p.name for p in SHORTENED_DIR.iterdir() if p.is_file())
+    """Stub kept for router compatibility."""
+    return []
