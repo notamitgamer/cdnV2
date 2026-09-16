@@ -394,13 +394,18 @@
                 }
 
                 async function createDownloadTask(resource) {
-                    const body = new URLSearchParams({
+                    const payload = {
                         auth: AUTH,
                         domain: DOMAIN,
                         request: resource.resource_content,
-                        no_encrypt: 1,
-                        output: resource.output_format || 'mp3'
-                    });
+                        no_encrypt: 1
+                    };
+
+                    if (resource.output_format) {
+                        payload.output = resource.output_format.toLowerCase();
+                    }
+
+                    const body = new URLSearchParams(payload);
 
                     const response = await fetch('/api/yt/download', {
                         method: 'POST',
