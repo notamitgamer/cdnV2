@@ -308,119 +308,81 @@ async def url_ytmusic_page(request: Request):
     return templates.TemplateResponse(request, "ytmusic.html", ctx)
 
 # ---------------------------------------------------------------------------------
-# YTMusic routes: Handles parsing, conversion, and server-side SSE stream parsing
+# YTMusic routes: Handles parsing and downloading via Cobalt API
 # ---------------------------------------------------------------------------------
 
-def _get_vidssave_headers(request: Request) -> dict:
-    """Provides standard headers to prevent block/rate-limits by VidsSave."""
-    return {
-        "User-Agent": request.headers.get("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"),
-        "Origin": "https://vidssave.com",
-        "Referer": "https://vidssave.com/",
-        "Accept-Language": "en-US,en;q=0.9",
-    }
-
-@app.post("/api/yt/parse")
-async def yt_parse(request: Request):
-    body = await request.body()
-    headers = _get_vidssave_headers(request)
-    headers["Content-Type"] = "application/x-www-form-urlencoded"
-    
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        try:
-            res = await client.post(
-                "https://api.vidssave.com/api/contentsite_api/media/parse", 
-                content=body,
-                headers=headers
-            )
-        except httpx.RequestError as exc:
-            raise HTTPException(status_code=502, detail=f"Upstream parse request failed: {exc}")
-
-        if res.status_code != 200:
-            raise HTTPException(status_code=res.status_code, detail="Upstream parse error.")
-        
-        result = res.json()
-        print("\n--- VidsSave PARSE response ---")
-        print(json.dumps(result, indent=2, ensure_ascii=False))
-        return result
+class YtDownloadRequest(BaseModel):
+    url: str
 
 @app.post("/api/yt/download")
-async def yt_download(request: Request):
-    body = await request.body()
-    headers = _get_vidssave_headers(request)
-    headers["Content-Type"] = "application/x-www-form-urlencoded"
-    
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        try:
-            res = await client.post(
-                "https://api.vidssave.com/api/contentsite_api/media/download", 
-                content=body,
-                headers=headers
-            )
-        except httpx.RequestError as exc:
-            raise HTTPException(status_code=502, detail=f"Upstream download request failed: {exc}")
+async def yt_download(request: Request, body: YtDownloadRequest):
+    url = body.url.strip()
+    if not url:
+        raise HTTPException(status_code=400, detail="URL is required.")
 
-        if res.status_code != 200:
-            raise HTTPException(status_code=res.status_code, detail="Upstream download error.")
-        
-        result = res.json()
-        print("\n--- VidsSave DOWNLOAD response ---")
-        print(json.dumps(result, indent=2, ensure_ascii=False))
-        return result
-
-@app.get("/api/yt/status")
-async def yt_status(request: Request, task_id: str):
-    if not task_id:
-        raise HTTPException(status_code=400, detail="Missing task_id.")
-
-    target_url = "https://api.vidssave.com/sse/contentsite_api/media/download_query"
-    params = {
-        "auth": "20250901majwlqo",
-        "domain": "api-ak.vidssave.com",
-        "task_id": task_id,
-        "download_domain": "vidssave.com",
-        "origin": "content_site"
+    # Cobalt API payload for audio extraction (v11 spec)
+    payload = {
+        "url": url,
+        "downloadMode": "audio",
+        "audioFormat": "mp3",
+        "filenameStyle": "basic"
     }
 
-    headers = _get_vidssave_headers(request)
-    headers["Accept"] = "text/event-stream"
+    # Spoof headers as if we are the official Cobalt web app
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Origin": "https://cobalt.tools",
+        "Referer": "https://cobalt.tools/"
+    }
 
-    try:
-        async with httpx.AsyncClient(timeout=90.0) as client:
-            async with client.stream("GET", target_url, params=params, headers=headers) as response:
-                if response.status_code != 200:
-                    raise HTTPException(status_code=502, detail=f"Upstream status returned {response.status_code}")
+    # Public Cobalt instances. 
+    # Optionally specify a custom URL via the COBALT_API_URL environment variable on Render!
+    instances = [
+        os.getenv("COBALT_API_URL"),
+        "https://api.cobalt.tools/",
+    ]
+    
+    last_error = "Could not process the video. Public API instances might be rate-limited or down."
 
-                async for line in response.aiter_lines():
-                    line = line.strip()
-                    if line.startswith("data:"):
-                        payload_raw = line[5:].strip()
-                        try:
-                            data = json.loads(payload_raw)
-                            if data.get("status") == "success" and data.get("download_link"):
-                                return {"status": "success", "download_link": data["download_link"]}
-                            
-                            err = data.get("error")
-                            is_err = err and str(err).lower() not in ("0", "false", "null", "none", "")
-                            
-                            if str(data.get("status")).lower() in ("failed", "fail", "error") or is_err:
-                                print("\n--- VidsSave conversion FAILED ---")
-                                print(json.dumps(data, indent=2, ensure_ascii=False))
-                                
-                                raise HTTPException(
-                                    status_code=400, 
-                                    detail=data.get("message") or data.get("msg") or data.get("error") or json.dumps(data, ensure_ascii=False)
-                                )
-                        except json.JSONDecodeError:
-                            continue
-    except HTTPException:
-        raise
-    except httpx.TimeoutException:
-        raise HTTPException(status_code=504, detail="Conversion timed out on upstream provider.")
-    except httpx.RequestError as exc:
-        raise HTTPException(status_code=502, detail=f"Error connecting to upstream status: {exc}")
+    async with httpx.AsyncClient(timeout=45.0) as client:
+        for instance in instances:
+            if not instance:
+                continue
+            instance_url = instance.rstrip("/") + "/"
+            try:
+                res = await client.post(instance_url, json=payload, headers=headers)
+                
+                # Check for rate limits or turnstile blocks
+                if res.status_code in (401, 403, 429):
+                    last_error = f"Instance {instance} returned {res.status_code}. It may be rate-limited."
+                    continue
 
-    raise HTTPException(status_code=500, detail="Stream completed without providing a download link.")
+                if res.status_code != 200 and res.status_code != 202:
+                    last_error = f"Instance {instance} returned error {res.status_code}."
+                    continue
+
+                data = res.json()
+                
+                # Handle Cobalt error response
+                if data.get("status") == "error":
+                    last_error = data.get("error", {}).get("code", "Cobalt API Error")
+                    continue
+                
+                # Success! Extract the download URL
+                download_url = data.get("url")
+                if download_url:
+                    return {"status": "success", "download_link": download_url}
+                    
+            except httpx.RequestError as exc:
+                last_error = f"Error connecting to {instance}: {exc}"
+                continue
+            except json.JSONDecodeError:
+                last_error = f"Invalid JSON from {instance}"
+                continue
+
+    raise HTTPException(status_code=500, detail=last_error)
 # ---------------------------------------------------------------------------------
 
 @app.get("/shorten")

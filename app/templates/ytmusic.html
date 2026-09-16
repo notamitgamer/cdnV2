@@ -264,7 +264,7 @@
                 <a href="#" id="masked-link" target="_blank" rel="noreferrer" referrerpolicy="no-referrer"></a>
                 <button type="button" class="btn" id="copy-btn">Copy</button>
             </div>
-            <p class="info-text">This link redirects to the official VidsSave download stream.</p>
+            <p class="info-text">This link redirects to the direct audio download stream.</p>
         </div>
     </main>
     
@@ -274,9 +274,6 @@
 
     <script>
         (function() {
-            const AUTH = '20250901majwlqo';
-            const DOMAIN = 'api-ak.vidssave.com';
-
             function isYouTubeUrl(rawUrl) {
                 try {
                     const parsed = new URL(rawUrl);
@@ -329,108 +326,16 @@
                     downloadBtnLabel.textContent = loading ? 'Working...' : 'Get Download Link';
                 }
 
-                async function parseYouTube(url) {
-                    const body = new URLSearchParams({
-                        auth: AUTH,
-                        domain: DOMAIN,
-                        origin: 'source',
-                        link: url
-                    });
-
-                    const response = await fetch('/api/yt/parse', {
+                async function fetchCobaltDownload(url) {
+                    const response = await fetch('/api/yt/download', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ url })
                     });
 
                     const data = await response.json();
-                    if (!response.ok || data.status !== 1) {
-                        throw new Error(data?.message || data?.msg || 'VidsSave could not parse the YouTube URL.');
-                    }
-                    return data.data;
-                }
-
-                function select128AudioResource(resources) {
-                    const audioItems = (resources || []).filter(item => {
-                        if (!item) return false;
-                        const isAudioType = String(item.type || '').toLowerCase().includes('audio');
-                        const hasAudioFormat = Array.isArray(item.available_formats) && 
-                            item.available_formats.some(f => ['mp3', 'm4a', 'audio'].includes(String(f).toLowerCase()));
-                        const isFormatMp3 = String(item.format || '').toLowerCase().includes('mp3');
-                        const isFormatM4a = String(item.format || '').toLowerCase().includes('m4a');
-                        
-                        return isAudioType || hasAudioFormat || isFormatMp3 || isFormatM4a;
-                    });
-
-                    if (audioItems.length === 0) return null;
-
-                    let matched = audioItems.find(item => {
-                        const q = String(item.quality || '').toLowerCase();
-                        return q.includes('128') || q.includes('128kbps');
-                    });
-
-                    if (!matched) {
-                        matched = audioItems.reduce((lowest, curr) => {
-                            const getNum = (res) => {
-                                const m = String(res.quality || '').match(/(\d+)/);
-                                return m ? Number(m[1]) : 128;
-                            };
-                            return getNum(curr) < getNum(lowest) ? curr : lowest;
-                        });
-                    }
-
-                    // FIX: Only apply output_format if the resource actually has convertible formats
-                    let outputFormat = null;
-                    if (Array.isArray(matched.available_formats) && matched.available_formats.length > 0) {
-                        for (const format of matched.available_formats) {
-                            const fmt = String(format).toLowerCase();
-                            if (fmt === 'mp3' || fmt === 'm4a' || fmt === 'audio') {
-                                outputFormat = fmt;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (outputFormat) {
-                        matched.output_format = outputFormat;
-                    }
-
-                    return matched;
-                }
-
-                async function createDownloadTask(resource) {
-                    const payload = {
-                        auth: AUTH,
-                        domain: DOMAIN,
-                        request: resource.resource_content,
-                        no_encrypt: 1
-                    };
-
-                    if (resource.output_format) {
-                        payload.output = resource.output_format.toLowerCase();
-                    }
-
-                    const body = new URLSearchParams(payload);
-
-                    const response = await fetch('/api/yt/download', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body
-                    });
-
-                    const result = await response.json();
-                    if (!response.ok || result.status !== 1 || !result.data?.task_id) {
-                        throw new Error(result?.message || result?.msg || 'VidsSave could not create the download task.');
-                    }
-                    return result.data.task_id;
-                }
-
-                // Polls through the server proxy endpoint without browser SSE restrictions
-                async function waitForDownloadLink(taskId) {
-                    const response = await fetch(`/api/yt/status?task_id=${encodeURIComponent(taskId)}`);
-                    const data = await response.json().catch(() => ({}));
                     if (!response.ok || data.status !== 'success' || !data.download_link) {
-                        throw new Error(data.detail || data.message || 'Failed to retrieve download link from status stream.');
+                        throw new Error(data.detail || data.message || 'Failed to process video via Cobalt API.');
                     }
                     return data.download_link;
                 }
@@ -465,21 +370,8 @@
                     setLoading(true);
 
                     try {
-                        setStatus('Parsing YouTube URL...');
-                        const parsed = await parseYouTube(url);
-                        const resource = select128AudioResource(parsed.resources);
-
-                        if (!resource || !resource.resource_content) {
-                            throw new Error('No downloadable audio resource was found.');
-                        }
-
-                        const typeMsg = resource.output_format ? ` ${resource.output_format.toUpperCase()}` : '';
-                        setStatus(`Preparing${typeMsg} task...`);
-                        
-                        const taskId = await createDownloadTask(resource);
-
-                        setStatus('Waiting for VidsSave to finalize audio stream...');
-                        const downloadUrl = await waitForDownloadLink(taskId);
+                        setStatus('Processing video via Cobalt API...');
+                        const downloadUrl = await fetchCobaltDownload(url);
 
                         setStatus('Shortening link...');
                         const maskedUrl = await shortenUrl(downloadUrl);
