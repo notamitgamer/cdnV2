@@ -3,25 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>URL Shortener · amit/cdn</title>
+    <title>URL Shortener &mdash; amit/cdn</title>
     <meta name="description" content="Shorten and mask any public URL.">
-
     <link rel="icon" href="/favicon.ico" sizes="any">
     <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16x16.png">
     <link rel="icon" type="image/svg+xml" href="/static/icons/logo.svg">
     <link rel="apple-touch-icon" sizes="180x180" href="/static/icons/apple-touch-icon.png">
-
     <link rel="manifest" href="/static/manifest.json">
     <meta name="theme-color" content="#09090b">
     <meta name="color-scheme" content="dark">
-
     <script type="module" src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@8.0.4/dist/turbo.es2017-esm.js"></script>
-
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-
     <style>
         :root {
             --bg: #09090b;
@@ -46,7 +41,6 @@
         
         * { -webkit-tap-highlight-color: transparent; }
         * { box-sizing: border-box; }
-
         body {
             font-family: var(--font-body);
             background: var(--bg);
@@ -57,17 +51,14 @@
             font-size: 1rem;
             -webkit-font-smoothing: antialiased;
         }
-
         @media (max-width: 480px) {
             body { font-size: 0.95rem; }
         }
-
         .container {
             width: 90%;
             max-width: 1000px;
             margin: 0 auto;
         }
-
         h1 {
             font-family: var(--font-heading);
             font-size: clamp(2.2rem, 5vw, 3rem);
@@ -78,7 +69,6 @@
             line-height: 1.1;
             max-width: 20ch;
         }
-
         blockquote {
             background: var(--surface);
             border: 1px solid var(--border);
@@ -90,17 +80,14 @@
             max-width: 68ch;
             font-size: 0.95rem;
         }
-
         a { color: var(--accent-primary); text-decoration: none; transition: color 0.15s; }
         a:hover { color: var(--accent-primary-hover); text-decoration: underline; }
-
         .input-group {
             position: relative;
             display: flex;
             align-items: center;
             width: 100%;
         }
-
         .url-input {
             width: 100%;
             padding: 0.85rem 2.5rem 0.85rem 1.25rem;
@@ -113,16 +100,13 @@
             font-variant-ligatures: none;
             font-feature-settings: "liga" 0, "calt" 0;
         }
-
         .url-input:focus {
             outline: none;
             background: var(--surface-2);
             border-color: var(--accent-primary);
             box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.15);
         }
-
         .url-input::placeholder { color: var(--text-dim); }
-
         .input-clear-btn {
             position: absolute;
             right: 0.75rem;
@@ -139,10 +123,8 @@
             border-radius: 50%;
             transition: color 0.2s, background 0.2s;
         }
-
         .input-group[data-has-text="true"] .input-clear-btn { display: flex; }
         .input-clear-btn:hover { color: var(--text-main); background: var(--surface-3); }
-
         .btn {
             display: inline-flex;
             align-items: center;
@@ -166,7 +148,6 @@
         .btn-primary { background: var(--accent-primary) !important; color: #ffffff !important; border-color: var(--accent-primary) !important; font-weight: 600; transition: none !important; }
         .btn-primary:hover:not(:disabled), .btn-primary:focus:not(:disabled), .btn-primary:active:not(:disabled) { background: var(--accent-primary) !important; border-color: var(--accent-primary) !important; color: #ffffff !important; }
         .btn-primary svg { stroke: #ffffff !important; }
-
         .icon-btn {
             display: inline-flex;
             align-items: center;
@@ -181,7 +162,6 @@
         .icon-btn:hover:not(:disabled) { background: var(--surface-2); border-color: var(--border-hover); }
         .icon-btn:hover:not(:disabled) svg { stroke: var(--accent-primary); }
         .icon-btn:active:not(:disabled) { transform: scale(0.95); }
-
         .result-box {
             margin-top: 2rem;
             background: var(--surface);
@@ -212,7 +192,6 @@
         }
         .result-url a { color: var(--accent-primary); text-decoration: none; }
         .result-url a:hover { text-decoration: underline; }
-
         .error-box {
             display: none;
             color: var(--danger);
@@ -222,21 +201,17 @@
             background: rgba(239, 68, 68, 0.1);
             border-radius: var(--radius-md);
         }
-
         .info-text {
             color: var(--text-dim);
             font-size: 0.9rem;
             margin-top: 1rem;
         }
-
         .spin-anim { animation: spin 0.7s linear infinite; display: inline-flex; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
-
         .btn-primary .btn-icon { display: inline-flex; }
         .btn-primary.is-loading .btn-icon.btn-icon-default { display: none; }
         .btn-primary .btn-icon-spinner { display: none; }
         .btn-primary.is-loading .btn-icon-spinner { display: inline-flex; }
-
         footer {
             width: 90%;
             max-width: 1000px;
@@ -246,7 +221,6 @@
             font-size: .85rem;
             color: var(--muted);
         }
-
         @media (max-width: 480px) {
             .container { width: 100%; padding: 0 1.25rem; }
             .result-url { flex-direction: column; align-items: flex-start; }
@@ -255,21 +229,20 @@
 </head>
 <body>
     {% include "_navbar.html" %}
-
-    <div class="container">
+    <main class="container">
         <h1>URL Shortener</h1>
         <blockquote>
             Paste any public <code>https://</code> URL and get back a masked, shareable link.
             The destination is never exposed until someone visits the masked URL.
         </blockquote>
-
+        
         <div class="input-group" id="shorten-group">
-            <input type="text" id="url-input" class="url-input" placeholder="Paste a URL to shorten…" autocomplete="off" spellcheck="false">
+            <input type="url" id="url-input" class="url-input" placeholder="Paste a URL to shorten (e.g. https://example.com)" autocomplete="off" spellcheck="false" required>
             <button type="button" class="input-clear-btn" id="url-clear" aria-label="Clear URL">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
         </div>
-
+        
         <div style="display:flex; gap:0.75rem; margin-top:1rem; align-items:center;">
             <button type="button" class="btn btn-primary" id="shorten-btn">
                 <span class="btn-icon btn-icon-default">
@@ -281,123 +254,161 @@
                 <span id="shorten-btn-label">Shorten URL</span>
             </button>
         </div>
-
-        <div id="error-box" class="error-box"></div>
-
+        
+        <div id="error-box" class="error-box" role="alert" aria-live="polite"></div>
+        
         <div id="result" style="display:none;" class="result-box">
             <h3>Your masked URL</h3>
             <div class="result-url">
-                <a href="/mask/{{ result_id }}" id="masked-link" target="_blank">{{ masked_url }}</a>
-                <button type="button" class="btn" id="copy-btn" data-url="{{ masked_url }}">Copy</button>
+                <a href="#" id="masked-link" target="_blank" rel="noopener noreferrer"></a>
+                <button type="button" class="btn" id="copy-btn">Copy</button>
             </div>
             <p class="info-text">This link will redirect to the destination URL when visited.</p>
         </div>
-    </div>
-
+    </main>
+    
     <footer>
         <p>&copy; 2025 - 2026 notamitgamer. All rights reserved.</p>
     </footer>
 
     <script>
-        const urlInput = document.getElementById('url-input');
-        const urlClear = document.getElementById('url-clear');
-        const shortenBtn = document.getElementById('shorten-btn');
-        const errorBox = document.getElementById('error-box');
-        const resultDiv = document.getElementById('result');
+        (function() {
+            const PRIVATE_HOST_RE = /^(localhost|127(?:\.\d{1,3}){3}|0\.0\.0\.0|10(?:\.\d{1,3}){3}|192\.168(?:\.\d{1,3}){2}|172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2}|\[?::1\]?|.*\.localhost|.*\.local|.*\.lan)$/i;
 
-        const LOCALHOST_HOST_RE = /^(localhost|127(?:\.\d{1,3}){3}|0\.0\.0\.0|\[?::1\]?|.*\.localhost)$/i;
-
-        function isLocalhostUrl(rawUrl) {
-            let hostname;
-            try {
-                hostname = new URL(rawUrl).hostname;
-            } catch (e) {
-                return false;
-            }
-            return LOCALHOST_HOST_RE.test(hostname);
-        }
-
-        urlClear.addEventListener('click', () => {
-            urlInput.value = '';
-            urlInput.focus();
-            urlClear.parentElement.removeAttribute('data-has-text');
-            errorBox.style.display = 'none';
-            resultDiv.style.display = 'none';
-        });
-
-        urlInput.addEventListener('input', () => {
-            if (urlInput.value.length > 0) {
-                urlClear.parentElement.setAttribute('data-has-text', 'true');
-            } else {
-                urlClear.parentElement.removeAttribute('data-has-text');
-            }
-        });
-
-        function showError(msg) {
-            errorBox.textContent = msg;
-            errorBox.style.display = 'block';
-        }
-
-        shortenBtn.addEventListener('click', async () => {
-            const url = urlInput.value.trim();
-            errorBox.style.display = 'none';
-            resultDiv.style.display = 'none';
-            if (!url) { showError('Please enter a URL.'); return; }
-            if (!/^https:\/\//i.test(url)) { showError('Only https:// URLs are supported.'); return; }
-            if (isLocalhostUrl(url)) { showError('Localhost/internal URLs cannot be shortened.'); return; }
-
-            shortenBtn.disabled = true;
-            shortenBtn.classList.add('is-loading');
-
-            try {
-                const res = await fetch('/api/shorten', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url })
-                });
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok) {
-                    throw new Error(data.detail || 'Failed to shorten URL.');
+            function isPrivateOrLocalHost(rawUrl) {
+                try {
+                    const parsed = new URL(rawUrl);
+                    return PRIVATE_HOST_RE.test(parsed.hostname);
+                } catch {
+                    return false;
                 }
-                resultDiv.style.display = 'block';
-                resultDiv.querySelector('#masked-link').href = '/mask/' + data.id;
-                resultDiv.querySelector('#masked-link').textContent = data.masked_url;
-                resultDiv.querySelector('#copy-btn').setAttribute('data-url', data.masked_url);
-            } catch (err) {
-                showError(err.message);
-            } finally {
-                shortenBtn.disabled = false;
-                shortenBtn.classList.remove('is-loading');
             }
-        });
 
-        function copyToClipboard(text, btn) {
-            navigator.clipboard.writeText(text).then(() => {
-                if (!btn) return;
-                const originalStyle = btn.style.cssText;
-                const originalText = btn.textContent;
-                btn.style.borderColor = 'var(--success)';
-                btn.style.color = 'var(--success)';
-                btn.textContent = 'Copied!';
-                setTimeout(() => {
-                    btn.style.cssText = originalStyle;
-                    btn.textContent = originalText;
-                }, 800);
-            }).catch(err => { console.error('failed to copy: ', err); });
-        }
+            function setupShortener() {
+                const urlInput = document.getElementById('url-input');
+                const urlClear = document.getElementById('url-clear');
+                const shortenBtn = document.getElementById('shorten-btn');
+                const errorBox = document.getElementById('error-box');
+                const resultDiv = document.getElementById('result');
+                const maskedLink = document.getElementById('masked-link');
+                const copyBtn = document.getElementById('copy-btn');
 
-        document.getElementById('copy-btn').addEventListener('click', (e) => {
-            const btn = e.currentTarget;
-            const url = btn.getAttribute('data-url');
-            if (url) copyToClipboard(url, btn);
-        });
+                if (!urlInput || !shortenBtn || shortenBtn.dataset.initialized) return;
+                shortenBtn.dataset.initialized = 'true';
 
-        document.addEventListener('keydown', (e) => {
-            if (e.key !== '/') return;
-            const tag = (document.activeElement && document.activeElement.tagName) || '';
-            if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-            urlInput.focus();
-        });
+                function showError(msg) {
+                    errorBox.textContent = msg;
+                    errorBox.style.display = 'block';
+                }
+
+                function clearError() {
+                    errorBox.textContent = '';
+                    errorBox.style.display = 'none';
+                }
+
+                urlClear.addEventListener('click', () => {
+                    urlInput.value = '';
+                    urlInput.focus();
+                    urlClear.parentElement.removeAttribute('data-has-text');
+                    clearError();
+                    resultDiv.style.display = 'none';
+                });
+
+                urlInput.addEventListener('input', () => {
+                    if (urlInput.value.length > 0) {
+                        urlClear.parentElement.setAttribute('data-has-text', 'true');
+                    } else {
+                        urlClear.parentElement.removeAttribute('data-has-text');
+                    }
+                });
+
+                urlInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        shortenBtn.click();
+                    }
+                });
+
+                shortenBtn.addEventListener('click', async () => {
+                    const url = urlInput.value.trim();
+                    clearError();
+                    resultDiv.style.display = 'none';
+
+                    if (!url) { showError('Please enter a URL.'); return; }
+                    if (!/^https:\/\//i.test(url)) { showError('Only https:// URLs are supported.'); return; }
+                    if (isPrivateOrLocalHost(url)) { showError('Localhost and private network URLs cannot be shortened.'); return; }
+
+                    shortenBtn.disabled = true;
+                    shortenBtn.classList.add('is-loading');
+
+                    try {
+                        const res = await fetch('/api/shorten', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ url })
+                        });
+                        
+                        const data = await res.json().catch(() => ({}));
+                        
+                        if (!res.ok) {
+                            throw new Error(data.detail || 'Failed to shorten URL.');
+                        }
+
+                        resultDiv.style.display = 'block';
+                        maskedLink.href = '/mask/' + data.id;
+                        maskedLink.textContent = data.masked_url;
+                        copyBtn.setAttribute('data-url', data.masked_url);
+                    } catch (err) {
+                        showError(err.message || 'An unexpected error occurred.');
+                    } finally {
+                        shortenBtn.disabled = false;
+                        shortenBtn.classList.remove('is-loading');
+                    }
+                });
+
+                copyBtn.addEventListener('click', async () => {
+                    const url = copyBtn.getAttribute('data-url');
+                    if (!url) return;
+
+                    try {
+                        await navigator.clipboard.writeText(url);
+                        const originalText = copyBtn.textContent;
+                        const originalStyle = copyBtn.style.cssText;
+
+                        copyBtn.style.borderColor = 'var(--success)';
+                        copyBtn.style.color = 'var(--success)';
+                        copyBtn.textContent = 'Copied!';
+
+                        setTimeout(() => {
+                            copyBtn.style.cssText = originalStyle;
+                            copyBtn.textContent = originalText;
+                        }, 1000);
+                    } catch (err) {
+                        console.error('Failed to copy: ', err);
+                    }
+                });
+            }
+
+            // Bind to Turbo and standard page loads
+            document.addEventListener('turbo:load', setupShortener);
+            document.addEventListener('DOMContentLoaded', setupShortener);
+
+            // Global '/' focus shortcut
+            if (!window.__shortenerKbdBound) {
+                window.__shortenerKbdBound = true;
+                document.addEventListener('keydown', (e) => {
+                    if (e.key !== '/') return;
+                    const tag = (document.activeElement && document.activeElement.tagName) || '';
+                    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+
+                    const currentUrlInput = document.getElementById('url-input');
+                    if (currentUrlInput) {
+                        e.preventDefault();
+                        currentUrlInput.focus();
+                    }
+                });
+            }
+        })();
     </script>
 </body>
 </html>
