@@ -43,6 +43,12 @@ jobs:
       - name: Pre-configure Bubblewrap (skip interactive JDK/SDK prompts)
         run: |
           mkdir -p "$HOME/.bubblewrap"
+          # bubblewrap's SDK path check only recognizes the legacy layout
+          # (a `tools` or `bin` folder directly under the SDK root). The
+          # cmdline-tools package installed by android-actions/setup-android
+          # puts those under cmdline-tools/latest/ instead, so add an empty
+          # `tools` dir purely to satisfy that existence check.
+          mkdir -p "$ANDROID_HOME/tools"
           python3 - << PYEOF
           import json
           config = {"jdkPath": "$JAVA_HOME", "androidSdkPath": "$ANDROID_HOME"}
