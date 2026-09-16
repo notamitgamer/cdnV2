@@ -237,12 +237,25 @@
         .btn-primary.is-loading .btn-icon-spinner { display: inline-flex; }
 
         footer {
-                margin-top: 4rem;
-                padding-top: 1.5rem;
-                border-top: 1px solid var(--border);
-                font-size: 0.85rem;
-                color: var(--muted);
-              }
+            margin-top: 5rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.5rem 1rem;
+        }
+        footer a { color: var(--text-main); font-weight: 500; }
+        footer a:hover { color: var(--accent-primary); }
+        footer .footer-copyright { white-space: nowrap; }
+
+        @media (max-width: 640px) {
+            footer { flex-direction: column; align-items: flex-start; }
+        }
 
         @media (max-width: 480px) {
             .container { width: 100%; padding: 0 1.25rem; }
@@ -292,7 +305,8 @@
     </div>
 
     <footer>
-        <p>&copy; 2025 - 2026 notamitgamer. All rights reserved.</p>
+        <div>amit/cdn · built by <a href="https://github.com/notamitgamer">notamitgamer</a><br>nothing here is a permanent fixture.</div>
+        <div class="footer-copyright">&copy; 2025 - 2026 notamitgamer. All rights reserved.</div>
     </footer>
 
     <script>
