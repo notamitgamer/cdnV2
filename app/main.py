@@ -310,15 +310,28 @@ async def url_ytmusic_page(request: Request):
 # ---------------------------------------------------------------------------------
 # YTMusic routes: Handles parsing, conversion, and server-side SSE stream parsing
 # ---------------------------------------------------------------------------------
+
+def _get_vidssave_headers(request: Request) -> dict:
+    """Provides standard headers to prevent block/rate-limits by VidsSave."""
+    return {
+        "User-Agent": request.headers.get("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"),
+        "Origin": "https://vidssave.com",
+        "Referer": "https://vidssave.com/",
+        "Accept-Language": "en-US,en;q=0.9",
+    }
+
 @app.post("/api/yt/parse")
 async def yt_parse(request: Request):
     body = await request.body()
+    headers = _get_vidssave_headers(request)
+    headers["Content-Type"] = "application/x-www-form-urlencoded"
+    
     async with httpx.AsyncClient(timeout=30.0) as client:
         try:
             res = await client.post(
                 "https://api.vidssave.com/api/contentsite_api/media/parse", 
                 content=body,
-                headers={"Content-Type": "application/x-www-form-urlencoded"}
+                headers=headers
             )
         except httpx.RequestError as exc:
             raise HTTPException(status_code=502, detail=f"Upstream parse request failed: {exc}")
@@ -334,12 +347,15 @@ async def yt_parse(request: Request):
 @app.post("/api/yt/download")
 async def yt_download(request: Request):
     body = await request.body()
+    headers = _get_vidssave_headers(request)
+    headers["Content-Type"] = "application/x-www-form-urlencoded"
+    
     async with httpx.AsyncClient(timeout=30.0) as client:
         try:
             res = await client.post(
                 "https://api.vidssave.com/api/contentsite_api/media/download", 
                 content=body,
-                headers={"Content-Type": "application/x-www-form-urlencoded"}
+                headers=headers
             )
         except httpx.RequestError as exc:
             raise HTTPException(status_code=502, detail=f"Upstream download request failed: {exc}")
@@ -353,7 +369,7 @@ async def yt_download(request: Request):
         return result
 
 @app.get("/api/yt/status")
-async def yt_status(task_id: str):
+async def yt_status(request: Request, task_id: str):
     if not task_id:
         raise HTTPException(status_code=400, detail="Missing task_id.")
 
@@ -366,9 +382,12 @@ async def yt_status(task_id: str):
         "origin": "content_site"
     }
 
+    headers = _get_vidssave_headers(request)
+    headers["Accept"] = "text/event-stream"
+
     try:
         async with httpx.AsyncClient(timeout=90.0) as client:
-            async with client.stream("GET", target_url, params=params) as response:
+            async with client.stream("GET", target_url, params=params, headers=headers) as response:
                 if response.status_code != 200:
                     raise HTTPException(status_code=502, detail=f"Upstream status returned {response.status_code}")
 
@@ -384,7 +403,6 @@ async def yt_status(task_id: str):
                             err = data.get("error")
                             is_err = err and str(err).lower() not in ("0", "false", "null", "none", "")
                             
-                            # If VidsSave explicitly signals a failure, log it and return exactly what it said
                             if str(data.get("status")).lower() in ("failed", "fail", "error") or is_err:
                                 print("\n--- VidsSave conversion FAILED ---")
                                 print(json.dumps(data, indent=2, ensure_ascii=False))

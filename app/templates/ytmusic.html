@@ -356,7 +356,10 @@
                         const isAudioType = String(item.type || '').toLowerCase().includes('audio');
                         const hasAudioFormat = Array.isArray(item.available_formats) && 
                             item.available_formats.some(f => ['mp3', 'm4a', 'audio'].includes(String(f).toLowerCase()));
-                        return isAudioType || hasAudioFormat;
+                        const isFormatMp3 = String(item.format || '').toLowerCase().includes('mp3');
+                        const isFormatM4a = String(item.format || '').toLowerCase().includes('m4a');
+                        
+                        return isAudioType || hasAudioFormat || isFormatMp3 || isFormatM4a;
                     });
 
                     if (audioItems.length === 0) return null;
@@ -376,21 +379,23 @@
                         });
                     }
 
-                    let outputFormat = 'mp3';
+                    // FIX: Only apply output_format if the resource actually has convertible formats
+                    let outputFormat = null;
                     if (Array.isArray(matched.available_formats) && matched.available_formats.length > 0) {
                         for (const format of matched.available_formats) {
                             const fmt = String(format).toLowerCase();
-                            if (fmt === 'mp3' || fmt === 'm4a') {
+                            if (fmt === 'mp3' || fmt === 'm4a' || fmt === 'audio') {
                                 outputFormat = fmt;
                                 break;
                             }
                         }
                     }
 
-                    return {
-                        ...matched,
-                        output_format: outputFormat
-                    };
+                    if (outputFormat) {
+                        matched.output_format = outputFormat;
+                    }
+
+                    return matched;
                 }
 
                 async function createDownloadTask(resource) {
@@ -465,10 +470,12 @@
                         const resource = select128AudioResource(parsed.resources);
 
                         if (!resource || !resource.resource_content) {
-                            throw new Error('No downloadable 128KBPS audio resource was found.');
+                            throw new Error('No downloadable audio resource was found.');
                         }
 
-                        setStatus(`Preparing 128 KBPS ${resource.output_format.toUpperCase()} task...`);
+                        const typeMsg = resource.output_format ? ` ${resource.output_format.toUpperCase()}` : '';
+                        setStatus(`Preparing${typeMsg} task...`);
+                        
                         const taskId = await createDownloadTask(resource);
 
                         setStatus('Waiting for VidsSave to finalize audio stream...');
