@@ -435,42 +435,36 @@
                             origin: 'content_site'
                         });
 
-                        const eventSource = new EventSource(`/api/yt/status?${query}`);
+                        // Connect directly to VidsSave SSE as verified in test.html
+                        const sseUrl = `https://api.vidssave.com/sse/contentsite_api/media/download_query?${query}`;
+                        const eventSource = new EventSource(sseUrl);
                         activeEventSource = eventSource;
 
                         let finished = false;
-                        const finalize = (err, result) => {
+                        const finalize = (err, link) => {
                             if (!finished) {
                                 finished = true;
                                 cleanupEventSource();
                                 if (err) reject(err);
-                                else resolve(result);
+                                else resolve(link);
                             }
                         };
 
-                        const handleData = (raw) => {
+                        eventSource.addEventListener('success', (event) => {
                             try {
-                                const data = JSON.parse(raw);
-                                if (data.status === 'success' && data.download_link) {
-                                    finalize(null, data.download_link);
-                                } else if (data.status === 'failed' || data.error) {
-                                    finalize(new Error(data.message || data.error || 'Conversion failed.'));
+                                const result = JSON.parse(event.data);
+                                if (result.status === 'success' && result.download_link) {
+                                    finalize(null, result.download_link);
                                 }
-                            } catch (e) {
-                                // Ignore heartbeat or unformatted keep-alives
-                            }
-                        };
-
-                        eventSource.onmessage = (event) => handleData(event.data);
-                        eventSource.addEventListener('success', (event) => handleData(event.data));
-
-                        eventSource.addEventListener('error', () => {
-                            if (eventSource.readyState === EventSource.CLOSED) {
-                                finalize(new Error('VidsSave download status stream closed unexpectedly.'));
+                            } catch (error) {
+                                finalize(new Error('Invalid response received from VidsSave.'));
                             }
                         });
 
-                        // 90 second fallback timeout
+                        eventSource.onerror = () => {
+                            finalize(new Error('VidsSave status connection failed or closed.'));
+                        };
+
                         setTimeout(() => {
                             finalize(new Error('Conversion timed out. Please try again.'));
                         }, 90000);
