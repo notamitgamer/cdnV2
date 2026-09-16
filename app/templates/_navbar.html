@@ -204,6 +204,8 @@
                     {% set ns.items = ns.items + [{'name': 'documentation', 'href': '/documentation'}] %}
                 {% elif page == 'gh-sync' %}
                     {% set ns.items = ns.items + [{'name': 'gh-sync', 'href': '/gh-sync'}] %}
+               {% elif page == 'shorten' %}
+                    {% set ns.items = ns.items + [{'name': 'shorten', 'href': '/shorten'}] %}
                 {% elif page == 'file' %}
                     {% set ns.items = ns.items + [{'name': filename, 'href': none}] %}
                 {% endif %}
