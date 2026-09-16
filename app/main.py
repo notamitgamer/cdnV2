@@ -732,4 +732,3 @@ async def serve(request: Request, path: str):
         
     ctx = await render_context(extra_ctx)
     return templates.TemplateResponse(request, "index.html", ctx)
-```eof
