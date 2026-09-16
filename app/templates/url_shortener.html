@@ -244,12 +244,18 @@
             font-family: var(--font-mono);
             font-size: 0.8rem;
             display: flex;
+            align-items: center;
             justify-content: space-between;
             flex-wrap: wrap;
-            gap: 1rem;
+            gap: 0.5rem 1rem;
         }
         footer a { color: var(--text-main); font-weight: 500; }
         footer a:hover { color: var(--accent-primary); }
+        footer .footer-copyright { white-space: nowrap; }
+
+        @media (max-width: 640px) {
+            footer { flex-direction: column; align-items: flex-start; }
+        }
 
         @media (max-width: 480px) {
             .container { width: 100%; padding: 0 1.25rem; }
@@ -299,8 +305,14 @@
     </div>
 
     <footer>
-        <div>amit/cdn · built by <a href="https://github.com/notamitgamer">notamitgamer</a><br>nothing here is a permanent fixture.</div>
-        <div>&copy; 2025 - 2026 notamitgamer. All rights reserved.</div>
+            <div>
+                amit/cdn · built by <a href="https://github.com/notamitgamer">notamitgamer</a><br>nothing here is a permanent fixture.
+            </div>
+            {% if repo_file_count is not none %}
+            <div title="Across the whole repo">
+                <strong style="color: var(--text-main);">{{ repo_file_count }}</strong> file{{ '' if repo_file_count == 1 else 's' }} · {{ repo_size_str }} total
+            </div>
+            {% endif %}
     </footer>
 
     <script>
