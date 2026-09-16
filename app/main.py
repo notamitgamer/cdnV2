@@ -493,6 +493,7 @@ async def yt_download_cobalt(request: Request, body: YtRequest):
         "audioFormat": "mp3",
         "audioBitrate": "128",
         "filenameStyle": "basic",
+        "youtubeHLS": True,
     }
 
     async with httpx.AsyncClient(
