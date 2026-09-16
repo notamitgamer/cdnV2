@@ -276,7 +276,6 @@
         (function() {
             const AUTH = '20250901majwlqo';
             const DOMAIN = 'api-ak.vidssave.com';
-            let activeEventSource = null;
 
             function isYouTubeUrl(rawUrl) {
                 try {
@@ -328,13 +327,6 @@
                     downloadBtn.disabled = loading;
                     downloadBtn.classList.toggle('is-loading', loading);
                     downloadBtnLabel.textContent = loading ? 'Working...' : 'Get Download Link';
-                }
-
-                function cleanupEventSource() {
-                    if (activeEventSource) {
-                        activeEventSource.close();
-                        activeEventSource = null;
-                    }
                 }
 
                 async function parseYouTube(url) {
@@ -423,52 +415,14 @@
                     return result.data.task_id;
                 }
 
-                function waitForDownloadLink(taskId) {
-                    return new Promise((resolve, reject) => {
-                        cleanupEventSource();
-
-                        const query = new URLSearchParams({
-                            auth: AUTH,
-                            domain: DOMAIN,
-                            task_id: taskId,
-                            download_domain: 'vidssave.com',
-                            origin: 'content_site'
-                        });
-
-                        // Connect directly to VidsSave SSE as verified in test.html
-                        const sseUrl = `https://api.vidssave.com/sse/contentsite_api/media/download_query?${query}`;
-                        const eventSource = new EventSource(sseUrl);
-                        activeEventSource = eventSource;
-
-                        let finished = false;
-                        const finalize = (err, link) => {
-                            if (!finished) {
-                                finished = true;
-                                cleanupEventSource();
-                                if (err) reject(err);
-                                else resolve(link);
-                            }
-                        };
-
-                        eventSource.addEventListener('success', (event) => {
-                            try {
-                                const result = JSON.parse(event.data);
-                                if (result.status === 'success' && result.download_link) {
-                                    finalize(null, result.download_link);
-                                }
-                            } catch (error) {
-                                finalize(new Error('Invalid response received from VidsSave.'));
-                            }
-                        });
-
-                        eventSource.onerror = () => {
-                            finalize(new Error('VidsSave status connection failed or closed.'));
-                        };
-
-                        setTimeout(() => {
-                            finalize(new Error('Conversion timed out. Please try again.'));
-                        }, 90000);
-                    });
+                // Polls through the server proxy endpoint without browser SSE restrictions
+                async function waitForDownloadLink(taskId) {
+                    const response = await fetch(`/api/yt/status?task_id=${encodeURIComponent(taskId)}`);
+                    const data = await response.json().catch(() => ({}));
+                    if (!response.ok || data.status !== 'success' || !data.download_link) {
+                        throw new Error(data.detail || data.message || 'Failed to retrieve download link from status stream.');
+                    }
+                    return data.download_link;
                 }
 
                 async function shortenUrl(url) {
@@ -488,7 +442,6 @@
                 downloadBtn.addEventListener('click', async () => {
                     const url = youtubeInput.value.trim();
                     clearMessages();
-                    cleanupEventSource();
 
                     if (!url) {
                         showError('Please enter a YouTube URL.');
@@ -513,7 +466,7 @@
                         setStatus(`Preparing 128 KBPS ${resource.output_format.toUpperCase()} task...`);
                         const taskId = await createDownloadTask(resource);
 
-                        setStatus('Waiting for VidsSave to finalize link...');
+                        setStatus('Waiting for VidsSave to finalize audio stream...');
                         const downloadUrl = await waitForDownloadLink(taskId);
 
                         setStatus('Shortening link...');
@@ -538,7 +491,6 @@
                     youtubeInput.focus();
                     youtubeClear.parentElement.removeAttribute('data-has-text');
                     clearMessages();
-                    cleanupEventSource();
                 });
 
                 youtubeInput.addEventListener('input', () => {
@@ -577,8 +529,6 @@
                         console.error('Copy failed:', error);
                     }
                 });
-
-                document.addEventListener('turbo:before-render', cleanupEventSource, { once: true });
             }
 
             document.addEventListener('turbo:load', setupYtMusic);

@@ -3,6 +3,7 @@ import shutil
 import time
 import uuid
 import io
+import json
 import zipfile
 import tarfile
 import tempfile
@@ -307,7 +308,7 @@ async def url_ytmusic_page(request: Request):
     return templates.TemplateResponse(request, "ytmusic.html", ctx)
 
 # ---------------------------------------------------------------------------------
-# YTMusic proxy routes for CORS form posts
+# YTMusic routes: Handles parsing, conversion, and server-side SSE stream parsing
 # ---------------------------------------------------------------------------------
 @app.post("/api/yt/parse")
 async def yt_parse(request: Request):
@@ -320,7 +321,7 @@ async def yt_parse(request: Request):
                 headers={"Content-Type": "application/x-www-form-urlencoded"}
             )
         except httpx.RequestError as exc:
-            raise HTTPException(status_code=502, detail=f"Upstream request failed: {exc}")
+            raise HTTPException(status_code=502, detail=f"Upstream parse request failed: {exc}")
 
         if res.status_code != 200:
             raise HTTPException(status_code=res.status_code, detail="Upstream parse error.")
@@ -337,11 +338,53 @@ async def yt_download(request: Request):
                 headers={"Content-Type": "application/x-www-form-urlencoded"}
             )
         except httpx.RequestError as exc:
-            raise HTTPException(status_code=502, detail=f"Upstream request failed: {exc}")
+            raise HTTPException(status_code=502, detail=f"Upstream download request failed: {exc}")
 
         if res.status_code != 200:
             raise HTTPException(status_code=res.status_code, detail="Upstream download error.")
         return res.json()
+
+@app.get("/api/yt/status")
+async def yt_status(task_id: str):
+    if not task_id:
+        raise HTTPException(status_code=400, detail="Missing task_id.")
+
+    target_url = "https://api.vidssave.com/sse/contentsite_api/media/download_query"
+    params = {
+        "auth": "20250901majwlqo",
+        "domain": "api-ak.vidssave.com",
+        "task_id": task_id,
+        "download_domain": "vidssave.com",
+        "origin": "content_site"
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=90.0) as client:
+            async with client.stream("GET", target_url, params=params) as response:
+                if response.status_code != 200:
+                    raise HTTPException(status_code=502, detail=f"Upstream status returned {response.status_code}")
+
+                async for line in response.aiter_lines():
+                    line = line.strip()
+                    if line.startswith("data:"):
+                        payload_raw = line[5:].strip()
+                        try:
+                            data = json.loads(payload_raw)
+                            if data.get("status") == "success" and data.get("download_link"):
+                                return {"status": "success", "download_link": data["download_link"]}
+                            if data.get("status") == "failed" or data.get("error"):
+                                raise HTTPException(
+                                    status_code=400, 
+                                    detail=data.get("message") or data.get("error") or "Conversion failed on upstream."
+                                )
+                        except json.JSONDecodeError:
+                            continue
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="Conversion timed out on upstream provider.")
+    except httpx.RequestError as exc:
+        raise HTTPException(status_code=502, detail=f"Error connecting to upstream status: {exc}")
+
+    raise HTTPException(status_code=500, detail="Stream completed without providing a download link.")
 # ---------------------------------------------------------------------------------
 
 @app.get("/shorten")
