@@ -338,6 +338,12 @@ def _assert_public_url(url: str):
         raise HTTPException(status_code=400, detail="Only https:// URLs are supported.")
     if not parsed.hostname:
         raise HTTPException(status_code=400, detail="Invalid URL.")
+    hostname_lower = parsed.hostname.lower()
+    if hostname_lower == "localhost" or hostname_lower.endswith(".localhost"):
+        raise HTTPException(
+            status_code=400,
+            detail="URLs pointing to private/internal addresses are not allowed.",
+        )
     try:
         addrinfos = socket.getaddrinfo(parsed.hostname, None)
     except socket.gaierror:
