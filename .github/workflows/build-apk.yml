@@ -116,39 +116,3 @@ jobs:
             This is not distributed via the Play Store, so updates won't auto-install - grab the latest release here when a new one ships.
           files: android/amit-cdn-v${{ steps.version.outputs.name }}-${{ steps.version.outputs.code }}.apk
           make_latest: true
-          fi
-
-      - name: Verify APK
-        working-directory: android
-        run: |
-          if [ ! -f app-release-signed.apk ]; then
-            echo "ERROR: app-release-signed.apk was not created."
-            echo "Files in android directory:"
-            ls -lah
-            exit 1
-          fi
-          ls -lh app-release-signed.apk
-
-      - name: Rename artifact
-        working-directory: android
-        run: |
-          cp app-release-signed.apk \
-            "amit-cdn-v${{ steps.version.outputs.name }}-${{ steps.version.outputs.code }}.apk"
-
-      - name: Clean up keystore
-        if: always()
-        working-directory: android
-        run: |
-          rm -f android.keystore
-
-      - name: Upload release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: apk-v${{ steps.version.outputs.name }}-${{ steps.version.outputs.code }}
-          name: amit/cdn Android app v${{ steps.version.outputs.name }} (${{ steps.version.outputs.code }})
-          body: |
-            Android app build (Trusted Web Activity wrapping cdn.amit.is-a.dev).
-            Install: download the APK below, enable "install from unknown sources" for your browser/file manager if prompted, then open it.
-            This is not distributed via the Play Store, so updates won't auto-install - grab the latest release here when a new one ships.
-          files: android/amit-cdn-v${{ steps.version.outputs.name }}-${{ steps.version.outputs.code }}.apk
-          make_latest: true
