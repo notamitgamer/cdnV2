@@ -1,40 +1,20 @@
+FROM ghcr.io/imputnet/cobalt:11.5-47d8ccb AS cobalt
+
 FROM node:24-bookworm-slim
 
-WORKDIR /opt/cobalt
+WORKDIR /app
 
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-
-# Install Python and build dependencies required by Cobalt
+# Install Python and required system packages
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         python3 \
         python3-pip \
-        python3-dev \
-        git \
-        build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Enable Corepack
-RUN corepack enable
+# Copy the already-built Cobalt API from the official Cobalt image
+COPY --from=cobalt /app /opt/cobalt-api
 
-# Clone the exact Cobalt 11.5 release commit
-RUN git clone https://github.com/imputnet/cobalt.git /opt/cobalt \
-    && cd /opt/cobalt \
-    && git checkout 47d8ccbc17aeeac6cb754c8b721c2148f007c103
-
-# Install Cobalt dependencies from the complete workspace
-RUN pnpm install --prod --frozen-lockfile
-
-# Deploy the Cobalt API together with its workspace dependencies
-RUN pnpm deploy --filter=@imput/cobalt-api --prod /opt/cobalt-api
-
-# ---------------------------------------------------------
-# FastAPI application
-# ---------------------------------------------------------
-
-WORKDIR /app
-
+# Install FastAPI dependencies
 COPY requirements.txt .
 
 RUN pip3 install \
@@ -42,8 +22,10 @@ RUN pip3 install \
     --break-system-packages \
     -r requirements.txt
 
+# Copy FastAPI application
 COPY app/ ./app/
 
+# Copy startup script
 COPY start.sh /start.sh
 
 RUN chmod +x /start.sh
