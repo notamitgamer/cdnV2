@@ -319,9 +319,9 @@ async def yt_download_cobalt(request: Request, body: YtRequest):
     if not url:
         raise HTTPException(status_code=400, detail="Missing YouTube URL.")
 
-    # Note: The official api.cobalt.tools now requires authentication (API keys/Turnstile).
-    # It is recommended to self-host or supply your instance URL here.
-    cobalt_api = os.getenv("COBALT_API_URL", "https://api.cobalt.tools/")
+    # The official api.cobalt.tools now enforces Cloudflare Turnstile/JWT which fails 
+    # for automated backend requests. Defaulting to a free community instance.
+    cobalt_api = os.getenv("COBALT_API_URL", "https://api.cobalt.canine.tools/")
     if not cobalt_api.endswith("/"):
         cobalt_api += "/"
 
@@ -331,7 +331,7 @@ async def yt_download_cobalt(request: Request, body: YtRequest):
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
     }
 
-    # Optionally bind an authorization header if an instance token is set
+    # Optionally bind an authorization header if your own instance token is set
     cobalt_api_token = os.getenv("COBALT_API_TOKEN")
     if cobalt_api_token:
         # Standardize Api-Key auth if not strictly provided as Bearer
@@ -374,6 +374,7 @@ async def yt_download_cobalt(request: Request, body: YtRequest):
                 err_code = data.get("error", {}).get("code", "Unknown Cobalt error")
                 raise HTTPException(status_code=400, detail=f"Cobalt error: {err_code}")
             
+            # The API might tunnel the file directly or redirect to a download link
             dl_url = data.get("url")
             if not dl_url:
                 raise HTTPException(status_code=500, detail=f"Cobalt succeeded but returned no download link. (Status: {status})")
