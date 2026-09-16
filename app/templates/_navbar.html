@@ -207,8 +207,10 @@
                     {% set ns.items = ns.items + [{'name': 'documentation', 'href': '/documentation'}] %}
                 {% elif page == 'gh-sync' %}
                     {% set ns.items = ns.items + [{'name': 'gh-sync', 'href': '/gh-sync'}] %}
-               {% elif page == 'shorten' %}
+                {% elif page == 'shorten' %}
                     {% set ns.items = ns.items + [{'name': 'shorten', 'href': '/shorten'}] %}
+                {% elif page == 'ytmusic' %}
+                    {% set ns.items = ns.items + [{'name': 'ytmusic', 'href': '/ytmusic'}] %}
                 {% elif page == 'file' %}
                     {% set ns.items = ns.items + [{'name': filename, 'href': none}] %}
                 {% endif %}
