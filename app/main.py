@@ -484,18 +484,36 @@ async def yt_download_cobalt(request: Request, body: YtRequest):
             if status == "error":
                 error = data.get("error", {})
 
+                print("========== COBALT ERROR ==========")
+                print(f"Full response: {data}")
+                
                 if isinstance(error, dict):
-                    error_code = error.get(
-                        "code",
-                        "Unknown Cobalt error",
+                    print(f"Error code: {error.get('code')}")
+                    print(f"Error context: {error.get('context')}")
+                else:
+                    print(f"Error: {error}")
+                
+                print("==================================")
+
+                if isinstance(error, dict):
+                    raise HTTPException(
+                        status_code=400,
+                        detail={
+                            "message": "Cobalt API failed",
+                            "code": error.get("code"),
+                            "context": error.get("context"),
+                            "raw": data,
+                        },
                     )
                 else:
-                    error_code = str(error)
-
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Cobalt error: {error_code}",
-                )
+                    raise HTTPException(
+                        status_code=400,
+                        detail={
+                            "message": "Cobalt API failed",
+                            "error": str(error),
+                            "raw": data,
+                        },
+                    )
 
             dl_url = data.get("url")
 
