@@ -319,44 +319,64 @@ async def yt_download_cobalt(request: Request, body: YtRequest):
     if not url:
         raise HTTPException(status_code=400, detail="Missing YouTube URL.")
 
-    # Defaults to public instance. Can be overridden in Render Environment Variables later if needed.
-    cobalt_api = os.getenv("COBALT_API_URL", "https://api.cobalt.tools/api/json")
+    # Note: The official api.cobalt.tools now requires authentication (API keys/Turnstile).
+    # It is recommended to self-host or supply your instance URL here.
+    cobalt_api = os.getenv("COBALT_API_URL", "https://api.cobalt.tools/")
+    if not cobalt_api.endswith("/"):
+        cobalt_api += "/"
 
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
-        # Spoofing a standard browser to ensure the public API accepts the request
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
     }
+
+    # Optionally bind an authorization header if an instance token is set
+    cobalt_api_token = os.getenv("COBALT_API_TOKEN")
+    if cobalt_api_token:
+        # Standardize Api-Key auth if not strictly provided as Bearer
+        if " " not in cobalt_api_token:
+            headers["Authorization"] = f"Api-Key {cobalt_api_token}"
+        else:
+            headers["Authorization"] = cobalt_api_token
 
     # Cobalt v11 API Payload
     payload = {
         "url": url,
-        "isAudioOnly": True,
-        "audioFormat": "mp3"
+        "downloadMode": "audio",
+        "audioFormat": "mp3",
+        "filenameStyle": "basic"
     }
 
     async with httpx.AsyncClient(timeout=60.0) as client:
         try:
             res = await client.post(cobalt_api, json=payload, headers=headers)
             
+            # Non-200 could be bot protection, ratelimits, or API validation errors.
             if res.status_code != 200:
                 err_text = res.text
                 try:
-                    err_text = res.json().get("text", err_text)
+                    data = res.json()
+                    if "error" in data and "code" in data["error"]:
+                        err_text = data["error"]["code"]
+                    else:
+                        err_text = data.get("text", err_text)
                 except Exception:
-                    pass
+                    # Truncate raw HTML (like Turnstile challenge pages) so it doesn't flood logs
+                    if len(err_text) > 200:
+                        err_text = err_text[:200] + "..."
                 raise HTTPException(status_code=400, detail=f"Cobalt API failed: {err_text}")
             
             data = res.json()
             status = data.get("status")
             
             if status == "error":
-                raise HTTPException(status_code=400, detail=data.get("text", "Unknown Cobalt error"))
+                err_code = data.get("error", {}).get("code", "Unknown Cobalt error")
+                raise HTTPException(status_code=400, detail=f"Cobalt error: {err_code}")
             
             dl_url = data.get("url")
             if not dl_url:
-                raise HTTPException(status_code=500, detail="Cobalt succeeded but returned no download link.")
+                raise HTTPException(status_code=500, detail=f"Cobalt succeeded but returned no download link. (Status: {status})")
 
             return {"url": dl_url, "title": "Audio"}
 
