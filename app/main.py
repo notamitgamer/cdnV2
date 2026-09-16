@@ -325,7 +325,11 @@ async def yt_parse(request: Request):
 
         if res.status_code != 200:
             raise HTTPException(status_code=res.status_code, detail="Upstream parse error.")
-        return res.json()
+        
+        result = res.json()
+        print("\n--- VidsSave PARSE response ---")
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return result
 
 @app.post("/api/yt/download")
 async def yt_download(request: Request):
@@ -342,7 +346,11 @@ async def yt_download(request: Request):
 
         if res.status_code != 200:
             raise HTTPException(status_code=res.status_code, detail="Upstream download error.")
-        return res.json()
+        
+        result = res.json()
+        print("\n--- VidsSave DOWNLOAD response ---")
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return result
 
 @app.get("/api/yt/status")
 async def yt_status(task_id: str):
@@ -372,13 +380,23 @@ async def yt_status(task_id: str):
                             data = json.loads(payload_raw)
                             if data.get("status") == "success" and data.get("download_link"):
                                 return {"status": "success", "download_link": data["download_link"]}
-                            if data.get("status") == "failed" or data.get("error"):
+                            
+                            err = data.get("error")
+                            is_err = err and str(err).lower() not in ("0", "false", "null", "none", "")
+                            
+                            # If VidsSave explicitly signals a failure, log it and return exactly what it said
+                            if str(data.get("status")).lower() in ("failed", "fail", "error") or is_err:
+                                print("\n--- VidsSave conversion FAILED ---")
+                                print(json.dumps(data, indent=2, ensure_ascii=False))
+                                
                                 raise HTTPException(
                                     status_code=400, 
-                                    detail=data.get("message") or data.get("error") or "Conversion failed on upstream."
+                                    detail=data.get("message") or data.get("msg") or data.get("error") or json.dumps(data, ensure_ascii=False)
                                 )
                         except json.JSONDecodeError:
                             continue
+    except HTTPException:
+        raise
     except httpx.TimeoutException:
         raise HTTPException(status_code=504, detail="Conversion timed out on upstream provider.")
     except httpx.RequestError as exc:
