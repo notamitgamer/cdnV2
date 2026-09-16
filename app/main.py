@@ -308,49 +308,60 @@ async def url_ytmusic_page(request: Request):
     return templates.TemplateResponse(request, "ytmusic.html", ctx)
 
 # ---------------------------------------------------------------------------------
-# YTMusic routes: Local extraction using yt-dlp (No Third-Party APIs)
+# YTMusic routes: Cobalt API Proxy
 # ---------------------------------------------------------------------------------
-import yt_dlp
-
 class YtRequest(BaseModel):
     url: str
 
 @app.post("/api/yt/download")
-async def yt_download_local(request: Request, body: YtRequest):
+async def yt_download_cobalt(request: Request, body: YtRequest):
     url = body.url.strip()
     if not url:
         raise HTTPException(status_code=400, detail="Missing YouTube URL.")
 
-    # Configure yt-dlp to extract the best audio-only URL without downloading
-    ydl_opts = {
-        'format': 'm4a/bestaudio/best', 
-        'quiet': True,
-        'no_warnings': True,
-        'skip_download': True,
-        'noplaylist': True,
+    # Defaults to public instance. Can be overridden in Render Environment Variables later if needed.
+    cobalt_api = os.getenv("COBALT_API_URL", "https://api.cobalt.tools/api/json")
+
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        # Spoofing a standard browser to ensure the public API accepts the request
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
     }
 
-    def _extract():
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            return ydl.extract_info(url, download=False)
+    # Cobalt v11 API Payload
+    payload = {
+        "url": url,
+        "isAudioOnly": True,
+        "audioFormat": "mp3"
+    }
 
-    try:
-        # Run in a thread pool so it doesn't freeze the FastAPI async event loop
-        info = await asyncio.to_thread(_extract)
-        
-        dl_url = info.get('url')
-        if not dl_url and 'requested_formats' in info:
-            dl_url = info['requested_formats'][0]['url']
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        try:
+            res = await client.post(cobalt_api, json=payload, headers=headers)
             
-        if not dl_url:
-            raise ValueError("No audio stream URL could be found in the video metadata.")
+            if res.status_code != 200:
+                err_text = res.text
+                try:
+                    err_text = res.json().get("text", err_text)
+                except Exception:
+                    pass
+                raise HTTPException(status_code=400, detail=f"Cobalt API failed: {err_text}")
             
-        return {"url": dl_url, "title": info.get("title", "Audio")}
+            data = res.json()
+            status = data.get("status")
+            
+            if status == "error":
+                raise HTTPException(status_code=400, detail=data.get("text", "Unknown Cobalt error"))
+            
+            dl_url = data.get("url")
+            if not dl_url:
+                raise HTTPException(status_code=500, detail="Cobalt succeeded but returned no download link.")
 
-    except yt_dlp.utils.DownloadError as e:
-        raise HTTPException(status_code=400, detail=f"Extraction failed: {str(e)}")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+            return {"url": dl_url, "title": "Audio"}
+
+        except httpx.RequestError as exc:
+            raise HTTPException(status_code=502, detail=f"Error connecting to Cobalt: {exc}")
 # ---------------------------------------------------------------------------------
 
 @app.get("/shorten")
