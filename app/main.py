@@ -314,31 +314,120 @@ async def url_ytmusic_page(request: Request):
 class YtRequest(BaseModel):
     url: str
 
-COBALT_FALLBACK_URLS = [
-    "https://api.cobalt.tools/",
-    "https://co.wukko.me/"
-]
+
+COBALT_INTERNAL_URL = os.getenv(
+    "COBALT_INTERNAL_URL",
+    "http://127.0.0.1:9000",
+).rstrip("/")
+
+COBALT_PUBLIC_PREFIX = "/cobalt"
+
+
+@app.api_route(
+    "/cobalt/{path:path}",
+    methods=["GET", "HEAD"],
+)
+async def cobalt_tunnel_proxy(path: str, request: Request):
+    """
+    Proxy Cobalt tunnel requests through the same Render service.
+
+    Cobalt itself listens only on 127.0.0.1:9000, while this FastAPI
+    application is the only publicly exposed process.
+    """
+    cobalt_url = f"{COBALT_INTERNAL_URL}/{path}"
+
+    query_string = request.url.query
+    if query_string:
+        cobalt_url += f"?{query_string}"
+
+    headers = {}
+
+    for header in (
+        "Range",
+        "If-Range",
+        "If-None-Match",
+        "If-Modified-Since",
+    ):
+        value = request.headers.get(header)
+        if value:
+            headers[header] = value
+
+    client = httpx.AsyncClient(
+        follow_redirects=False,
+        timeout=None,
+    )
+
+    try:
+        upstream = await client.send(
+            client.build_request(
+                request.method,
+                cobalt_url,
+                headers=headers,
+            ),
+            stream=True,
+        )
+    except httpx.RequestError as exc:
+        await client.aclose()
+        raise HTTPException(
+            status_code=502,
+            detail=f"Error connecting to Cobalt tunnel: {exc}",
+        )
+
+    response_headers = {}
+
+    for header in (
+        "content-type",
+        "content-length",
+        "content-range",
+        "accept-ranges",
+        "content-disposition",
+        "cache-control",
+        "etag",
+        "last-modified",
+        "estimated-content-length",
+    ):
+        value = upstream.headers.get(header)
+        if value:
+            response_headers[header] = value
+
+    async def stream_cobalt():
+        try:
+            async for chunk in upstream.aiter_raw():
+                yield chunk
+        finally:
+            await client.aclose()
+
+    return StreamingResponse(
+        stream_cobalt(),
+        status_code=upstream.status_code,
+        headers=response_headers,
+    )
+
 
 @app.post("/api/yt/download")
 async def yt_download_cobalt(request: Request, body: YtRequest):
     url = body.url.strip()
-    if not url:
-        raise HTTPException(status_code=400, detail="Missing YouTube URL.")
 
-    # Determine which instance URL to use
-    user_defined_api = os.getenv("COBALT_API_URL")
-    
-    # If the user defines an API URL, strictly use it. Otherwise, attempt fallbacks
-    # in case community instances go offline (DNS/NXDOMAIN errors).
-    instances_to_try = [user_defined_api] if user_defined_api else COBALT_FALLBACK_URLS
+    if not url:
+        raise HTTPException(
+            status_code=400,
+            detail="Missing YouTube URL.",
+        )
+
+    cobalt_api = f"{COBALT_INTERNAL_URL}/"
 
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/122.0.0.0 Safari/537.36"
+        ),
     }
 
     cobalt_api_token = os.getenv("COBALT_API_TOKEN")
+
     if cobalt_api_token:
         if " " not in cobalt_api_token:
             headers["Authorization"] = f"Api-Key {cobalt_api_token}"
@@ -349,57 +438,103 @@ async def yt_download_cobalt(request: Request, body: YtRequest):
         "url": url,
         "downloadMode": "audio",
         "audioFormat": "mp3",
-        "filenameStyle": "basic"
+        "audioBitrate": "128",
+        "filenameStyle": "basic",
     }
 
-    last_error = "Could not reach any Cobalt API instances."
+    async with httpx.AsyncClient(
+        timeout=60.0,
+        follow_redirects=False,
+    ) as client:
+        try:
+            res = await client.post(
+                cobalt_api,
+                json=payload,
+                headers=headers,
+            )
 
-    for instance in instances_to_try:
-        if not instance.endswith("/"):
-            instance += "/"
+            if res.status_code != 200:
+                err_text = res.text
 
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            try:
-                res = await client.post(instance, json=payload, headers=headers)
-                
-                # Non-200 could be bot protection, ratelimits, or API validation errors.
-                if res.status_code != 200:
-                    err_text = res.text
-                    try:
-                        data = res.json()
-                        if "error" in data and "code" in data["error"]:
-                            err_text = data["error"]["code"]
-                        else:
-                            err_text = data.get("text", err_text)
-                    except Exception:
-                        if len(err_text) > 200:
-                            err_text = err_text[:200] + "..."
-                    
-                    last_error = f"API error ({res.status_code}): {err_text}"
-                    # Do not fallback if the instance actually responded with an auth/format error
-                    if res.status_code in (400, 401, 403):
-                         raise HTTPException(status_code=400, detail=f"Cobalt returned an error: {err_text}")
-                    continue
-                
-                data = res.json()
-                status = data.get("status")
-                
-                if status == "error":
-                    err_code = data.get("error", {}).get("code", "Unknown Cobalt error")
-                    raise HTTPException(status_code=400, detail=f"Cobalt error: {err_code}")
-                
-                dl_url = data.get("url")
-                if not dl_url:
-                    raise HTTPException(status_code=500, detail=f"Cobalt succeeded but returned no download link. (Status: {status})")
+                try:
+                    data = res.json()
 
-                return {"url": dl_url, "title": "Audio"}
+                    if "error" in data and isinstance(data["error"], dict):
+                        err_text = data["error"].get(
+                            "code",
+                            err_text,
+                        )
+                    elif data.get("text"):
+                        err_text = data["text"]
 
-            except (httpx.RequestError, socket.gaierror) as exc:
-                last_error = f"Failed to connect to {instance}: {exc}"
-                continue # Try the next instance in the list
+                except Exception:
+                    pass
 
-    # If the loop finishes without returning, all instances failed
-    raise HTTPException(status_code=502, detail=last_error)
+                if len(err_text) > 300:
+                    err_text = err_text[:300] + "..."
+
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Cobalt API failed: {err_text}",
+                )
+
+            data = res.json()
+            status = data.get("status")
+
+            if status == "error":
+                error = data.get("error", {})
+
+                if isinstance(error, dict):
+                    error_code = error.get(
+                        "code",
+                        "Unknown Cobalt error",
+                    )
+                else:
+                    error_code = str(error)
+
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Cobalt error: {error_code}",
+                )
+
+            dl_url = data.get("url")
+
+            if not dl_url:
+                raise HTTPException(
+                    status_code=500,
+                    detail=(
+                        "Cobalt succeeded but returned no "
+                        f"download link. (Status: {status})"
+                    ),
+                )
+
+            # Cobalt may return its own tunnel URL.
+            # Convert it to our public FastAPI proxy URL.
+            if status == "tunnel":
+                parsed = urlparse(dl_url)
+
+                if parsed.path.startswith("/tunnel"):
+                    public_url = (
+                        f"{CDN_BASE_URL}{COBALT_PUBLIC_PREFIX}"
+                        f"{parsed.path}"
+                    )
+
+                    if parsed.query:
+                        public_url += f"?{parsed.query}"
+
+                    dl_url = public_url
+
+            return {
+                "url": dl_url,
+                "title": data.get("filename", "Audio"),
+            }
+
+        except httpx.RequestError as exc:
+            raise HTTPException(
+                status_code=502,
+                detail=f"Error connecting to Cobalt: {exc}",
+            )
+
 
 # ---------------------------------------------------------------------------------
 

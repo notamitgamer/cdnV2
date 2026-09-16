@@ -6,9 +6,18 @@ services:
     envVars:
       - key: HF_REPO_ID
         value: notamitgamer/cdn
+
       - key: HF_TOKEN
         sync: false
+
       - key: RAW_DOMAIN
         value: raw.cdn.amit.is-a.dev
+
       - key: RAW_BASE_URL
         value: https://raw.cdn.amit.is-a.dev
+
+      - key: COBALT_API_URL
+        value: https://cdn.amit.is-a.dev/cobalt/
+
+      - key: COBALT_PORT
+        value: "9000"

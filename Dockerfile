@@ -1,13 +1,54 @@
-FROM python:3.11-slim
+FROM node:24-bookworm-slim
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python and build dependencies required by Cobalt
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-dev \
+        git \
+        build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy the app structure
+# Enable pnpm
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+
+RUN corepack enable
+
+# Clone the current Cobalt source
+RUN git clone --depth 1 https://github.com/imputnet/cobalt.git /opt/cobalt
+
+WORKDIR /opt/cobalt
+
+# Install Cobalt production dependencies
+RUN pnpm install --prod --frozen-lockfile
+
+# Deploy only the Cobalt API package
+RUN pnpm deploy --filter=@imput/cobalt-api --prod /opt/cobalt-api
+
+# Install Python dependencies
+WORKDIR /app
+
+COPY requirements.txt .
+
+RUN pip3 install \
+    --no-cache-dir \
+    --break-system-packages \
+    -r requirements.txt
+
+# Copy the FastAPI application
 COPY app/ ./app/
 
+# Copy startup script
+COPY start.sh /start.sh
+
+RUN chmod +x /start.sh
+
+# Render exposes the FastAPI process.
+# Cobalt itself remains internal on port 9000.
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["/start.sh"]
