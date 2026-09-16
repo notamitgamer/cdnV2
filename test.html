@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VidsSave API Test</title>
+</head>
+<body>
+
+    <h2>VidsSave API Test</h2>
+
+    <input
+        id="youtubeUrl"
+        type="text"
+        placeholder="YouTube URL"
+        style="width: 400px;"
+    >
+
+    <button id="testButton">Get Download Link</button>
+
+    <pre id="output"></pre>
+
+    <script>
+        const API = "https://api.vidssave.com/api/contentsite_api";
+        const AUTH = "20250901majwlqo";
+        const DOMAIN = "api-ak.vidssave.com";
+
+        const output = document.getElementById("output");
+
+        function log(message) {
+            output.textContent += message + "\n";
+        }
+
+        async function test() {
+            output.textContent = "";
+
+            const youtubeUrl =
+                document.getElementById("youtubeUrl").value.trim();
+
+            if (!youtubeUrl) {
+                log("Enter a YouTube URL.");
+                return;
+            }
+
+            try {
+                // -------------------------------------------------
+                // 1. PARSE
+                // -------------------------------------------------
+
+                log("Parsing YouTube URL...");
+
+                const parseBody = new URLSearchParams({
+                    auth: AUTH,
+                    domain: DOMAIN,
+                    origin: "source",
+                    link: youtubeUrl
+                });
+
+                const parseResponse = await fetch(
+                    `${API}/media/parse`,
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type":
+                                "application/x-www-form-urlencoded"
+                        },
+                        body: parseBody
+                    }
+                );
+
+                const parseResult = await parseResponse.json();
+
+                console.log("Parse response:", parseResult);
+
+                if (parseResult.status !== 1) {
+                    throw new Error(
+                        "Parse failed: " +
+                        JSON.stringify(parseResult)
+                    );
+                }
+
+                const resources =
+                    parseResult.data.resources || [];
+
+                log(`Found ${resources.length} resources.`);
+
+                // -------------------------------------------------
+                // 2. FIND AUDIO RESOURCE
+                // -------------------------------------------------
+
+                let resource = null;
+
+                for (const item of resources) {
+                    if (!item) {
+                        continue;
+                    }
+
+                    const formats = item.available_formats;
+
+                    if (Array.isArray(formats) && formats.length > 0) {
+                        for (const format of formats) {
+                            const type =
+                                String(format).toLowerCase();
+
+                            if (
+                                type === "mp3" ||
+                                type === "m4a" ||
+                                type === "audio"
+                            ) {
+                                resource = {
+                                    ...item,
+                                    output_format: type
+                                };
+
+                                break;
+                            }
+                        }
+                    }
+
+                    if (resource) {
+                        break;
+                    }
+
+                    if (
+                        String(item.type || "")
+                            .toLowerCase()
+                            .includes("audio")
+                    ) {
+                        resource = item;
+                        break;
+                    }
+                }
+
+                if (!resource) {
+                    throw new Error(
+                        "Could not find an audio resource."
+                    );
+                }
+
+                console.log("Selected resource:", resource);
+
+                const resourceContent =
+                    resource.resource_content;
+
+                if (!resourceContent) {
+                    throw new Error(
+                        "Selected resource has no resource_content."
+                    );
+                }
+
+                log("Audio resource found.");
+
+                // -------------------------------------------------
+                // 3. START DOWNLOAD
+                // -------------------------------------------------
+
+                log("Starting download task...");
+
+                const downloadData = {
+                    auth: AUTH,
+                    domain: DOMAIN,
+                    request: resourceContent,
+                    no_encrypt: 1
+                };
+
+                if (resource.output_format) {
+                    downloadData.output =
+                        resource.output_format.toLowerCase();
+                }
+
+                const downloadBody =
+                    new URLSearchParams(downloadData);
+
+                const downloadResponse = await fetch(
+                    `${API}/media/download`,
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type":
+                                "application/x-www-form-urlencoded"
+                        },
+                        body: downloadBody
+                    }
+                );
+
+                const downloadResult =
+                    await downloadResponse.json();
+
+                console.log(
+                    "Download response:",
+                    downloadResult
+                );
+
+                if (
+                    downloadResult.status !== 1 ||
+                    !downloadResult.data ||
+                    !downloadResult.data.task_id
+                ) {
+                    throw new Error(
+                        "Download task failed: " +
+                        JSON.stringify(downloadResult)
+                    );
+                }
+
+                const taskId =
+                    downloadResult.data.task_id;
+
+                log("Task created.");
+                log("Task ID: " + taskId);
+
+                // -------------------------------------------------
+                // 4. SSE
+                // -------------------------------------------------
+
+                log("Waiting for download link...");
+
+                const query = new URLSearchParams({
+                    auth: AUTH,
+                    domain: DOMAIN,
+                    task_id: taskId,
+                    download_domain: "vidssave.com",
+                    origin: "content_site"
+                });
+
+                const sseUrl =
+                    `https://api.vidssave.com/sse/contentsite_api/media/download_query?${query}`;
+
+                const eventSource =
+                    new EventSource(sseUrl);
+
+                eventSource.addEventListener(
+                    "success",
+                    event => {
+                        try {
+                            const result =
+                                JSON.parse(event.data);
+
+                            console.log(
+                                "SSE success:",
+                                result
+                            );
+
+                            if (
+                                result.status === "success" &&
+                                result.download_link
+                            ) {
+                                eventSource.close();
+
+                                log("");
+                                log("SUCCESS!");
+                                log("");
+                                log(
+                                    "Download link:"
+                                );
+                                log(
+                                    result.download_link
+                                );
+                            }
+                        } catch (error) {
+                            eventSource.close();
+
+                            log(
+                                "SSE parsing error: " +
+                                error.message
+                            );
+                        }
+                    }
+                );
+
+                eventSource.onerror = () => {
+                    eventSource.close();
+
+                    log(
+                        "SSE connection closed or failed."
+                    );
+                };
+
+            } catch (error) {
+                console.error(error);
+
+                log("");
+                log("ERROR:");
+                log(error.message);
+            }
+        }
+
+        document
+            .getElementById("testButton")
+            .addEventListener("click", test);
+    </script>
+
+</body>
+</html>
