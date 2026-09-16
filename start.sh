@@ -36,7 +36,7 @@ cd /opt/cobalt-api
 
 API_URL="http://127.0.0.1:9000/" \
 API_PORT=9000 \
-node src/index.js &
+pnpm start &
 
 COBALT_PID=$!
 
@@ -45,8 +45,11 @@ echo "Cobalt PID: $COBALT_PID"
 echo ""
 echo "Waiting for Cobalt to start..."
 
+COBALT_READY=0
+
 for i in $(seq 1 30); do
     if python3 -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9000/', timeout=1)" >/dev/null 2>&1; then
+        COBALT_READY=1
         echo "Cobalt is ready."
         break
     fi
@@ -60,8 +63,9 @@ for i in $(seq 1 30); do
     sleep 1
 done
 
-if ! kill -0 "$COBALT_PID" 2>/dev/null; then
-    echo "ERROR: Cobalt failed to start."
+if [ "$COBALT_READY" -ne 1 ]; then
+    echo "ERROR: Cobalt did not become ready within 30 seconds."
+    kill "$COBALT_PID" 2>/dev/null || true
     exit 1
 fi
 
@@ -70,13 +74,20 @@ echo "Starting FastAPI..."
 
 cd /app
 
-exec uvicorn app.main:app \
+uvicorn app.main:app \
     --host 0.0.0.0 \
     --port "${PORT:-8000}" &
 
 FASTAPI_PID=$!
 
 echo "FastAPI PID: $FASTAPI_PID"
+
+echo ""
+echo "========================================"
+echo "Both services started"
+echo "Cobalt:  http://127.0.0.1:9000"
+echo "FastAPI: http://0.0.0.0:${PORT:-8000}"
+echo "========================================"
 
 wait -n "$COBALT_PID" "$FASTAPI_PID"
 
