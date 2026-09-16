@@ -33,6 +33,7 @@ from .storage import (
     format_size,
 )
 from .gh_oidc import verify_actions_token
+from .shortener import shorten_url, get_destination_url
 
 app = FastAPI()
 templates = Jinja2Templates(directory="app/templates")
@@ -69,19 +70,6 @@ async def static_icons(filename: str):
 async def favicon():
     return FileResponse(
         STATIC_DIR / "favicon.ico",
-        headers={"Cache-Control": "public, max-age=86400"},
-    )
-
-
-@app.get("/.well-known/assetlinks.json")
-async def assetlinks():
-    # Verifies dev.amit.cdn.twa (the Android TWA wrapper) as the owner of this
-    # domain, so Chrome opens it as a trusted full-screen app instead of a
-    # Custom Tab with the URL bar showing. See android/twa-manifest.json.
-    file_path = STATIC_DIR / ".well-known" / "assetlinks.json"
-    return FileResponse(
-        file_path,
-        media_type="application/json",
         headers={"Cache-Control": "public, max-age=86400"},
     )
 
@@ -310,6 +298,35 @@ async def gh_sync(request: Request, token: str = Form(...), archive: UploadFile 
         "note": "cdn_url is the browsable folder listing. raw_url_prefix isn't a link by itself - append an individual filename to it to get that file's direct raw URL.",
         "ref": claims["ref"],
     }
+
+
+@app.get("/shorten")
+async def url_shortener_page(request: Request):
+    ctx = await render_context({"page": "shorten"})
+    return templates.TemplateResponse(request, "url_shortener.html", ctx)
+
+
+class ShortenRequest(BaseModel):
+    url: str
+
+
+@app.post("/api/shorten")
+async def api_shorten(request: Request, body: ShortenRequest):
+    url = body.url.strip()
+    _assert_public_url(url)
+    short_id = shorten_url(url)
+    return {
+        "id": short_id,
+        "masked_url": f"{CDN_BASE_URL}/mask/{short_id}",
+    }
+
+
+@app.get("/mask/{short_id}")
+async def mask_redirect(request: Request, short_id: str):
+    destination = get_destination_url(short_id)
+    if destination is None:
+        raise HTTPException(status_code=404, detail="Short URL not found")
+    return RedirectResponse(destination, status_code=307)
 
 
 _MAX_URL_UPLOAD_BYTES = UPLOAD_LIMIT_PER_HOUR
