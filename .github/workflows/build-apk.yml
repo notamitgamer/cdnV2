@@ -82,6 +82,29 @@ jobs:
               json.dump(data, f, indent=2)
           PYEOF
 
+      - name: Generate the Android Gradle project from twa-manifest.json
+        working-directory: android
+        run: |
+          set -o pipefail
+          # This repo only commits twa-manifest.json, not the actual generated
+          # Gradle project (no manifest-checksum.txt either). `bubblewrap build`
+          # detects that and always stops to ask "regenerate your project?" -
+          # a prompt with no TTY to answer it in CI. Running `update` explicitly
+          # here generates the project and writes manifest-checksum.txt, so the
+          # later `build` step sees a matching checksum and skips straight to
+          # compiling instead of prompting.
+          # --skipVersionUpgrade: we already set the version above; this also
+          # avoids a further prompt asking for a version name.
+          bubblewrap update --skipVersionUpgrade 2>&1 | tee update.log
+          exit_code=${PIPESTATUS[0]}
+          if [ "$exit_code" -ne 0 ]; then
+            echo "## Bubblewrap update failed - last 100 lines" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            tail -100 update.log >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            exit "$exit_code"
+          fi
+
       - name: Build signed APK
         working-directory: android
         env:
@@ -90,8 +113,9 @@ jobs:
         run: |
           set -o pipefail
           # ~/.bubblewrap/config.json (written in the "Pre-configure Bubblewrap"
-          # step) already has valid jdkPath/androidSdkPath, so bubblewrap won't
-          # prompt interactively here.
+          # step) already has valid jdkPath/androidSdkPath, and the project was
+          # already generated with a matching manifest-checksum.txt in the
+          # previous step, so bubblewrap won't prompt interactively here.
           bubblewrap build --skipPwaValidation 2>&1 | tee build.log
           exit_code=${PIPESTATUS[0]}
           if [ "$exit_code" -ne 0 ]; then
