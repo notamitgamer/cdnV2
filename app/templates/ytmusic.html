@@ -146,20 +146,6 @@
         .btn-primary { background: var(--accent-primary) !important; color: #ffffff !important; border-color: var(--accent-primary) !important; font-weight: 600; transition: none !important; }
         .btn-primary:hover:not(:disabled), .btn-primary:focus:not(:disabled), .btn-primary:active:not(:disabled) { background: var(--accent-primary) !important; border-color: var(--accent-primary) !important; color: #ffffff !important; }
         .btn-primary svg { stroke: #ffffff !important; }
-        .icon-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            padding: 0.65rem;
-            transition: all 0.2s ease;
-        }
-        .icon-btn:hover:not(:disabled) { background: var(--surface-2); border-color: var(--border-hover); }
-        .icon-btn:hover:not(:disabled) svg { stroke: var(--accent-primary); }
-        .icon-btn:active:not(:disabled) { transform: scale(0.95); }
         .result-box {
             margin-top: 2rem;
             background: var(--surface);
@@ -230,7 +216,7 @@
     <main class="container">
         <h1>YouTube Music Downloader</h1>
         <blockquote>
-            Paste a YouTube or YouTube Music URL and get a download link.
+            Paste a YouTube or YouTube Music URL and get a 128 KBPS audio download link.
         </blockquote>
 
         <div class="input-group" id="youtube-group">
@@ -275,10 +261,10 @@
         <div id="result" style="display:none;" class="result-box">
             <h3>Your download link</h3>
             <div class="result-url">
-                <a href="#" id="masked-link" target="_blank" rel="nofollow noopener noreferrer"></a>
+                <a href="#" id="masked-link" target="_blank" rel="noreferrer" referrerpolicy="no-referrer"></a>
                 <button type="button" class="btn" id="copy-btn">Copy</button>
             </div>
-            <p class="info-text">This masked link redirects to the VidsSave download URL.</p>
+            <p class="info-text">This link redirects to the official VidsSave download stream.</p>
         </div>
     </main>
     
@@ -372,36 +358,58 @@
                     return data.data;
                 }
 
-                function selectAudioResource(resources) {
-                    const audioResources = (resources || []).filter(
-                        item => item && String(item.type || '').toLowerCase() === 'audio' && item.resource_content
-                    );
+                function select128AudioResource(resources) {
+                    const audioItems = (resources || []).filter(item => {
+                        if (!item) return false;
+                        const isAudioType = String(item.type || '').toLowerCase().includes('audio');
+                        const hasAudioFormat = Array.isArray(item.available_formats) && 
+                            item.available_formats.some(f => ['mp3', 'm4a', 'audio'].includes(String(f).toLowerCase()));
+                        return isAudioType || hasAudioFormat;
+                    });
 
-                    if (audioResources.length === 0) return null;
+                    if (audioItems.length === 0) return null;
 
-                    function getBitrate(resource) {
-                        const match = String(resource.quality || '').match(/(\d+(?:\.\d+)?)\s*KBPS/i);
-                        return match ? Number(match[1]) : -1;
+                    let matched = audioItems.find(item => {
+                        const q = String(item.quality || '').toLowerCase();
+                        return q.includes('128') || q.includes('128kbps');
+                    });
+
+                    if (!matched) {
+                        matched = audioItems.reduce((lowest, curr) => {
+                            const getNum = (res) => {
+                                const m = String(res.quality || '').match(/(\d+)/);
+                                return m ? Number(m[1]) : 128;
+                            };
+                            return getNum(curr) < getNum(lowest) ? curr : lowest;
+                        });
                     }
 
-                    return audioResources.reduce((best, current) => {
-                        return getBitrate(current) > getBitrate(best) ? current : best;
-                    });
+                    let outputFormat = 'mp3';
+                    if (Array.isArray(matched.available_formats) && matched.available_formats.length > 0) {
+                        for (const format of matched.available_formats) {
+                            const fmt = String(format).toLowerCase();
+                            if (fmt === 'mp3' || fmt === 'm4a') {
+                                outputFormat = fmt;
+                                break;
+                            }
+                        }
+                    }
+
+                    return {
+                        ...matched,
+                        output_format: outputFormat
+                    };
                 }
 
                 async function createDownloadTask(resource) {
-                    const data = {
+                    const body = new URLSearchParams({
                         auth: AUTH,
                         domain: DOMAIN,
                         request: resource.resource_content,
-                        no_encrypt: '1'
-                    };
+                        no_encrypt: 1,
+                        output: resource.output_format || 'mp3'
+                    });
 
-                    if (resource.output_format) {
-                        data.output = resource.output_format.toLowerCase();
-                    }
-
-                    const body = new URLSearchParams(data);
                     const response = await fetch('/api/yt/download', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -496,22 +504,19 @@
                     try {
                         setStatus('Parsing YouTube URL...');
                         const parsed = await parseYouTube(url);
-                        const resource = selectAudioResource(parsed.resources);
+                        const resource = select128AudioResource(parsed.resources);
 
                         if (!resource || !resource.resource_content) {
-                            throw new Error('No downloadable audio resource was returned.');
+                            throw new Error('No downloadable 128KBPS audio resource was found.');
                         }
 
-                        const qualityLabel = resource.quality || 'audio';
-                        const formatLabel = resource.output_format || resource.original_format || '';
-                        setStatus(`Preparing ${qualityLabel} ${formatLabel} download...`);
-
+                        setStatus(`Preparing 128 KBPS ${resource.output_format.toUpperCase()} task...`);
                         const taskId = await createDownloadTask(resource);
 
-                        setStatus('Waiting for media processing to complete...');
+                        setStatus('Waiting for VidsSave to finalize link...');
                         const downloadUrl = await waitForDownloadLink(taskId);
 
-                        setStatus('Generating shareable link...');
+                        setStatus('Shortening link...');
                         const maskedUrl = await shortenUrl(downloadUrl);
 
                         maskedLink.href = maskedUrl;
@@ -573,14 +578,12 @@
                     }
                 });
 
-                // Terminate SSE listener if navigating away via Turbo
                 document.addEventListener('turbo:before-render', cleanupEventSource, { once: true });
             }
 
             document.addEventListener('turbo:load', setupYtMusic);
             document.addEventListener('DOMContentLoaded', setupYtMusic);
 
-            // Global '/' focus shortcut
             if (!window.__ytmusicKbdBound) {
                 window.__ytmusicKbdBound = true;
                 document.addEventListener('keydown', event => {
