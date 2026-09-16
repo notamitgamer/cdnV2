@@ -307,7 +307,7 @@ async def url_ytmusic_page(request: Request):
     return templates.TemplateResponse(request, "ytmusic.html", ctx)
 
 # ---------------------------------------------------------------------------------
-# YTMusic proxy routes to avoid VidSave CORS/Origin restrictions blocking browsers
+# YTMusic proxy routes for CORS form posts
 # ---------------------------------------------------------------------------------
 @app.post("/api/yt/parse")
 async def yt_parse(request: Request):
@@ -342,43 +342,6 @@ async def yt_download(request: Request):
         if res.status_code != 200:
             raise HTTPException(status_code=res.status_code, detail="Upstream download error.")
         return res.json()
-
-@app.get("/api/yt/status")
-async def yt_status(request: Request):
-    query = request.url.query
-    target_url = f"https://api.vidssave.com/sse/contentsite_api/media/download_query?{query}"
-    
-    headers = {
-        "Accept": "text/event-stream",
-        "Cache-Control": "no-cache",
-        "Origin": "https://vidssave.com",
-        "Referer": "https://vidssave.com/",
-        "User-Agent": request.headers.get("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"),
-    }
-
-    async def event_generator():
-        client = httpx.AsyncClient(timeout=None)
-        try:
-            async with client.stream("GET", target_url, headers=headers) as r:
-                if r.status_code != 200:
-                    yield f"event: error\ndata: Upstream status stream returned {r.status_code}\n\n".encode("utf-8")
-                    return
-                async for chunk in r.aiter_raw():
-                    yield chunk
-        except (httpx.RequestError, asyncio.CancelledError):
-            return
-        finally:
-            await client.aclose()
-                    
-    return StreamingResponse(
-        event_generator(), 
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache, no-transform",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",
-        }
-    )
 # ---------------------------------------------------------------------------------
 
 @app.get("/shorten")
