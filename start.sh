@@ -20,8 +20,8 @@ echo "==============================="
 echo ""
 
 echo "========== COBALT ENV =========="
-echo "API_URL=${API_URL:-NOT_SET}"
-echo "API_PORT=${API_PORT:-9000}"
+echo "API_URL=${API_URL:-https://cdn.amit.is-a.dev/cobalt/}"
+echo "API_PORT=9000"
 echo "COOKIE_PATH=${COOKIE_PATH:-NOT_SET}"
 echo "YOUTUBE_SESSION_SERVER=${YOUTUBE_SESSION_SERVER:-NOT_SET}"
 echo "YOUTUBE_SESSION_INNERTUBE_CLIENT=${YOUTUBE_SESSION_INNERTUBE_CLIENT:-NOT_SET}"
@@ -30,13 +30,24 @@ echo "ENABLE_DEPRECATED_YOUTUBE_HLS=${ENABLE_DEPRECATED_YOUTUBE_HLS:-NOT_SET}"
 echo "================================"
 echo ""
 
+echo "Checking Cobalt installation..."
+
+if [ ! -f /opt/cobalt-api/src/cobalt ]; then
+    echo "ERROR: Cobalt executable not found:"
+    echo "/opt/cobalt-api/src/cobalt"
+    exit 1
+fi
+
+echo "Cobalt executable found."
+
+echo ""
 echo "Starting Cobalt..."
 
 cd /opt/cobalt-api
 
-API_URL="http://127.0.0.1:9000/" \
+API_URL="https://cdn.amit.is-a.dev/cobalt/" \
 API_PORT=9000 \
-pnpm start &
+node src/cobalt &
 
 COBALT_PID=$!
 
@@ -85,6 +96,7 @@ echo "FastAPI PID: $FASTAPI_PID"
 echo ""
 echo "========================================"
 echo "Both services started"
+echo "========================================"
 echo "Cobalt:  http://127.0.0.1:9000"
 echo "FastAPI: http://0.0.0.0:${PORT:-8000}"
 echo "========================================"
