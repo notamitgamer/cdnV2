@@ -73,6 +73,19 @@ async def favicon():
     )
 
 
+@app.get("/.well-known/assetlinks.json")
+async def assetlinks():
+    # Verifies dev.amit.cdn.twa (the Android TWA wrapper) as the owner of this
+    # domain, so Chrome opens it as a trusted full-screen app instead of a
+    # Custom Tab with the URL bar showing. See android/twa-manifest.json.
+    file_path = STATIC_DIR / ".well-known" / "assetlinks.json"
+    return FileResponse(
+        file_path,
+        media_type="application/json",
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
+
+
 CDN_BASE_URL = os.getenv("CDN_BASE_URL", "https://cdn.amit.is-a.dev")
 RAW_DOMAIN = os.getenv("RAW_DOMAIN", "raw.cdn.amit.is-a.dev")
 RAW_BASE_URL = os.getenv("RAW_BASE_URL", f"https://{RAW_DOMAIN}")

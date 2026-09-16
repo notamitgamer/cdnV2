@@ -1,0 +1,95 @@
+name: Build & Release Android APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'App version name (e.g. 1.0.0)'
+        required: false
+        default: '1.0.0'
+  push:
+    tags:
+      - 'apk-v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Bubblewrap CLI
+        run: npm install -g @bubblewrap/cli
+
+      - name: Restore signing keystore
+        working-directory: android
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android.keystore
+
+      - name: Compute version code
+        id: version
+        run: |
+          NAME="${{ inputs.version_name || '1.0.0' }}"
+          echo "code=${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Set version in twa-manifest.json
+        working-directory: android
+        run: |
+          python3 - << 'PYEOF'
+          import json
+          with open("twa-manifest.json") as f:
+              data = json.load(f)
+          data["appVersionCode"] = int("${{ steps.version.outputs.code }}")
+          data["appVersionName"] = "${{ steps.version.outputs.name }}"
+          with open("twa-manifest.json", "w") as f:
+              json.dump(data, f, indent=2)
+          PYEOF
+
+      - name: Build signed APK
+        working-directory: android
+        env:
+          BUBBLEWRAP_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: bubblewrap build --skipPwaValidation
+
+      - name: Rename artifact
+        working-directory: android
+        run: cp app-release-signed.apk "amit-cdn-v${{ steps.version.outputs.name }}-${{ steps.version.outputs.code }}.apk"
+
+      - name: Clean up keystore
+        if: always()
+        working-directory: android
+        run: rm -f android.keystore
+
+      - name: Upload release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-v${{ steps.version.outputs.name }}-${{ steps.version.outputs.code }}
+          name: amit/cdn Android app v${{ steps.version.outputs.name }} (${{ steps.version.outputs.code }})
+          body: |
+            Android app build (Trusted Web Activity wrapping cdn.amit.is-a.dev).
+
+            Install: download the APK below, enable "install from unknown sources"
+            for your browser/file manager if prompted, then open it.
+
+            This is not distributed via the Play Store, so updates won't
+            auto-install - grab the latest release here when a new one ships.
+          files: android/amit-cdn-v${{ steps.version.outputs.name }}-${{ steps.version.outputs.code }}.apk
+          make_latest: true

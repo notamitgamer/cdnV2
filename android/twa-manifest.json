@@ -1,0 +1,40 @@
+{
+  "packageId": "dev.amit.cdn.twa",
+  "host": "cdn.amit.is-a.dev",
+  "name": "amit/cdn",
+  "launcherName": "amit/cdn",
+  "display": "standalone",
+  "themeColor": "#000000",
+  "themeColorDark": "#000000",
+  "navigationColor": "#000000",
+  "navigationColorDark": "#000000",
+  "navigationDividerColor": "#000000",
+  "navigationDividerColorDark": "#000000",
+  "backgroundColor": "#000000",
+  "backgroundColorDark": "#000000",
+  "enableNotifications": false,
+  "startUrl": "/",
+  "iconUrl": "https://cdn.amit.is-a.dev/static/icons/icon-512.png",
+  "maskableIconUrl": "https://cdn.amit.is-a.dev/static/icons/icon-maskable-512.png",
+  "monochromeIconUrl": "https://cdn.amit.is-a.dev/static/icons/icon-monochrome-512.png",
+  "shortcuts": [],
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "cdn-twa"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "webManifestUrl": "https://cdn.amit.is-a.dev/static/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://cdn.amit.is-a.dev/",
+  "minSdkVersion": 21,
+  "splashScreenFadeOutDuration": 300,
+  "generatorApp": "bubblewrap-cli"
+}
