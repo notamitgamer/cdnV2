@@ -396,7 +396,11 @@ async def mask_redirect(request: Request, short_id: str):
     destination = await get_destination_url(short_id)
     if destination is None:
         raise HTTPException(status_code=404, detail="Short URL not found")
-    return RedirectResponse(destination, status_code=307)
+    return RedirectResponse(
+        destination,
+        status_code=307,
+        headers={"Referrer-Policy": "no-referrer"}
+    )
 
 _MAX_URL_UPLOAD_BYTES = UPLOAD_LIMIT_PER_HOUR
 
