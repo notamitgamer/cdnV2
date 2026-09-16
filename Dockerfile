@@ -19,8 +19,9 @@ ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 
 # Clone Cobalt 11.5
-RUN git clone --depth 1 --branch 11.5-47d8ccb \
-    https://github.com/imputnet/cobalt.git /opt/cobalt
+RUN git clone --depth 1 https://github.com/imputnet/cobalt.git /opt/cobalt \
+    && cd /opt/cobalt \
+    && git checkout 11.5
 
 WORKDIR /opt/cobalt
 
