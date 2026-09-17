@@ -1,3 +1,5 @@
+FROM ghcr.io/imputnet/cobalt:11 AS cobalt
+
 FROM node:24-bookworm-slim
 
 WORKDIR /app
@@ -8,6 +10,9 @@ RUN apt-get update \
         python3 \
         python3-pip \
     && rm -rf /var/lib/apt/lists/*
+
+# Copy the already-built Cobalt API from the official Cobalt image
+COPY --from=cobalt /app /opt/cobalt-api
 
 # Install FastAPI dependencies
 COPY requirements.txt .

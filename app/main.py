@@ -368,6 +368,332 @@ async def gh_sync(
     }
 
 
+@app.get("/ytmusic")
+async def url_ytmusic_page(request: Request):
+    ctx = await render_context({"page": "ytmusic"})
+    return templates.TemplateResponse(request, "ytmusic.html", ctx)
+
+
+# ---------------------------------------------------------------------------------
+# YTMusic routes: Cobalt API Proxy
+# ---------------------------------------------------------------------------------
+
+class YtRequest(BaseModel):
+    url: str
+
+
+COBALT_INTERNAL_URL = os.getenv(
+    "COBALT_INTERNAL_URL",
+    "http://127.0.0.1:9000",
+).rstrip("/")
+
+COBALT_PUBLIC_PREFIX = "/cobalt"
+
+
+@app.api_route(
+    "/cobalt/{path:path}",
+    methods=["GET", "HEAD"],
+)
+async def cobalt_tunnel_proxy(path: str, request: Request):
+    cobalt_url = f"{COBALT_INTERNAL_URL}/{path}"
+
+    query_string = request.url.query
+    if query_string:
+        cobalt_url += f"?{query_string}"
+
+    headers = {}
+
+    for header in [
+        "Range",
+        "If-Range",
+        "If-None-Match",
+        "If-Modified-Since",
+    ]:
+        value = request.headers.get(header)
+        if value:
+            headers[header] = value
+
+    client = httpx.AsyncClient(
+        follow_redirects=False,
+        timeout=60.0,
+    )
+
+    try:
+        req = client.build_request(
+            request.method,
+            cobalt_url,
+            headers=headers,
+        )
+
+        res = await client.send(req, stream=True)
+
+        response_headers = {}
+
+        for header in [
+            "Content-Type",
+            "Content-Length",
+            "Content-Range",
+            "Accept-Ranges",
+            "Content-Disposition",
+            "Cache-Control",
+            "ETag",
+            "Last-Modified",
+        ]:
+            value = res.headers.get(header)
+            if value:
+                response_headers[header] = value
+
+        return StreamingResponse(
+            _proxy_stream(client, res),
+            status_code=res.status_code,
+            headers=response_headers,
+        )
+
+    except httpx.RequestError as exc:
+        await client.aclose()
+        raise HTTPException(
+            status_code=502,
+            detail=f"Error connecting to Cobalt tunnel: {exc}",
+        )
+
+
+@app.post("/api/yt/download")
+async def yt_download_cobalt(request: Request, body: YtRequest):
+    url = body.url.strip()
+
+    if not url:
+        raise HTTPException(
+            status_code=400,
+            detail="Missing YouTube URL.",
+        )
+
+    cobalt_api = f"{COBALT_INTERNAL_URL}/"
+
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/122.0.0.0 Safari/537.36"
+        ),
+    }
+
+    cobalt_api_token = os.getenv("COBALT_API_TOKEN")
+
+    if cobalt_api_token:
+        if " " not in cobalt_api_token:
+            headers["Authorization"] = f"Api-Key {cobalt_api_token}"
+        else:
+            headers["Authorization"] = cobalt_api_token
+
+    payload = {
+        "url": url,
+        "downloadMode": "audio",
+        "audioFormat": "mp3",
+        "audioBitrate": "128",
+        "filenameStyle": "basic",
+        "youtubeHLS": True,
+    }
+
+    async with httpx.AsyncClient(
+        timeout=60.0,
+        follow_redirects=False,
+    ) as client:
+        try:
+            res = await client.post(
+                cobalt_api,
+                json=payload,
+                headers=headers,
+            )
+
+            if res.status_code != 200:
+                err_text = res.text
+
+                try:
+                    data = res.json()
+
+                    if "error" in data and isinstance(data["error"], dict):
+                        err_text = data["error"].get(
+                            "code",
+                            err_text,
+                        )
+                    elif data.get("text"):
+                        err_text = data["text"]
+
+                except Exception:
+                    pass
+
+                if len(err_text) > 300:
+                    err_text = err_text[:300] + "..."
+
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Cobalt API failed: {err_text}",
+                )
+
+            data = res.json()
+            status = data.get("status")
+
+            if status == "error":
+                error = data.get("error", {})
+
+                print("========== COBALT ERROR ==========")
+                print(f"Full response: {data}")
+
+                if isinstance(error, dict):
+                    print(f"Error code: {error.get('code')}")
+                    print(f"Error context: {error.get('context')}")
+                else:
+                    print(f"Error: {error}")
+
+                print("==================================")
+
+                if isinstance(error, dict):
+                    raise HTTPException(
+                        status_code=400,
+                        detail={
+                            "message": "Cobalt API failed",
+                            "code": error.get("code"),
+                            "context": error.get("context"),
+                            "raw": data,
+                        },
+                    )
+                else:
+                    raise HTTPException(
+                        status_code=400,
+                        detail={
+                            "message": "Cobalt API failed",
+                            "error": str(error),
+                            "raw": data,
+                        },
+                    )
+
+            dl_url = data.get("url")
+
+            if not dl_url:
+                raise HTTPException(
+                    status_code=500,
+                    detail=(
+                        "Cobalt succeeded but returned no "
+                        f"download link. (Status: {status})"
+                    ),
+                )
+
+            if status == "tunnel":
+                parsed = urlparse(dl_url)
+
+                if parsed.path.startswith("/tunnel"):
+                    public_url = (
+                        f"{CDN_BASE_URL}{COBALT_PUBLIC_PREFIX}"
+                        f"{parsed.path}"
+                    )
+
+                    if parsed.query:
+                        public_url += f"?{parsed.query}"
+
+                    dl_url = public_url
+
+            return {
+                "url": dl_url,
+                "title": data.get("filename", "Audio"),
+            }
+
+        except httpx.RequestError as exc:
+            raise HTTPException(
+                status_code=502,
+                detail=f"Error connecting to Cobalt: {exc}",
+            )
+
+
+# ---------------------------------------------------------------------------------
+# TEMPORARY COBALT DIAGNOSTIC ENDPOINT
+# ---------------------------------------------------------------------------------
+
+@app.get("/api/yt/debug")
+async def yt_debug(url: str):
+    url = url.strip()
+
+    if not url:
+        raise HTTPException(
+            status_code=400,
+            detail="Missing YouTube URL.",
+        )
+
+    cobalt_api = f"{COBALT_INTERNAL_URL}/"
+
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/122.0.0.0 Safari/537.36"
+        ),
+    }
+
+    cobalt_api_token = os.getenv("COBALT_API_TOKEN")
+
+    if cobalt_api_token:
+        if " " not in cobalt_api_token:
+            headers["Authorization"] = f"Api-Key {cobalt_api_token}"
+        else:
+            headers["Authorization"] = cobalt_api_token
+
+    payload = {
+        "url": url,
+        "downloadMode": "audio",
+        "audioFormat": "mp3",
+        "audioBitrate": "128",
+        "filenameStyle": "basic",
+    }
+
+    async with httpx.AsyncClient(
+        timeout=60.0,
+        follow_redirects=False,
+    ) as client:
+        try:
+            res = await client.post(
+                cobalt_api,
+                json=payload,
+                headers=headers,
+            )
+
+            raw_text = res.text
+
+            try:
+                response_body = res.json()
+            except Exception:
+                response_body = raw_text
+
+            print("========== COBALT DEBUG ==========")
+            print(f"HTTP status: {res.status_code}")
+            print(f"Response headers: {dict(res.headers)}")
+            print(f"Response body: {response_body}")
+            print("===================================")
+
+            return {
+                "cobalt_url": cobalt_api,
+                "http_status": res.status_code,
+                "response_headers": dict(res.headers),
+                "response": response_body,
+            }
+
+        except httpx.RequestError as exc:
+            print("========== COBALT DEBUG ERROR ==========")
+            print(f"Request error: {repr(exc)}")
+            print("========================================")
+
+            raise HTTPException(
+                status_code=502,
+                detail={
+                    "message": "Error connecting to Cobalt",
+                    "error": repr(exc),
+                },
+            )
+
+
+
 @app.get("/shorten")
 async def url_shortener_page(request: Request):
     ctx = await render_context({"page": "shorten"})

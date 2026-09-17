@@ -15,3 +15,12 @@ services:
 
       - key: RAW_BASE_URL
         value: https://raw.cdn.amit.is-a.dev
+
+      - key: COBALT_API_URL
+        value: https://cdn.amit.is-a.dev/cobalt/
+
+      - key: COBALT_PORT
+        value: "9000"
+
+      - key: YOUTUBE_COOKIE_HEADER
+        sync: false
