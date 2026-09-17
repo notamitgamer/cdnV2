@@ -21,3 +21,6 @@ services:
 
       - key: COBALT_PORT
         value: "9000"
+
+      - key: YOUTUBE_COOKIE_HEADER
+        sync: false

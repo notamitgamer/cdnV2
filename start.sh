@@ -10,10 +10,33 @@ echo ""
 echo "========== COBALT ENV =========="
 echo "API_URL=${API_URL:-https://cdn.amit.is-a.dev/cobalt/}"
 echo "API_PORT=9000"
-echo "COOKIE_PATH=${COOKIE_PATH:-NOT_SET}"
 echo "================================"
 echo ""
 
+COBALT_COOKIE_PATH=""
+
+if [ -n "$YOUTUBE_COOKIE_HEADER" ]; then
+    echo "YOUTUBE_COOKIE_HEADER is set - writing cookies.json..."
+
+    COBALT_COOKIE_PATH="/tmp/cobalt-cookies.json"
+
+    YOUTUBE_COOKIE_HEADER="$YOUTUBE_COOKIE_HEADER" python3 -c "
+import json
+import os
+
+cookie_header = os.environ['YOUTUBE_COOKIE_HEADER'].strip()
+
+with open('$COBALT_COOKIE_PATH', 'w') as f:
+    json.dump({'youtube': [cookie_header]}, f)
+"
+
+    echo "Wrote $COBALT_COOKIE_PATH"
+else
+    echo "YOUTUBE_COOKIE_HEADER not set - continuing without YouTube cookies"
+    echo "(YouTube downloads will likely fail with error.api.youtube.login)"
+fi
+
+echo ""
 echo "Starting Cobalt..."
 
 cd /opt/cobalt-api
@@ -26,9 +49,16 @@ cd /opt/cobalt-api
 # exact path previously killed the whole container on every boot even
 # when the Cobalt build itself was fine. Instead we start the process and
 # let the readiness probe below be the real success/failure signal.
-API_URL="https://cdn.amit.is-a.dev/cobalt/" \
-API_PORT=9000 \
-node src/cobalt &
+if [ -n "$COBALT_COOKIE_PATH" ]; then
+    API_URL="https://cdn.amit.is-a.dev/cobalt/" \
+    API_PORT=9000 \
+    COOKIE_PATH="$COBALT_COOKIE_PATH" \
+    node src/cobalt &
+else
+    API_URL="https://cdn.amit.is-a.dev/cobalt/" \
+    API_PORT=9000 \
+    node src/cobalt &
+fi
 
 COBALT_PID=$!
 
