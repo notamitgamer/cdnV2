@@ -108,6 +108,42 @@ async def _proxy_stream(client: httpx.AsyncClient, r: httpx.Response):
         await client.aclose()
 
 
+_WEB_ASSET_MIME_TYPES = {
+    ".css": "text/css",
+    ".js": "text/javascript",
+    ".mjs": "text/javascript",
+    ".json": "application/json",
+    ".svg": "image/svg+xml",
+    ".xml": "application/xml",
+    ".woff": "font/woff",
+    ".woff2": "font/woff2",
+    ".ttf": "font/ttf",
+    ".otf": "font/otf",
+    ".wasm": "application/wasm",
+    ".webmanifest": "application/manifest+json",
+    ".map": "application/json",
+}
+
+def _resolve_content_type(filename: str, upstream_content_type: str | None) -> str | None:
+    """
+    Hugging Face's resolve/ endpoint (and GitHub's raw.githubusercontent.com, for
+    that matter) often serves files it doesn't specially recognize back as
+    text/plain or application/octet-stream. Combined with X-Content-Type-Options:
+    nosniff below, that makes browsers refuse to apply a .css file as a stylesheet
+    or run a .js file as a script - the Content-Type has to be right, not just
+    close. Override it from the file extension for the asset types this actually
+    breaks, rather than trusting whatever the upstream sent.
+    """
+    ext = "." + filename.rsplit(".", 1)[-1] if "." in filename else ""
+    if ext in (".md", ".txt"):
+        return "text/plain; charset=utf-8"
+    mime = _WEB_ASSET_MIME_TYPES.get(ext)
+    if mime:
+        if mime.startswith("text/") or mime in ("application/json", "application/xml", "application/manifest+json"):
+            return f"{mime}; charset=utf-8"
+        return mime
+    return upstream_content_type
+
 async def stream_raw(path: str, request: Request):
     hf_url = f"https://huggingface.co/datasets/{HF_REPO_ID}/resolve/main/{path}"
     client = httpx.AsyncClient(follow_redirects=True)
@@ -134,9 +170,9 @@ async def stream_raw(path: str, request: Request):
             headers[h] = r.headers[h]
 
     filename = path.split("/")[-1].lower()
-    if filename.endswith(".md") or filename.endswith(".txt"):
-        if headers.get("Content-Type", "application/octet-stream") == "application/octet-stream":
-            headers["Content-Type"] = "text/plain; charset=utf-8"
+    resolved_type = _resolve_content_type(filename, headers.get("Content-Type"))
+    if resolved_type:
+        headers["Content-Type"] = resolved_type
 
     return StreamingResponse(
         _proxy_stream(client, r),
@@ -163,7 +199,7 @@ async def download_file(path: str, request: Request):
     filename = path.split("/")[-1]
     headers = {
         "Content-Disposition": f'attachment; filename="{filename}"',
-        "Content-Type": r.headers.get("Content-Type", "application/octet-stream"),
+        "Content-Type": _resolve_content_type(filename.lower(), r.headers.get("Content-Type")) or "application/octet-stream",
         "Accept-Ranges": "bytes",
     }
 
