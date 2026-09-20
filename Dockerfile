@@ -1,20 +1,12 @@
-FROM node:24-bookworm-slim
+FROM python:3.12-slim-bookworm
 
 WORKDIR /app
-
-# Install Python and required system packages
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        python3 \
-        python3-pip \
-    && rm -rf /var/lib/apt/lists/*
 
 # Install FastAPI dependencies
 COPY requirements.txt .
 
 RUN pip3 install \
     --no-cache-dir \
-    --break-system-packages \
     -r requirements.txt
 
 # Copy FastAPI application
