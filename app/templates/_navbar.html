@@ -3,61 +3,78 @@
    page. Self-contained with its own hardcoded values rather than each page's local theme variables, so it looks and behaves
    identically everywhere regardless of what a given page's own :root defines. */
 .navbar-wrapper {
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    background: #09090b;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    margin-bottom: 2.75rem;
-    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.2);
+    background: #ffffff;
+    border-bottom: 3px solid #14315c;
+    margin-bottom: 2.25rem;
+}
+.banner-strip {
+    background: #14315c;
+    color: #f2c94c;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 0.35rem 0.5rem;
 }
 .navbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 1.25rem 5%;
-    max-width: 1000px;
+    flex-wrap: wrap;
+    padding: 0.9rem 5%;
+    max-width: 1100px;
     margin: 0 auto;
+    row-gap: 0.5rem;
 }
 .wordmark {
-    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-weight: 500;
-    font-size: 1.1rem;
-    color: #f4f4f5 !important;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-weight: 700;
+    font-size: 1.35rem;
+    color: #14315c !important;
     text-decoration: none !important;
     letter-spacing: -0.01em;
-    transition: opacity 0.2s;
 }
-.wordmark:hover { opacity: 0.8; }
-.wordmark-slash { color: #818cf8; }
+.wordmark:hover { text-decoration: none !important; }
+.wordmark-slash { color: #a4111d; }
+.wordmark-sub {
+    display: block;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: 400;
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+    color: #4a5568;
+    text-transform: uppercase;
+    margin-top: 0.1rem;
+}
 .navlinks {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
+    flex-wrap: wrap;
+    gap: 0 1.1rem;
+    font-family: Arial, Helvetica, sans-serif;
 }
 .navlinks a {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.1rem;
-    height: 2.1rem;
-    color: #b8b8c0;
-    border-radius: 8px;
-    transition: all 0.2s ease;
-    padding: 0;
+    color: #0b3d91;
+    font-size: 0.92rem;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    padding: 0.3rem 0;
 }
 .navlinks a:hover {
-    color: #f4f4f5;
-    background: rgba(255, 255, 255, 0.05);
+    color: #a4111d;
 }
 .navlinks a.active {
-    color: #818cf8;
-    background: rgba(129, 140, 248, 0.12);
+    color: #a4111d;
+    text-decoration: none;
+    border-bottom: 2px solid #a4111d;
 }
 .breadcrumb-container {
-    max-width: 1000px;
+    max-width: 1100px;
     margin: 0 auto;
-    padding: 0 5% 1rem 5%;
+    padding: 0 5% 0.75rem 5%;
+    font-family: Arial, Helvetica, sans-serif;
     background: #09090b;
 }
 .breadcrumb {
@@ -158,27 +175,16 @@
 }
 </style>
 <div class="navbar-wrapper">
+    <div class="banner-strip">Official Public File Repository Portal</div>
     <header class="navbar">
-        <a href="/" class="wordmark">amit<span class="wordmark-slash">/</span>cdn</a>
+        <a href="/" class="wordmark">amit<span class="wordmark-slash">/</span>cdn <span class="wordmark-sub">File Distribution Service</span></a>
         <nav class="navlinks">
-            <a href="/find" class="{{ 'active' if page == 'search' }}" title="Find" aria-label="Find"{{ ' aria-current="page"'|safe if page == 'search' }}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            </a>
-            <a href="/new" class="{{ 'active' if page == 'upload' }}" title="New / Upload" aria-label="New / Upload"{{ ' aria-current="page"'|safe if page == 'upload' }}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            </a>
-            <a href="/gh-sync" class="{{ 'active' if page == 'gh-sync' }}" title="GitHub Actions Sync" aria-label="GitHub Actions Sync"{{ ' aria-current="page"'|safe if page == 'gh-sync' }}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-            </a>
-            <a href="/documentation" class="{{ 'active' if page == 'documentation' }}" title="Documentation" aria-label="Documentation"{{ ' aria-current="page"'|safe if page == 'documentation' }}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-            </a>
-            <a href="/history" class="{{ 'active' if page == 'history' }}" title="History" aria-label="History"{{ ' aria-current="page"'|safe if page == 'history' }}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            </a>
-            <a href="/shorten" class="{{ 'active' if page == 'shorten' }}" title="URL Shortener" aria-label="URL Shortener"{{ ' aria-current="page"'|safe if page == 'shorten' }}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-            </a>
+            <a href="/find" class="{{ 'active' if page == 'search' }}"{{ ' aria-current="page"'|safe if page == 'search' }}>Find</a>
+            <a href="/new" class="{{ 'active' if page == 'upload' }}"{{ ' aria-current="page"'|safe if page == 'upload' }}>Upload</a>
+            <a href="/gh-sync" class="{{ 'active' if page == 'gh-sync' }}"{{ ' aria-current="page"'|safe if page == 'gh-sync' }}>Sync</a>
+            <a href="/documentation" class="{{ 'active' if page == 'documentation' }}"{{ ' aria-current="page"'|safe if page == 'documentation' }}>Documentation</a>
+            <a href="/history" class="{{ 'active' if page == 'history' }}"{{ ' aria-current="page"'|safe if page == 'history' }}>History</a>
+            <a href="/shorten" class="{{ 'active' if page == 'shorten' }}"{{ ' aria-current="page"'|safe if page == 'shorten' }}>URL Shortener</a>
         </nav>
     </header>
     {% if not (page == 'listing' and not path) %}
