@@ -68,6 +68,7 @@
       <li><a href="#gh-sync">GitHub Actions sync</a></li>
       <li><a href="#uploading">Uploading files</a></li>
       <li><a href="#shortener">URL shortener</a></li>
+      <li><a href="#rate-limits">Rate limits</a></li>
       <li><a href="#downloading">Downloading &amp; zips</a></li>
       <li><a href="#batches">Multi-file batches</a></li>
       <li><a href="#search">Search</a></li>
@@ -138,7 +139,7 @@
         <li>Verifies the token's signature against GitHub's own public keys (<code>token.actions.githubusercontent.com/.well-known/jwks</code>), checks it isn't expired, and checks the <code>aud</code> claim matches this service.</li>
         <li>Reads <code>repository_owner</code>, <code>repository</code> and the numeric <code>repository_owner_id</code> straight out of the <em>verified</em> token claims — this is the destination folder and the identity of the sender, and it is never taken from anything else in the request. A workflow file cannot forge these claims because GitHub itself stamps them for the run.</li>
         <li>Refuses banned visitors and banned GitHub accounts, then applies the <strong>approval rule</strong>: the <em>first</em> sync from a GitHub account is accepted automatically; after that, the account must have been approved by the CDN owner or the sync is refused with <code>403</code>. Accounts are tracked by GitHub's numeric owner ID, so renaming an account or re-registering an old username does not bypass this. The CDN owner's own account is always allowed.</li>
-        <li>Runs a per-repo, per-IP rate check (2&nbsp;GB/hour) as an abuse guard — this is not a content-size cap, just throttling.</li>
+        <li>Runs the rate check on the size of the compressed archive, per repo and IP (50&nbsp;MB/minute, 300&nbsp;MB/hour — see <a href="#rate-limits">Rate limits</a>).</li>
         <li>Extracts the tar archive into a temp directory, rejecting anything that tries to write outside that directory (path traversal) or that is a symlink.</li>
         <li>Rejects the <strong>whole sync</strong> if any file is a video, detected by extension <em>and</em> by file signature (so renaming a video does not help). Nothing is uploaded in that case.</li>
         <li>Uploads that folder to the Hugging Face storage bucket with the destination and the delete scope both limited to exactly <code>&lt;owner&gt;/&lt;repo&gt;/</code> — so the call can create, update, or delete files only inside that one folder, never anywhere else. Files deleted from the source repo are removed from the CDN folder too (this is a mirror, not an accumulate-forever upload). The bucket keeps no version history, so those removals are permanent.</li>
@@ -159,12 +160,13 @@
         <li><span class="err-code">400</span> Archive isn't a readable <code>.tar.gz</code>, or it contains an unsafe path / a symlink.</li>
         <li><span class="err-code">403</span> The sender's IP or GitHub account is banned, <em>or</em> this account's first sync was already accepted and further syncs need approval from the CDN owner. The message says which.</li>
         <li><span class="err-code">415</span> The archive contains a video file. The message names the file and nothing is synced.</li>
-        <li><span class="err-code">429</span> Per-repo/IP hourly byte limit (2&nbsp;GB) exceeded.</li>
+        <li><span class="err-code">429</span> The archive is over the per-repo/IP limit (50&nbsp;MB/minute or 300&nbsp;MB/hour). An archive larger than 50&nbsp;MB is always refused. See <a href="#rate-limits">Rate limits</a>.</li>
       </ul>
 
       <h3>Limits, currently</h3>
-      <p>Any file type except video. No per-file or total size cap beyond the 2&nbsp;GB/hour abuse-rate guard above.
-         The lack of a size cap is intentional for now, not an oversight; the video rule and the approval rule are not.</p>
+      <p>Any file type except video, and no limit on the number of files. The only size limit is the rate limit on the
+         compressed archive (50&nbsp;MB/minute, 300&nbsp;MB/hour per repo and IP), so keep the archive under 50&nbsp;MB, for example by
+         excluding build folders with <code>tar --exclude</code>. Details in <a href="#rate-limits">Rate limits</a>.</p>
     </div>
   </section>
 
@@ -205,7 +207,7 @@
         <li><span class="err-code">400</span> <code>folder</code> isn't <code>uploads</code> or <code>third-party</code>.</li>
         <li><span class="err-code">403</span> Your IP is banned, or the upload comes from a VPN/proxy address.</li>
         <li><span class="err-code">415</span> The file is a video (<code>.mp4</code>, <code>.mov</code>, <code>.webm</code>, <code>.mkv</code> and similar, or recognised by its contents). Videos are not accepted on this CDN.</li>
-        <li><span class="err-code">429</span> Per-IP rate limit exceeded (50&nbsp;MB/min or 300&nbsp;MB/hour).</li>
+        <li><span class="err-code">429</span> Per-IP rate limit exceeded (50&nbsp;MB/min or 300&nbsp;MB/hour). A single file over 50&nbsp;MB is always refused. See <a href="#rate-limits">Rate limits</a>.</li>
       </ul>
     </div>
 
@@ -232,7 +234,7 @@
         <li><span class="err-code">403</span> Your IP is banned, or the request comes from a VPN/proxy address.</li>
         <li><span class="err-code">413</span> File exceeds the fetch size limit (currently the same 300&nbsp;MB/hour figure used as the upload cap).</li>
         <li><span class="err-code">415</span> The downloaded file is a video.</li>
-        <li><span class="err-code">429</span> Per-IP rate limit exceeded.</li>
+        <li><span class="err-code">429</span> Per-IP rate limit exceeded. See <a href="#rate-limits">Rate limits</a>.</li>
       </ul>
     </div>
   </section>
@@ -265,7 +267,7 @@
       <ul class="err-list">
         <li><span class="err-code">400</span> Not <code>https://</code>, longer than 2048 characters, invalid, host doesn't resolve, or it points to a private/internal address.</li>
         <li><span class="err-code">403</span> Your IP is banned.</li>
-        <li><span class="err-code">429</span> More than 10 requests in a minute or 60 in an hour from your IP.</li>
+        <li><span class="err-code">429</span> More than 10 requests in a minute or 60 in an hour from your IP. See <a href="#rate-limits">Rate limits</a>.</li>
       </ul>
     </div>
 
@@ -278,6 +280,47 @@
         <li><span class="err-code">404</span> No short link with that ID.</li>
       </ul>
     </div>
+  </section>
+
+  <section id="rate-limits">
+    <h2>Rate limits</h2>
+    <p class="lede">Limits keep the storage free for everyone and stop one visitor from filling it. They apply only to things that
+       <em>write</em>: uploads, fetching a file from a URL, shortening a link, and GitHub sync. Browsing, search, viewing,
+       downloads and zips are not rate-limited by this app.</p>
+
+    <h3>At a glance</h3>
+    <table>
+      <tr><th>What</th><th class="desc">Limit</th></tr>
+      <tr><td style="white-space:nowrap"><code>/api/put</code><br><code>/api/put-url</code></td><td class="desc"><strong>50&nbsp;MB per minute</strong> and <strong>300&nbsp;MB per hour</strong>, counted in bytes, per IP. A single file can be at most 50&nbsp;MB.</td></tr>
+      <tr><td style="white-space:nowrap"><code>/api/shorten</code></td><td class="desc"><strong>10 per minute</strong> and <strong>60 per hour</strong>, counted in requests, per IP.</td></tr>
+      <tr><td style="white-space:nowrap"><code>/api/gh-sync</code></td><td class="desc"><strong>50&nbsp;MB per minute</strong> and <strong>300&nbsp;MB per hour</strong> of compressed archive, per repo and IP. An archive over 50&nbsp;MB is refused.</td></tr>
+    </table>
+
+    <h3>How the limits work</h3>
+    <ul style="color:var(--muted)">
+      <li><strong>Sliding window.</strong> Your usage is totalled over the <em>last 60 seconds</em> and the <em>last 60 minutes</em>. There is no clock-time reset: old uploads age out of the window one by one, so your allowance returns gradually.</li>
+      <li><strong>Per IP.</strong> The limit follows the address your request really comes from. People on the same network (office, school, mobile carrier) share one allowance. Uploads from VPN or proxy addresses are refused outright, whatever your usage.</li>
+      <li><strong>Bytes, not files.</strong> Ten 1&nbsp;MB files use the same allowance as one 10&nbsp;MB file. Each file is checked when it arrives.</li>
+      <li><strong>The 50&nbsp;MB file ceiling.</strong> A file larger than the per-minute allowance can never pass, even on a fresh IP, so 50&nbsp;MB is the largest single file you can upload. <code>/api/put-url</code> will download up to 300&nbsp;MB from the source before this check applies, then refuse anything over 50&nbsp;MB.</li>
+      <li><strong>Batches stop at the limit.</strong> If you upload several files in one request and the limit is reached partway, the request fails with <code>429</code>. Files already stored earlier in that request stay stored.</li>
+      <li><strong>What does not count.</strong> Uploads refused before the limit check (banned IP, VPN/proxy address, video) do not use your allowance. Shortener requests <em>do</em> count even when the URL turns out to be invalid, because the limit is checked before the link is examined.</li>
+      <li><strong>In memory.</strong> Counters are kept in the server's memory, so a restart or redeploy clears them.</li>
+    </ul>
+
+    <h3>When you hit a limit</h3>
+    <p>The response is <code>429</code> with a JSON message. There is no <code>Retry-After</code> header, so use the message to tell which window you hit:</p>
+    <pre>{ "detail": "Upload rate limit exceeded: 50.00 MB/minute. Try again shortly." }
+{ "detail": "Upload rate limit exceeded: 300.00 MB/hour. Try again later." }
+{ "detail": "Rate limit exceeded: 10 requests/minute. Try again shortly." }
+{ "detail": "Rate limit exceeded: 60 requests/hour. Try again later." }</pre>
+    <p>After a <em>minute</em> message, wait up to a minute. After an <em>hour</em> message, wait until earlier uploads are an hour old. Waiting is the only fix: retrying immediately just fails again.</p>
+
+    <h3>Staying under the limits</h3>
+    <ul style="color:var(--muted)">
+      <li>Upload big batches in smaller groups and leave a minute between them.</li>
+      <li>Compress or resize large files before uploading, and keep each one under 50&nbsp;MB.</li>
+      <li>For GitHub sync, exclude build output and dependency folders from the archive (<code>tar --exclude='node_modules'</code>) so it stays under 50&nbsp;MB.</li>
+    </ul>
   </section>
 
   <section id="downloading">
