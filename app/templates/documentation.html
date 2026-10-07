@@ -67,9 +67,11 @@
       <li><a href="#browsing">Browsing &amp; viewing</a></li>
       <li><a href="#gh-sync">GitHub Actions sync</a></li>
       <li><a href="#uploading">Uploading files</a></li>
+      <li><a href="#shortener">URL shortener</a></li>
       <li><a href="#downloading">Downloading &amp; zips</a></li>
       <li><a href="#batches">Multi-file batches</a></li>
       <li><a href="#search">Search</a></li>
+      <li><a href="#stats">Stats</a></li>
       <li><a href="#raw-domain">The raw domain</a></li>
       <li><a href="#utility">Utility</a></li>
       <li><a href="#architecture">How storage works</a></li>
@@ -91,9 +93,9 @@
         <tr><td>nonexistent</td><td class="desc">404 page.</td></tr>
       </table>
       <h3>How it decides</h3>
-      <p>It calls <code>get_file_info(path)</code> first (a HEAD request against the Hugging Face dataset repo's
-         <code>resolve/main/</code> URL for that path). If that says the path exists as a file, it renders the file
-         page. Otherwise it calls <code>list_directory(path)</code> (a tree listing from the HF API); a non-empty
+      <p>It calls <code>get_file_info(path)</code> first (a HEAD request against the Hugging Face bucket's
+         <code>resolve</code> URL for that path). If that says the path exists as a file, it renders the file
+         page. Otherwise it calls <code>list_directory(path)</code> (a tree listing from the HF bucket API); a non-empty
          result renders the folder listing, an empty result on a non-root path is a 404.</p>
       <h3>Errors</h3>
       <ul class="err-list"><li><span class="err-code">404</span> Path doesn't exist as a file or a non-empty folder.</li></ul>
@@ -134,10 +136,12 @@
       <h3>How it works, step by step</h3>
       <ol style="color:var(--muted)">
         <li>Verifies the token's signature against GitHub's own public keys (<code>token.actions.githubusercontent.com/.well-known/jwks</code>), checks it isn't expired, and checks the <code>aud</code> claim matches this service.</li>
-        <li>Reads <code>repository_owner</code> and <code>repository</code> straight out of the <em>verified</em> token claims — this is the destination folder, and it is never taken from anything else in the request. A workflow file cannot forge these claims because GitHub itself stamps them for the run.</li>
+        <li>Reads <code>repository_owner</code>, <code>repository</code> and the numeric <code>repository_owner_id</code> straight out of the <em>verified</em> token claims — this is the destination folder and the identity of the sender, and it is never taken from anything else in the request. A workflow file cannot forge these claims because GitHub itself stamps them for the run.</li>
+        <li>Refuses banned visitors and banned GitHub accounts, then applies the <strong>approval rule</strong>: the <em>first</em> sync from a GitHub account is accepted automatically; after that, the account must have been approved by the CDN owner or the sync is refused with <code>403</code>. Accounts are tracked by GitHub's numeric owner ID, so renaming an account or re-registering an old username does not bypass this. The CDN owner's own account is always allowed.</li>
         <li>Runs a per-repo, per-IP rate check (2&nbsp;GB/hour) as an abuse guard — this is not a content-size cap, just throttling.</li>
         <li>Extracts the tar archive into a temp directory, rejecting anything that tries to write outside that directory (path traversal) or that is a symlink.</li>
-        <li>Uploads that folder to the underlying Hugging Face dataset repo with <code>path_in_repo</code> <strong>and</strong> <code>delete_patterns</code> both scoped to exactly <code>&lt;owner&gt;/&lt;repo&gt;/</code> — so the call can create, update, or delete files only inside that one folder, never anywhere else. Deleted files in the source repo are removed from the CDN folder too (this is a mirror, not an accumulate-forever upload).</li>
+        <li>Rejects the <strong>whole sync</strong> if any file is a video, detected by extension <em>and</em> by file signature (so renaming a video does not help). Nothing is uploaded in that case.</li>
+        <li>Uploads that folder to the Hugging Face storage bucket with the destination and the delete scope both limited to exactly <code>&lt;owner&gt;/&lt;repo&gt;/</code> — so the call can create, update, or delete files only inside that one folder, never anywhere else. Files deleted from the source repo are removed from the CDN folder too (this is a mirror, not an accumulate-forever upload). The bucket keeps no version history, so those removals are permanent.</li>
       </ol>
 
       <h3>Response <code>200</code></h3>
@@ -153,12 +157,14 @@
       <ul class="err-list">
         <li><span class="err-code">401</span> Token missing, expired, badly signed, wrong audience, or its owner/repository claims don't line up (malformed token).</li>
         <li><span class="err-code">400</span> Archive isn't a readable <code>.tar.gz</code>, or it contains an unsafe path / a symlink.</li>
+        <li><span class="err-code">403</span> The sender's IP or GitHub account is banned, <em>or</em> this account's first sync was already accepted and further syncs need approval from the CDN owner. The message says which.</li>
+        <li><span class="err-code">415</span> The archive contains a video file. The message names the file and nothing is synced.</li>
         <li><span class="err-code">429</span> Per-repo/IP hourly byte limit (2&nbsp;GB) exceeded.</li>
       </ul>
 
       <h3>Limits, currently</h3>
-      <p>No file-type restriction and no per-file or total size cap beyond the 2&nbsp;GB/hour abuse-rate guard above.
-         This is intentional for now, not an oversight.</p>
+      <p>Any file type except video. No per-file or total size cap beyond the 2&nbsp;GB/hour abuse-rate guard above.
+         The lack of a size cap is intentional for now, not an oversight; the video rule and the approval rule are not.</p>
     </div>
   </section>
 
@@ -177,10 +183,13 @@
         <tr><td><code>folder</code></td><td class="desc">Optional. Must be exactly <code>uploads</code> or <code>third-party</code> — these are the only two folders this endpoint is allowed to write to. Defaults to <code>uploads</code>.</td></tr>
       </table>
       <h3>How it works</h3>
-      <p>Each file is streamed to a local temp path, checked against the rate limiter (50&nbsp;MB/minute, 300&nbsp;MB/hour
-         per client IP), then uploaded to Hugging Face at <code>&lt;folder&gt;/&lt;8-char-uuid&gt;-&lt;original-filename&gt;</code>
-         (any characters other than letters, digits, <code>.</code>, <code>_</code> and <code>-</code> become underscores, and accents are simplified). The random prefix means two uploads can never collide, and the
-         filename portion is still readable. If 2 or more files were uploaded together, a <em>batch</em> is also created
+      <p>Each file is streamed to a temporary file named only by a random ID (your filename is never used in a filesystem path),
+         then checked in this order: banned IP, VPN/proxy address, video (by extension or file signature), and the
+         rate limiter (50&nbsp;MB/minute, 300&nbsp;MB/hour per client IP). It is then stored in the bucket at
+         <code>&lt;folder&gt;/&lt;8-char-uuid&gt;-&lt;filename&gt;</code>. Any filename is accepted: directory parts are dropped,
+         accents are simplified, and anything other than letters, digits, <code>.</code>, <code>_</code> and <code>-</code>
+         becomes an underscore (<code>my file (1).png</code> is stored as <code>ab12cd34-my_file_1.png</code>).
+         The random prefix means two uploads can never collide, and the filename portion is still readable. If 2 or more files were uploaded together, a <em>batch</em> is also created
          (see <a href="#batches">Batches</a> below) so the whole set can be shared/downloaded as one link.</p>
       <h3>Response <code>200</code></h3>
       <pre>{
@@ -194,6 +203,8 @@
       <h3>Errors</h3>
       <ul class="err-list">
         <li><span class="err-code">400</span> <code>folder</code> isn't <code>uploads</code> or <code>third-party</code>.</li>
+        <li><span class="err-code">403</span> Your IP is banned, or the upload comes from a VPN/proxy address.</li>
+        <li><span class="err-code">415</span> The file is a video (<code>.mp4</code>, <code>.mov</code>, <code>.webm</code>, <code>.mkv</code> and similar, or recognised by its contents). Videos are not accepted on this CDN.</li>
         <li><span class="err-code">429</span> Per-IP rate limit exceeded (50&nbsp;MB/min or 300&nbsp;MB/hour).</li>
       </ul>
     </div>
@@ -201,7 +212,8 @@
     <div class="endpoint">
       <div class="route-row"><span class="method post">POST</span><span class="route-path">/api/put-url</span></div>
       <p>Uploads a file the server fetches from a URL you give it, instead of one you send directly. Same destination
-         rules and rate limiter as <code>/api/put</code>.</p>
+         rules, checks (ban, VPN/proxy, video) and rate limiter as <code>/api/put</code>. The file name is taken from the URL or the
+         response's <code>Content-Disposition</code> and sanitised the same way.</p>
       <h3>Request</h3>
       <p>JSON body:</p>
       <pre>{ "url": "https://example.com/file.png", "folder": "uploads" }</pre>
@@ -217,8 +229,53 @@
       <h3>Errors</h3>
       <ul class="err-list">
         <li><span class="err-code">400</span> Not <code>https://</code>, hostname doesn't resolve, resolves to a private/internal address, or the source returned a non-200.</li>
+        <li><span class="err-code">403</span> Your IP is banned, or the request comes from a VPN/proxy address.</li>
         <li><span class="err-code">413</span> File exceeds the fetch size limit (currently the same 300&nbsp;MB/hour figure used as the upload cap).</li>
+        <li><span class="err-code">415</span> The downloaded file is a video.</li>
         <li><span class="err-code">429</span> Per-IP rate limit exceeded.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="shortener">
+    <h2>URL shortener</h2>
+
+    <div class="endpoint">
+      <div class="route-row"><span class="method get">GET</span><span class="route-path">/shorten</span></div>
+      <p>The page for creating short links. It calls the API below.</p>
+    </div>
+
+    <div class="endpoint">
+      <div class="route-row"><span class="method post">POST</span><span class="route-path">/api/shorten</span></div>
+      <p>Turns a long <code>https://</code> URL into a short <code>/mask/&lt;id&gt;</code> link on this domain.</p>
+      <h3>Request</h3>
+      <pre>{ "url": "https://example.com/some/long/page" }</pre>
+      <h3>How it works / safety</h3>
+      <p>Only <code>https://</code> URLs of at most 2048 characters are accepted. The hostname is resolved and every
+         address is checked — private, loopback, link-local and other internal addresses are rejected, the same SSRF
+         guard used by <code>/api/put-url</code>. Each client IP is limited to <strong>10 requests per minute and 60 per hour</strong>;
+         the limit is counted before the hostname lookup, so rejected attempts count too. The destination is stored as a small
+         object in the bucket under a random 8-character ID.</p>
+      <h3>Response <code>200</code></h3>
+      <pre>{
+  "id": "abc123XY",
+  "masked_url": "https://cdn.amit.is-a.dev/mask/abc123XY"
+}</pre>
+      <h3>Errors</h3>
+      <ul class="err-list">
+        <li><span class="err-code">400</span> Not <code>https://</code>, longer than 2048 characters, invalid, host doesn't resolve, or it points to a private/internal address.</li>
+        <li><span class="err-code">403</span> Your IP is banned.</li>
+        <li><span class="err-code">429</span> More than 10 requests in a minute or 60 in an hour from your IP.</li>
+      </ul>
+    </div>
+
+    <div class="endpoint">
+      <div class="route-row"><span class="method get">GET</span><span class="route-path">/mask/{short_id}</span></div>
+      <p>Redirects to the stored destination with a <code>307</code> and a <code>Referrer-Policy: no-referrer</code> header, so the
+         destination site doesn't see which page the visitor came from.</p>
+      <h3>Errors</h3>
+      <ul class="err-list">
+        <li><span class="err-code">404</span> No short link with that ID.</li>
       </ul>
     </div>
   </section>
@@ -287,12 +344,44 @@
     </div>
   </section>
 
+  <section id="stats">
+    <h2>Stats</h2>
+
+    <div class="endpoint">
+      <div class="route-row"><span class="method get">GET</span><span class="route-path">/stats</span></div>
+      <p>A page of charts about what is on the CDN: file types (by count or by size), the most common extensions, a
+         file-size histogram, the biggest folders, files added per month, and the largest files. It loads its data from
+         <code>/api/stats</code> and draws everything with plain CSS and inline SVG, so the page stays tiny.</p>
+    </div>
+
+    <div class="endpoint">
+      <div class="route-row"><span class="method get">GET</span><span class="route-path">/api/stats</span></div>
+      <p>The JSON behind the page. It contains aggregate numbers only — no IP addresses and no upload history. It is
+         computed from the same cached file listing used for browsing and search and recomputed at most every 10 minutes, so
+         calling it never adds load on the bucket. The response is sent with <code>Cache-Control: public, max-age=300</code>.</p>
+      <h3>Response <code>200</code></h3>
+      <pre>{
+  "empty": false,
+  "generated": 1791270000,                       // unix time
+  "totals": { "files": 900, "bytes": 1060758477, "avg": 1178620, "median": 171280, "types": 14 },
+  "categories": [ { "key": "images", "label": "Images", "files": 421, "bytes": 123456 } ],
+  "extensions": [ { "ext": "png", "files": 236, "bytes": 49283712 } ],   // top 10 by count
+  "extensions_more": 72,                         // files in rarer types
+  "sizes": [ { "label": "&lt; 10 KB", "files": 129 } ],
+  "folders": [ { "name": "uploads", "files": 375, "bytes": 564133888 } ],  // top 8 by size
+  "largest": [ { "name": "a.zip", "path": "uploads/ab12cd34-a.zip", "size": 45088768 } ],
+  "months": [ { "m": "2026-09", "files": 71, "bytes": 1234567 } ]        // last 12 months
+}</pre>
+      <p>If the file listing can't be read, it returns the last good result, or <code>{ "empty": true }</code> if there is none yet.</p>
+    </div>
+  </section>
+
   <section id="raw-domain">
     <h2>The raw domain</h2>
     <div class="endpoint">
       <div class="route-row"><span class="method get">GET</span><span class="route-path">/{path}</span> <span class="domain-tag">raw.cdn.amit.is-a.dev</span></div>
       <p>A separate hostname, not a path prefix on the main domain. Requests here are proxied straight through to
-         the underlying Hugging Face file (<code>resolve/main/&lt;path&gt;</code>), with no HTML wrapper — this is
+         the underlying file in the Hugging Face bucket (its <code>resolve</code> URL), with no HTML wrapper — this is
          meant for direct file links (<code>&lt;img src&gt;</code>, downloads, embeds), not browsing.</p>
       <h3>If the path is a folder, not a file</h3>
       <p>The direct file fetch 404s (Hugging Face's <code>resolve</code> only serves blobs). Before giving up, this
@@ -327,12 +416,15 @@
     <h2>How storage actually works</h2>
     <p class="lede">Everything above talks about "the CDN" as one thing, but there's no custom database or file
        server behind it — every file this service serves, lists, or accepts lives in a single
-       <strong>Hugging Face dataset repository</strong>. This app is a FastAPI backend in front of that repo:</p>
+       <strong>Hugging Face Storage Bucket</strong>. A bucket is plain object storage, not a git repository, so there is no
+       commit history that grows as files pile up. This app is a FastAPI backend in front of that bucket:</p>
     <ul style="color:var(--muted)">
-      <li>File listings (folders, search, file-exists checks) come from Hugging Face's repo-tree API, with a short-lived in-memory cache on this server's side so repeated browsing doesn't re-hit that API constantly.</li>
-      <li>Serving an actual file's bytes (viewing, raw links, downloads, zips) streams from the dataset repo's public <code>resolve/main/&lt;path&gt;</code> URL — this server proxies that stream rather than storing a separate copy.</li>
-      <li>Uploads (<code>/api/put</code>, <code>/api/put-url</code>, <code>/api/gh-sync</code>) all ultimately call the Hugging Face Hub API to commit files into that same dataset repo, each scoped to whatever folder/path rules that endpoint enforces.</li>
-      <li>There is one HF write token, held only by this server - never handed to uploaders, contributors, or GitHub Actions runs. Everything that writes to storage goes through this backend's own validation first (folder allow-lists, OIDC identity checks, rate limits) precisely because the write credential itself has no per-user restriction built in - the backend <em>is</em> the access control.</li>
+      <li>File listings (folders, search, file-exists checks, stats) come from the bucket's tree API, with a short-lived in-memory cache on this server's side so repeated browsing doesn't re-hit that API constantly.</li>
+      <li>Serving an actual file's bytes (viewing, raw links, downloads, zips) streams from the bucket's public <code>resolve</code> URL — this server proxies that stream rather than storing a separate copy.</li>
+      <li>Uploads (<code>/api/put</code>, <code>/api/put-url</code>, <code>/api/gh-sync</code>) all ultimately call the Hugging Face bucket API to write objects into that same bucket, each scoped to whatever folder/path rules that endpoint enforces.</li>
+      <li>There is one HF write token, held only by this server - never handed to uploaders, contributors, or GitHub Actions runs. Everything that writes to storage goes through this backend's own validation first (folder allow-lists, OIDC identity checks, bans, rate limits) precisely because the write credential itself has no per-user restriction built in - the backend <em>is</em> the access control.</li>
+      <li><strong>No version history.</strong> Overwritten or deleted files can't be restored from history, and a GitHub sync that removes files from a folder removes them for good.</li>
+      <li>A few internal folders live in the same bucket (batch records, short links and the site's own moderation data). They are hidden from listings and search, and the moderation data is encrypted.</li>
     </ul>
   </section>
 
