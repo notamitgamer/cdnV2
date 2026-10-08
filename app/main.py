@@ -220,44 +220,40 @@ async def download_file(path: str, request: Request):
     )
 
 
-UPLOAD_LIMIT_PER_MINUTE = 50 * 1024 * 1024
-UPLOAD_LIMIT_PER_HOUR = 300 * 1024 * 1024
+UPLOAD_LIMIT_PER_HOUR = 500 * 1024 * 1024        # file uploads (/api/put), per IP
+URL_UPLOAD_LIMIT_PER_HOUR = 50 * 1024 * 1024     # uploads from a link (/api/put-url), per IP
 
 
 class _UploadRateLimiter:
-    def __init__(self):
+    """Sliding one-hour window of uploaded bytes, per key (the client IP). No per-minute limit."""
+
+    def __init__(self, per_hour: int, name: str = "Upload"):
+        self.per_hour = per_hour
+        self.name = name
         self._usage: dict[str, deque] = {}
 
-    def _prune(self, ip: str, now: float):
-        dq = self._usage.get(ip)
-        if not dq:
-            return
+    def check_and_record(self, key: str, size: int):
+        now = time.time()
+        if size > self.per_hour:  # can never fit, so don't say "try again later"
+            raise HTTPException(
+                status_code=413,
+                detail=f"File too large (limit {format_size(self.per_hour)} per file).",
+            )
+        dq = self._usage.setdefault(key, deque())
         while dq and now - dq[0][0] > 3600:
             dq.popleft()
-
-    def check_and_record(self, ip: str, size: int):
-        now = time.time()
-        dq = self._usage.setdefault(ip, deque())
-        self._prune(ip, now)
-        minute_used = sum(s for t, s in dq if now - t <= 60)
-        hour_used = sum(s for t, s in dq)
-
-        if minute_used + size > UPLOAD_LIMIT_PER_MINUTE:
+        if sum(s for _, s in dq) + size > self.per_hour:
             raise HTTPException(
                 status_code=429,
-                detail=f"Upload rate limit exceeded: {format_size(UPLOAD_LIMIT_PER_MINUTE)}/minute. Try again shortly.",
+                detail=f"{self.name} rate limit exceeded: {format_size(self.per_hour)}/hour. Try again later.",
             )
-
-        if hour_used + size > UPLOAD_LIMIT_PER_HOUR:
-            raise HTTPException(
-                status_code=429,
-                detail=f"Upload rate limit exceeded: {format_size(UPLOAD_LIMIT_PER_HOUR)}/hour. Try again later.",
-            )
-
         dq.append((now, size))
+        if len(self._usage) > 10000:  # drop idle clients so the table can't grow forever
+            self._usage = {k: v for k, v in self._usage.items() if v and now - v[-1][0] <= 3600}
 
 
-_upload_limiter = _UploadRateLimiter()
+_upload_limiter = _UploadRateLimiter(UPLOAD_LIMIT_PER_HOUR, "Upload")
+_url_upload_limiter = _UploadRateLimiter(URL_UPLOAD_LIMIT_PER_HOUR, "URL upload")
 
 
 class _CountRateLimiter:
@@ -288,7 +284,7 @@ class _CountRateLimiter:
             self._hits = {k: v for k, v in self._hits.items() if v and now - v[-1] <= 3600}
 
 
-_shorten_limiter = _CountRateLimiter(per_minute=10, per_hour=60)
+_shorten_limiter = _CountRateLimiter(per_minute=10, per_hour=50)
 SHORTEN_MAX_URL_LENGTH = 2048
 BATCH_MIN_FILES = 2
 ALLOWED_UPLOAD_FOLDERS = {"uploads", "third-party"}
@@ -356,10 +352,6 @@ async def handle_upload(
     return response
 
 
-GH_SYNC_LIMIT_PER_HOUR = 2 * 1024 * 1024 * 1024
-_gh_sync_limiter = _UploadRateLimiter()
-
-
 def _safe_extract_tar(tar: tarfile.TarFile, dest: str):
     dest_real = os.path.realpath(dest)
 
@@ -413,11 +405,7 @@ async def gh_sync(
         raise HTTPException(status_code=403, detail="You are banned from this CDN.")
     await gh_check(owner, claims["owner_id"])
 
-    contents = await archive.read()
-    _gh_sync_limiter.check_and_record(
-        f"gh-sync:{owner}/{repo}:{client_ip}",
-        len(contents),
-    )
+    contents = await archive.read()  # no size/rate limit on GitHub sync (identity, approval, bans and the video rule apply)
 
     with tempfile.TemporaryDirectory() as tmp_upload, tempfile.TemporaryDirectory() as tmp_extract:
         archive_path = os.path.join(tmp_upload, "payload.tar.gz")
@@ -508,7 +496,7 @@ async def mask_redirect(request: Request, short_id: str):
     )
 
 
-_MAX_URL_UPLOAD_BYTES = UPLOAD_LIMIT_PER_HOUR
+_MAX_URL_UPLOAD_BYTES = URL_UPLOAD_LIMIT_PER_HOUR
 
 
 def _assert_public_url(url: str):
@@ -644,7 +632,7 @@ async def handle_upload_from_url(
             folder,
             "url",
         )
-        _upload_limiter.check_and_record(
+        _url_upload_limiter.check_and_record(
             client_ip,
             downloaded,
         )

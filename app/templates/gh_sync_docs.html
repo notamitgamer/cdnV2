@@ -201,9 +201,10 @@ jobs:
         extension and by file contents (renaming won't help). If the repo contains one, the whole sync is
         rejected and nothing is uploaded. Leave videos out of the archive, for example by adding
         <code>--exclude='*.mp4'</code> to the <code>tar</code> command.</li>
-    <li>There's no limit on file count, but the <em>compressed archive</em> is rate-limited: 50&nbsp;MB per minute and
-        300&nbsp;MB per hour per repo, so an archive over 50&nbsp;MB is refused. Keep it small by excluding build output,
-        for example <code>--exclude='node_modules'</code> in the <code>tar</code> command.
+    <li><strong>No rate limit.</strong> There's no limit on file count, archive size or how often you sync. What protects it instead is your
+        sign-in identity, the approval rule, bans and the no-video rule. One caveat outside this service: the network in front of the CDN can cap a
+        single request (Cloudflare's free plan refuses requests over 100&nbsp;MB), so a very large archive may still be refused. Keep it small with
+        <code>--exclude='node_modules'</code> in the <code>tar</code> command.
         <a href="/documentation#rate-limits">How rate limits work</a>.</li>
     <li>Each sync fully replaces the contents of <em>your own</em> <code>username/repo</code> folder only
         (delete-then-upload), so removed files disappear from the CDN too. No other folder is ever touched.
@@ -225,9 +226,9 @@ jobs:
         or exclude it from the archive.</li>
     <li><code>401</code> — the identity token was missing, expired or not for this service. Check that
         <code>permissions: id-token: write</code> is set and that the audience is <code>cdn.amit.is-a.dev</code>.</li>
-    <li><code>429</code> — the archive is over the rate limit (50&nbsp;MB per minute, 300&nbsp;MB per hour). An archive larger than
-        50&nbsp;MB can never pass, so shrink it, or wait if you've just synced. See
-        <a href="/documentation#rate-limits">rate limits</a>.</li>
+    <li><code>413</code> with a message that isn't from the CDN (for example a plain "Request Entity Too Large") — the request was refused before it
+        reached the CDN because the archive is too big for the network in front of it (100&nbsp;MB on Cloudflare's free plan). Exclude build output and
+        dependency folders from the archive. Sync itself has no <a href="/documentation#rate-limits">rate limit</a>.</li>
   </ul>
   <p>The full request/response details are in the <a href="/documentation#gh-sync">documentation</a>.</p>
 
