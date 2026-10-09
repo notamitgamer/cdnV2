@@ -165,10 +165,7 @@
 
       <h3>Limits, currently</h3>
       <p>Any file type except video. <strong>GitHub sync has no rate limit</strong> and no limit on the size or number of files:
-         what protects it instead is the sign-in identity, the approval rule, bans and the video rule above. Separately, the network in front of the
-         CDN can cap a single request (for example, Cloudflare's Free and Pro plans refuse requests over 100&nbsp;MB, and that happens before the
-         request reaches this app), so a very large archive can still fail with a <code>413</code> that isn't one of the messages on this page.
-         If that happens, shrink the archive with <code>tar --exclude</code>. See <a href="#rate-limits">Rate limits</a>.</p>
+         what protects it instead is the sign-in identity, the approval rule, bans and the video rule above. See <a href="#rate-limits">Rate limits</a>.</p>
     </div>
   </section>
 
@@ -312,7 +309,7 @@
       <li><strong>What does not count.</strong> Uploads refused before the limit check (banned IP, VPN/proxy address, video) do not use your allowance. Shortener requests <em>do</em> count even when the URL turns out to be invalid, because the limit is checked before the link is examined.</li>
       <li><strong>GitHub sync is not rate-limited.</strong> It is protected by the sign-in identity, the approval rule, bans and the video rule instead (see <a href="#gh-sync">GitHub Actions sync</a>).</li>
       <li><strong>In memory.</strong> Counters are kept in the server's memory, so a restart or redeploy clears them.</li>
-      <li><strong>Your network may add its own cap.</strong> A single request can also be limited by the network in front of the CDN, separately from the limits above. For example, Cloudflare's Free and Pro plans refuse any request over 100&nbsp;MB before it reaches this app. If a large upload fails with a <code>413</code> that doesn't match the messages below, split it into smaller uploads.</li>
+      
     </ul>
 
     <h3>When you hit a limit</h3>
