@@ -186,7 +186,7 @@
       <h3>How it works</h3>
       <p>Each file is streamed to a temporary file named only by a random ID (your filename is never used in a filesystem path),
          then checked in this order: banned IP, VPN/proxy address, video (by extension or file signature), and the
-         upload limit (500&nbsp;MB per hour per client IP). It is then stored in the bucket at
+         upload limit (200&nbsp;MB per hour per client IP). It is then stored in the bucket at
          <code>&lt;folder&gt;/&lt;8-char-uuid&gt;-&lt;filename&gt;</code>. Any filename is accepted: directory parts are dropped,
          accents are simplified, and anything other than letters, digits, <code>.</code>, <code>_</code> and <code>-</code>
          becomes an underscore (<code>my file (1).png</code> is stored as <code>ab12cd34-my_file_1.png</code>).
@@ -206,8 +206,8 @@
         <li><span class="err-code">400</span> <code>folder</code> isn't <code>uploads</code> or <code>third-party</code>.</li>
         <li><span class="err-code">403</span> Your IP is banned, or the upload comes from a VPN/proxy address.</li>
         <li><span class="err-code">415</span> The file is a video (<code>.mp4</code>, <code>.mov</code>, <code>.webm</code>, <code>.mkv</code> and similar, or recognised by its contents). Videos are not accepted on this CDN.</li>
-        <li><span class="err-code">413</span> A single file is larger than 500&nbsp;MB (waiting won't help; split it).</li>
-        <li><span class="err-code">429</span> You have used your 500&nbsp;MB for the hour. See <a href="#rate-limits">Rate limits</a>.</li>
+        <li><span class="err-code">413</span> A single file is larger than 200&nbsp;MB (waiting won't help; split it).</li>
+        <li><span class="err-code">429</span> You have used your 200&nbsp;MB for the hour. See <a href="#rate-limits">Rate limits</a>.</li>
       </ul>
     </div>
 
@@ -292,7 +292,7 @@
     <h3>At a glance</h3>
     <table>
       <tr><th>What</th><th class="desc">Limit</th></tr>
-      <tr><td style="white-space:nowrap"><code>/api/put</code></td><td class="desc"><strong>500&nbsp;MB per hour</strong>, counted in bytes, per IP. No per-minute limit. A single file can be at most 500&nbsp;MB.</td></tr>
+      <tr><td style="white-space:nowrap"><code>/api/put</code></td><td class="desc"><strong>200&nbsp;MB per hour</strong>, counted in bytes, per IP. No per-minute limit. A single file can be at most 200&nbsp;MB.</td></tr>
       <tr><td style="white-space:nowrap"><code>/api/put-url</code></td><td class="desc"><strong>50&nbsp;MB per hour</strong>, counted in bytes, per IP. This is a separate allowance from file uploads. A single file can be at most 50&nbsp;MB.</td></tr>
       <tr><td style="white-space:nowrap"><code>/api/shorten</code></td><td class="desc"><strong>10 per minute</strong> and <strong>50 per hour</strong>, counted in requests, per IP.</td></tr>
       <tr><td style="white-space:nowrap"><code>/api/gh-sync</code></td><td class="desc"><strong>No rate limit.</strong></td></tr>
@@ -303,8 +303,8 @@
       <li><strong>Sliding window.</strong> Your usage is totalled over the <em>last 60 minutes</em> (the shortener also looks at the last 60 seconds). There is no clock-time reset: old uploads age out one by one, so your allowance returns gradually.</li>
       <li><strong>Per IP.</strong> The limit follows the address your request really comes from. People on the same network (office, school, mobile carrier) share one allowance. Uploads from VPN or proxy addresses are refused outright, whatever your usage.</li>
       <li><strong>Bytes, not files.</strong> Ten 1&nbsp;MB files use the same allowance as one 10&nbsp;MB file. Each file is checked when it arrives.</li>
-      <li><strong>Two separate allowances.</strong> Uploading from a link never uses up your 500&nbsp;MB of file uploads, and file uploads never use up your 50&nbsp;MB for links.</li>
-      <li><strong>Biggest single file.</strong> 500&nbsp;MB for file uploads and 50&nbsp;MB from a link. A file over that is refused with <code>413</code> rather than <code>429</code>, because waiting would not help. From a link, the download stops as soon as it passes 50&nbsp;MB.</li>
+      <li><strong>Two separate allowances.</strong> Uploading from a link never uses up your 200&nbsp;MB of file uploads, and file uploads never use up your 50&nbsp;MB for links.</li>
+      <li><strong>Biggest single file.</strong> 200&nbsp;MB for file uploads and 50&nbsp;MB from a link. A file over that is refused with <code>413</code> rather than <code>429</code>, because waiting would not help. From a link, the download stops as soon as it passes 50&nbsp;MB.</li>
       <li><strong>Batches stop at the limit.</strong> If you upload several files in one request and the limit is reached partway, the request fails with <code>429</code>. Files already stored earlier in that request stay stored.</li>
       <li><strong>What does not count.</strong> Uploads refused before the limit check (banned IP, VPN/proxy address, video) do not use your allowance. Shortener requests <em>do</em> count even when the URL turns out to be invalid, because the limit is checked before the link is examined.</li>
       <li><strong>GitHub sync is not rate-limited.</strong> It is protected by the sign-in identity, the approval rule, bans and the video rule instead (see <a href="#gh-sync">GitHub Actions sync</a>).</li>
@@ -314,16 +314,16 @@
 
     <h3>When you hit a limit</h3>
     <p>The response is <code>429</code> (or <code>413</code> for a file that is too big) with a JSON message. There is no <code>Retry-After</code> header, so use the message to see which limit you hit:</p>
-    <pre>{ "detail": "Upload rate limit exceeded: 500.00 MB/hour. Try again later." }
+    <pre>{ "detail": "Upload rate limit exceeded: 200.00 MB/hour. Try again later." }
 { "detail": "URL upload rate limit exceeded: 50.00 MB/hour. Try again later." }
 { "detail": "Rate limit exceeded: 10 requests/minute. Try again shortly." }
 { "detail": "Rate limit exceeded: 50 requests/hour. Try again later." }
-{ "detail": "File too large (limit 500.00 MB per file)." }</pre>
+{ "detail": "File too large (limit 200.00 MB per file)." }</pre>
     <p>After a <em>minute</em> message, wait up to a minute. After an <em>hour</em> message, wait until earlier uploads are an hour old. For <em>file too large</em>, waiting doesn't help: make the file smaller or split it.</p>
 
     <h3>Staying under the limits</h3>
     <ul style="color:var(--muted)">
-      <li>Upload big batches in smaller groups, and leave time between them if you are close to 500&nbsp;MB in an hour.</li>
+      <li>Upload big batches in smaller groups, and leave time between them if you are close to 200&nbsp;MB in an hour.</li>
       <li>Compress or resize large files before uploading.</li>
       <li>Have a whole project to move? <a href="#gh-sync">GitHub sync</a> has no rate limit.</li>
     </ul>
@@ -350,12 +350,12 @@
       <h3>How it works</h3>
       <p>Lists every file under <code>path</code> recursively via the HF API, fetches up to 8 of them concurrently,
          and streams them into a zip in memory (paths inside the zip are relative to the folder you asked for, not
-         absolute). There's a hard limit of <strong>300 files / 500&nbsp;MB total</strong> per zip — past that it
+         absolute). There's a hard limit of <strong>300 files / 200&nbsp;MB total</strong> per zip — past that it
          refuses rather than trying to build an enormous zip in memory.</p>
       <h3>Errors</h3>
       <ul class="err-list">
         <li><span class="err-code">404</span> Folder is empty or doesn't exist.</li>
-        <li><span class="err-code">413</span> Folder exceeds the 300-file / 500&nbsp;MB zip limit.</li>
+        <li><span class="err-code">413</span> Folder exceeds the 300-file / 200&nbsp;MB zip limit.</li>
       </ul>
     </div>
   </section>
