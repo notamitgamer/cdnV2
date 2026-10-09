@@ -225,6 +225,10 @@
             .container { width: 100%; padding: 0 1.25rem; }
             .result-url { flex-direction: column; align-items: flex-start; }
         }
+    
+        .rate-note { display:flex; gap:.65rem; align-items:flex-start; margin:0 0 1.25rem; padding:.75rem 1rem; border:1px solid rgba(245,158,11,.45); background:rgba(245,158,11,.1); border-radius:var(--radius-md); font-size:.88rem; line-height:1.5; color:var(--text-main); }
+        .rate-note svg { flex:none; margin-top:.15rem; color:#d97706; }
+        .rate-note a { color:var(--accent-primary); font-weight:500; white-space:nowrap; }
     </style>
 </head>
 <body>
@@ -235,6 +239,8 @@
             Paste any public <code>https://</code> URL and get back a masked, shareable link.
             The destination is never exposed until someone visits the masked URL.
         </blockquote>
+
+        <div class="rate-note" role="note"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span><strong>Rate limit:</strong> each IP can create <strong>10 links per minute</strong> and <strong>50 per hour</strong>. Failed attempts count too. Only <code>https://</code> URLs up to 2048 characters are accepted. <a href="/documentation#rate-limits">How rate limits work</a></span></div>
         
         <div class="input-group" id="shorten-group">
             <input type="url" id="url-input" class="url-input" placeholder="Paste a URL to shorten (e.g. https://example.com)" autocomplete="off" spellcheck="false" required>

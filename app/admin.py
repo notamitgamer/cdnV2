@@ -437,6 +437,10 @@ function render(s){
     t+='</table>';
   }else t+='<p class="dim" style="margin:0">Nothing waiting. A new GitHub account shows up here after its first sync.</p>';
   t+='</section>';
+  t+='<section id="bans" class="sec"><h2>Banned IPs</h2><table class="cards"><tr><th>IP</th><th>Since</th><th>Note</th><th></th></tr>';
+  for(const ip in banned)t+=`<tr>${cell('IP',esc(ip),'name mono')}${cell('Since',fmt(banned[ip].t))}${cell('Note',esc(banned[ip].note||''))}<td class="act">${btn('Unban','','/api/admin/unban',{ip})}</td></tr>`;
+  if(!nb)t+=empty(4,'None.');
+  t+='</table></section>';
   document.getElementById('top').innerHTML=t;
 
   let u='<table class="cards"><tr><th>File</th><th>Time</th><th>IP</th><th>Size</th><th>Via</th><th>Status</th><th></th></tr>';
@@ -453,11 +457,9 @@ function render(s){
   for(const [k,g] of s.gh){const c=g.status==='allowed'?'ok':g.status==='banned'?'bad':'warn';
     r+=`<tr>${cell('Account',esc(g.owner),'name')}${cell('Status',esc(g.status),c)}${cell('Repos',esc((g.repos||[]).join(', ')))}${cell('Syncs',g.syncs)}${cell('Last IP',esc(g.last_ip),'mono')}${cell('Last sync',fmt(g.last))}<td class="act">${g.status!=='allowed'?btn('Allow','green',GH,{key:k,action:'allow'}):btn('Revoke','',GH,{key:k,action:'revoke'})}${g.status!=='banned'?btn('Ban','red',GH,{key:k,action:'ban'},'Ban this GitHub account?'):''}</td></tr>`}
   if(!s.gh.length)r+=empty(7,'No GitHub syncs yet.');
-  r+=`</table><p class="dim">Always allowed: ${esc(s.always_allow.join(', ')||'none')}</p><section id="bans" class="sec"><h2>Banned IPs</h2><table class="cards"><tr><th>IP</th><th>Since</th><th>Note</th><th></th></tr>`;
-  for(const ip in banned)r+=`<tr>${cell('IP',esc(ip),'name mono')}${cell('Since',fmt(banned[ip].t))}${cell('Note',esc(banned[ip].note||''))}<td class="act">${btn('Unban','','/api/admin/unban',{ip})}</td></tr>`;
-  if(!nb)r+=empty(4,'None.');
+  r+=`</table><p class="dim">Always allowed: ${esc(s.always_allow.join(', ')||'none')}</p>`;
   const w=s.whoami,kv=(a,b)=>`<tr><td>${a}</td><td class="mono">${esc(b==null||b===''?'-':b)}</td></tr>`;
-  r+=`</table></section><details id="who" class="who"${WHO||!w.ok?' open':''}><summary>Your IP as the server sees it: <span class="mono ${w.ok?'ok':'bad'}">${esc(w.detected)}</span> ${w.ok?'&#10003;':'&#10007; looks wrong'}</summary><table class="kv">${kv('X-Forwarded-For',w.x_forwarded_for)}${kv('CF-Connecting-IP',w.cf_connecting_ip)}${kv('Socket peer',w.socket_peer)}${kv('Settings','TRUST_CF_CONNECTING_IP='+(w.trust_cf_header?1:0)+', TRUSTED_PROXY_HOPS='+w.proxy_hops)}</table><p class="dim">This must be your real public IP, or bans will hit the wrong address.</p></details>`;
+  r+=`<details id="who" class="who"${WHO||!w.ok?' open':''}><summary>Your IP as the server sees it: <span class="mono ${w.ok?'ok':'bad'}">${esc(w.detected)}</span> ${w.ok?'&#10003;':'&#10007; looks wrong'}</summary><table class="kv">${kv('X-Forwarded-For',w.x_forwarded_for)}${kv('CF-Connecting-IP',w.cf_connecting_ip)}${kv('Socket peer',w.socket_peer)}${kv('Settings','TRUST_CF_CONNECTING_IP='+(w.trust_cf_header?1:0)+', TRUSTED_PROXY_HOPS='+w.proxy_hops)}</table><p class="dim">This must be your real public IP, or bans will hit the wrong address.</p></details>`;
   document.getElementById('rest').innerHTML=r;
   document.getElementById('who').addEventListener('toggle',e=>{WHO=e.target.open});
 }

@@ -137,6 +137,9 @@
      The CDN backend verifies that token's signature, reads the owner/repo straight from it, and uses
      <em>only that</em> to decide where your files go. Nothing in your request body or headers is trusted
      for the destination path.</p>
+  <p>The same token also says <em>who</em> you are, by GitHub's permanent numeric account ID — renaming
+     your account, or someone registering a username you dropped, doesn't change that identity.
+     That's what the approval step below is based on.</p>
 
   <h2>1. Add the workflow</h2>
   <p>Create <code>.github/workflows/cdn-sync.yml</code> in the repo you want mirrored. The token is
@@ -177,7 +180,7 @@ jobs:
         env:
           OIDC_TOKEN: ${{ steps.oidc.outputs.token }}
         run: |
-          curl -sf -X POST https://cdn.amit.is-a.dev/api/gh-sync \
+          curl -sS --fail-with-body -X POST https://cdn.amit.is-a.dev/api/gh-sync \
             -F "token=$OIDC_TOKEN" \
             -F "archive=@/tmp/payload.tar.gz"
 {% endraw %}</pre>
@@ -190,16 +193,41 @@ jobs:
 
   <h2>Notes</h2>
   <ul>
-    <li>Any file type except video is accepted (a sync containing a video is rejected as a whole), and there's currently no limit on file size or on how many files a sync can push — send the whole repo as-is.</li>
     <li><strong>First sync is free, later ones need approval.</strong> The first sync from a new GitHub account
         goes through immediately. After that, further syncs from that account are refused until the CDN owner
-        approves it. Accounts that upload abusive content are banned.</li>
+        approves it, so after your first push, ask for approval. Approved accounts sync freely from then on.
+        Accounts that upload abusive content are banned.</li>
+    <li><strong>No videos.</strong> Any file type is accepted <em>except</em> video, which is detected by file
+        extension and by file contents (renaming won't help). If the repo contains one, the whole sync is
+        rejected and nothing is uploaded. Leave videos out of the archive, for example by adding
+        <code>--exclude='*.mp4'</code> to the <code>tar</code> command.</li>
+    <li><strong>No rate limit.</strong> There's no limit on file count, archive size or how often you sync. What protects it instead is your
+        sign-in identity, the approval rule, bans and the no-video rule. A smaller archive syncs faster, so leave build output out, for example
+        <code>--exclude='node_modules'</code> in the <code>tar</code> command.
+        <a href="/documentation#rate-limits">How rate limits work</a>.</li>
     <li>Each sync fully replaces the contents of <em>your own</em> <code>username/repo</code> folder only
-        (delete-then-upload), so removed files disappear from the CDN too. No other folder is ever touched.</li>
+        (delete-then-upload), so removed files disappear from the CDN too. No other folder is ever touched.
+        The storage keeps no version history, so a removed or overwritten file can't be brought back — keep the
+        original in your repo.</li>
     <li>Change <code>branches: [ main ]</code> to whichever branch you want mirrored.</li>
     <li>Want it on every branch/tag push instead? Adjust the <code>on:</code> block — the destination
         folder is still locked to your username/repo either way.</li>
   </ul>
+
+  <h2>If a sync is refused</h2>
+  <p>The step now shows the server's reason in the Actions log (that's what <code>--fail-with-body</code> is for).</p>
+  <ul>
+    <li><code>403</code> <em>"First sync from '&lt;you&gt;' was accepted; further syncs need approval…"</em> — your account
+        has already synced once and is waiting to be approved. Nothing is wrong with your workflow; ask the CDN owner to
+        approve the account, then re-run the job.</li>
+    <li><code>403</code> <em>"…banned…"</em> — the account (or the network the job ran from) has been blocked.</li>
+    <li><code>415</code> <em>"Video files are not allowed…"</em> — the message names the file; remove it from the repo
+        or exclude it from the archive.</li>
+    <li><code>401</code> — the identity token was missing, expired or not for this service. Check that
+        <code>permissions: id-token: write</code> is set and that the audience is <code>cdn.amit.is-a.dev</code>.</li>
+    
+  </ul>
+  <p>The full request/response details are in the <a href="/documentation#gh-sync">documentation</a>.</p>
 
   <footer>
     <p>&copy; 2025 - 2026 notamitgamer. All rights reserved.</p>
