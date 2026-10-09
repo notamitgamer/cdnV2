@@ -220,7 +220,7 @@ async def download_file(path: str, request: Request):
     )
 
 
-UPLOAD_LIMIT_PER_HOUR = 500 * 1024 * 1024        # file uploads (/api/put), per IP
+UPLOAD_LIMIT_PER_HOUR = 200 * 1024 * 1024        # file uploads (/api/put), per IP
 URL_UPLOAD_LIMIT_PER_HOUR = 50 * 1024 * 1024     # uploads from a link (/api/put-url), per IP
 
 
