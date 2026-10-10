@@ -333,7 +333,7 @@ _PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>CDN admin</title>
 <style>
 :root{--bg:#0d1117;--sf:#161b22;--bd:#30363d;--ln:#21262d;--tx:#e6edf3;--dim:#9da7b3;--red:#ff7b72;--grn:#56d364;--amb:#d29922;--blu:#58a6ff}
-*{box-sizing:border-box}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;margin:0 auto;padding:14px 14px 64px;background:var(--bg);color:var(--tx);max-width:1200px;-webkit-text-size-adjust:100%}
 header.bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
 h1{font-size:18px;margin:0}h2{font-size:14px;margin:20px 0 8px;color:var(--dim);font-weight:600;scroll-margin-top:54px}
