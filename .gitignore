@@ -12,3 +12,14 @@ android/app/
 android/*.aab
 android/build/
 android/.gradle/
+
+# Local env files (the template .env.example is committed)
+.env.*
+!.env.example
+
+# Tooling / editors / OS
+.ruff_cache/
+.pytest_cache/
+.idea/
+.vscode/
+.DS_Store

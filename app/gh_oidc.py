@@ -14,6 +14,7 @@ Why this instead of a PAT/App token per contributor:
 Docs: https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect
 """
 
+import os
 import time
 import httpx
 import jwt
@@ -22,7 +23,9 @@ from fastapi import HTTPException
 
 GITHUB_OIDC_ISSUER = "https://token.actions.githubusercontent.com"
 JWKS_URL = f"{GITHUB_OIDC_ISSUER}/.well-known/jwks"
-EXPECTED_AUDIENCE = "cdn.amit.is-a.dev"
+# The `audience` your workflows request in core.getIDToken(...). Self-hosters: set OIDC_AUDIENCE
+# to your own CDN hostname. The default keeps the original deployment working unchanged.
+EXPECTED_AUDIENCE = os.getenv("OIDC_AUDIENCE", "cdn.amit.is-a.dev")
 
 _jwks_client = None
 _jwks_client_ts = 0
