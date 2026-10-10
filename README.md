@@ -23,6 +23,8 @@ Live instance: <https://cdn.amit.is-a.dev> · License: [MIT](LICENSE)
 - **Abuse protection** — per-IP rate limits, video-upload blocking (by extension and by file contents),
   and optional VPN/proxy blocking.
 - **Stats** — `/stats` shows file counts and storage used.
+- **Link prefetching** — pages you can navigate to from the current one are fetched quietly in the
+  background, so the server's listing cache is warm by the time you click (details below).
 - **PWA** — installable, with a service worker that deliberately caches nothing, so listings are
   never stale.
 
@@ -129,6 +131,25 @@ Default limits per client IP: 200 MB/hour for file uploads, 50 MB/hour for URL u
 per minute / 50 per hour for the shortener. GitHub sync has no rate limit but accepts at most a 200 MB
 compressed archive. Video files are refused.
 
+## Link prefetching
+
+`app/static/prefetch.js` (loaded from `<head>` on the public pages, not the admin dashboard) fetches the pages linked from the
+current one once the browser is idle. The slow part of opening a folder is the first Hugging Face
+lookup behind it, which the server then caches for 60 seconds; prefetching pays that cost ahead of the
+click. It is deliberately conservative:
+
+- Same-origin links only, and never `/api/*`, `/admin`, `/mask/*`, `/pack/*`, `/static/*`, `/raw/*`,
+  downloads, `target`/`download` links, or anything inside `data-turbo="false"`.
+- At most **16 pages per page view**, **2 at a time**. Folder and file links on screen go first,
+  navbar and footer links last. Only while the tab is visible.
+- Cancelled as soon as you navigate, so it never competes with a real click.
+- Disabled on Save-Data, 2g and `prefers-reduced-data`; reduced to 6 pages / 1 at a time on 3g.
+
+To turn it off for a page, add `<meta name="cdn-prefetch" content="off">`; to exclude a link or a
+whole section, add `data-no-prefetch`. To change the limits, edit `DEFAULTS` at the top of the file. For
+debugging, run `__cdnPrefetch.stats()` in the browser console. Prefetches carry an `X-Purpose: prefetch`
+request header, and they don't show up in the Recent/Visited history, which is recorded by the page itself.
+
 ## Project layout
 
 ```
@@ -141,7 +162,8 @@ app/
   shortener.py     URL shortener
   stats.py         /stats
   templates/       Jinja2 pages (index.html renders most page types)
-  static/          icons, manifest, service worker
+  static/          icons, manifest, service worker, prefetch.js
+tests/             node --test tests/*.test.js (prefetcher unit tests)
 Dockerfile · render.yaml · start.sh
 ```
 

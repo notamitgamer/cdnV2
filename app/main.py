@@ -48,19 +48,22 @@ templates = Jinja2Templates(directory="app/templates")
 
 STATIC_DIR = Path(__file__).parent / "static"
 _NO_STORE_FILES = {"manifest.json", "sw.js"}
+_REVALIDATE_FILES = {"prefetch.js"}
 
 
 @app.get("/static/{filename}")
 async def static_no_cache_root(filename: str):
-    if filename not in _NO_STORE_FILES:
+    if filename in _NO_STORE_FILES:
+        cache_control = "no-store, no-cache, must-revalidate, max-age=0"
+    elif filename in _REVALIDATE_FILES:
+        # Short cache: full page loads don't re-download it, and a deploy still shows up within minutes.
+        cache_control = "public, max-age=300"
+    else:
         raise HTTPException(status_code=404)
     file_path = STATIC_DIR / filename
     if not file_path.is_file():
         raise HTTPException(status_code=404)
-    return FileResponse(
-        file_path,
-        headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"},
-    )
+    return FileResponse(file_path, headers={"Cache-Control": cache_control})
 
 
 @app.get("/static/icons/{filename}")
