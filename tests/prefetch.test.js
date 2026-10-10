@@ -1,7 +1,7 @@
 // Run with: node --test tests/*.test.js
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { pathAllowed, candidateUrl, createPrefetcher } = require('../app/static/prefetch.js');
+const { DEFAULTS, pathAllowed, candidateUrl, createPrefetcher } = require('../app/static/prefetch.js');
 
 const BASE = new URL('https://cdn.example.com/photos/');
 const link = (href, extra = {}) => ({ href, ...extra });
@@ -144,7 +144,7 @@ test('a failing fetch does not stall the queue and is not retried in a loop', as
 
 test('paused queue holds work until resumed', async () => {
   const { fn, calls } = manualFetch();
-  const pf = createPrefetcher({ fetchFn: fn, config: { maxLinks: 10 } });
+  const pf = createPrefetcher({ fetchFn: fn, config: { concurrency: 2, maxLinks: 10 } });
   pf.setPaused(true);
   pf.enqueue(urls(3));
   await tick();
@@ -152,4 +152,24 @@ test('paused queue holds work until resumed', async () => {
   pf.setPaused(false);
   await tick();
   assert.equal(calls.length, 2);
+});
+
+test('abort(keepUrl) leaves the page being opened running and cancels the rest', async () => {
+  const { fn, calls } = manualFetch();
+  const pf = createPrefetcher({ fetchFn: fn, config: { concurrency: 3, maxLinks: 10 } });
+  const [a, b, c] = urls(3);
+  pf.enqueue([a, b, c, ...urls(6).slice(3)]);
+  await tick();
+  pf.abort(b);
+  await tick();
+  assert.deepEqual(calls.map((x) => x.aborted), [true, false, true]);
+  assert.equal(pf.stats().queued, 0);
+  calls[1].resolve();           // the kept request finishes normally and is remembered
+  await tick(); await tick();
+  pf.newPage();
+  assert.equal(pf.enqueue([b]), 0);
+});
+
+test('prefetch TTL is shorter than the pages\' browser-cache lifetime (30 s)', () => {
+  assert.ok(DEFAULTS.ttlMs < 30000);
 });

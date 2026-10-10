@@ -23,8 +23,8 @@ Live instance: <https://cdn.amit.is-a.dev> · License: [MIT](LICENSE)
 - **Abuse protection** — per-IP rate limits, video-upload blocking (by extension and by file contents),
   and optional VPN/proxy blocking.
 - **Stats** — `/stats` shows file counts and storage used.
-- **Link prefetching** — pages you can navigate to from the current one are fetched quietly in the
-  background, so the server's listing cache is warm by the time you click (details below).
+- **Fast navigation** — linked pages are prefetched in the background and cached/gzipped, so a click
+  is usually answered from the browser's own cache (details below).
 - **PWA** — installable, with a service worker that deliberately caches nothing, so listings are
   never stale.
 
@@ -131,30 +131,48 @@ Default limits per client IP: 200 MB/hour for file uploads, 50 MB/hour for URL u
 per minute / 50 per hour for the shortener. GitHub sync has no rate limit but accepts at most a 200 MB
 compressed archive. Video files are refused.
 
-## Link prefetching
+## Fast navigation
 
-`app/static/prefetch.js` (loaded from `<head>` on the public pages, not the admin dashboard) fetches the pages linked from the
-current one once the browser is idle. The slow part of opening a folder is the first Hugging Face
-lookup behind it, which the server then caches for 60 seconds; prefetching pays that cost ahead of the
-click. It is deliberately conservative:
+Moving around is meant to feel close to a static site. Three things work together:
+
+1. **Link prefetching.** `app/static/prefetch.js` (loaded from `<head>` on the public pages, not the
+   admin dashboard) fetches the pages linked from the current one as soon as the browser is idle.
+2. **Browser-cached, gzipped pages.** Rendered pages are identical for everyone, so they are sent with
+   `Cache-Control: private, max-age=30` and gzip (`app/fast_html.py`). A prefetched page therefore sits
+   in the browser's cache and the click is answered with no network at all; a page that wasn't
+   prefetched in time still arrives about 5x smaller (a typical folder listing is ~60 KB of HTML, ~12 KB
+   gzipped).
+3. **Fewer storage round trips.** Opening a folder used to cost a wasted `HEAD` request plus the
+   listing. When the parent folder's listing is cached (it is, because that's the page you clicked
+   from), the `HEAD` is skipped, and simultaneous requests for one folder share a single Hugging Face call.
+
+**Freshness trade-off:** because pages are cached for 30 s in the browser (on top of the server's 60 s
+listing cache), a file you just uploaded can take up to a minute or two to show in a folder you
+already had open. A hard refresh (Ctrl/Cmd+Shift+R) always fetches fresh.
+
+### What gets prefetched
+
+The prefetcher is deliberately conservative:
 
 - Same-origin links only, and never `/api/*`, `/admin`, `/mask/*`, `/pack/*`, `/static/*`, `/raw/*`,
   downloads, `target`/`download` links, or anything inside `data-turbo="false"`.
-- At most **16 pages per page view**, **2 at a time**. Folder and file links on screen go first,
+- At most **16 pages per page view**, **3 at a time**. Folder and file links on screen go first,
   navbar and footer links last. Only while the tab is visible.
-- Cancelled as soon as you navigate, so it never competes with a real click.
+- When you click, in-flight prefetches are cancelled, except the one for the page you're opening.
 - Disabled on Save-Data, 2g and `prefers-reduced-data`; reduced to 6 pages / 1 at a time on 3g.
 
 To turn it off for a page, add `<meta name="cdn-prefetch" content="off">`; to exclude a link or a
-whole section, add `data-no-prefetch`. To change the limits, edit `DEFAULTS` at the top of the file. For
-debugging, run `__cdnPrefetch.stats()` in the browser console. Prefetches carry an `X-Purpose: prefetch`
-request header, and they don't show up in the Recent/Visited history, which is recorded by the page itself.
+whole section, add `data-no-prefetch`. To change the limits, edit `DEFAULTS` at the top of the file
+(keep `ttlMs` below the 30 s cache lifetime in `app/fast_html.py`). For debugging, run
+`__cdnPrefetch.stats()` in the browser console. Prefetches carry an `X-Purpose: prefetch` request
+header, and they don't show up in the Recent/Visited history, which is recorded by the page itself.
 
 ## Project layout
 
 ```
 app/
   main.py          routes, uploads, zip packing, GitHub sync endpoint
+  fast_html.py     browser-cache + gzip headers for rendered pages
   storage.py       Hugging Face bucket access, listing, caching, search
   upload_guard.py  upload checks: video blocking, VPN detection, client IP
   admin.py         /admin dashboard, bans, GitHub allowlist (encrypted state)
@@ -163,7 +181,7 @@ app/
   stats.py         /stats
   templates/       Jinja2 pages (index.html renders most page types)
   static/          icons, manifest, service worker, prefetch.js
-tests/             node --test tests/*.test.js (prefetcher unit tests)
+tests/             prefetcher unit tests (node) + offline server fast-path checks (python)
 Dockerfile · render.yaml · start.sh
 ```
 

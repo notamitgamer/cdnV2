@@ -116,6 +116,22 @@ async def get_file_info(path: str) -> dict:
             _set_cache(cache_key, result)
             return result
 
+async def get_path_info(path: str) -> dict:
+    """Like get_file_info(), for deciding whether a URL is a file page or a folder listing.
+
+    Opening a folder used to cost a wasted HEAD request (a folder isn't a file, so it 404s) before the
+    listing was fetched. When the parent folder's listing is already cached, which it normally is
+    because that is the page you clicked from, it already says whether `path` is a file or a folder
+    (and a file's size), so the HEAD is skipped. Anything not found there falls back to get_file_info().
+    """
+    parent = path.rpartition("/")[0]
+    for entry in _get_cache(f"list_dir_{parent}") or ():
+        if entry["path"] == path:
+            if entry["is_dir"]:
+                return {"exists": False, "size": None, "content_type": None}
+            return {"exists": True, "size": entry.get("size"), "content_type": None}
+    return await get_file_info(path)
+
 def _under(path: str, items: list) -> list:
     """Keep only entries inside `path` (defensive: guards against prefix over-match
     such as 'docs' also matching 'docs-old/...')."""
@@ -149,34 +165,42 @@ async def list_directory(path: str):
     if cached is not None:
         return cached
 
-    try:
-        items = await asyncio.to_thread(_fetch_tree, path)
-    except Exception as e:
-        print(f"[storage] list_repo_tree failed for {path!r}: {e}")
-        return []
-    
-    files_and_folders = []
-    for item in items:
-        if _is_hidden_path(item.path):
-            continue
+    # One fetch per folder at a time: when a prefetch and a real click ask for the same folder
+    # together, the second waits for the first instead of repeating the Hugging Face call.
+    async with _get_key_lock(cache_key):
+        cached = _get_cache(cache_key)
+        if cached is not None:
+            return cached
 
-        name = item.path.split("/")[-1]
-        is_dir = not hasattr(item, "size")
-        size = getattr(item, "size", 0)
-        
-        size_str = format_size(size) if not is_dir else "-"
+        try:
+            items = await asyncio.to_thread(_fetch_tree, path)
+        except Exception as e:
+            print(f"[storage] list_repo_tree failed for {path!r}: {e}")
+            return []
 
-        files_and_folders.append({
-            "name": name,
-            "path": item.path,
-            "is_dir": is_dir,
-            "size_str": size_str
-        })
-    
-    files_and_folders.sort(key=lambda x: (not x["is_dir"], x["name"].lower()))
-    
-    _set_cache(cache_key, files_and_folders)
-    return files_and_folders
+        files_and_folders = []
+        for item in items:
+            if _is_hidden_path(item.path):
+                continue
+
+            name = item.path.split("/")[-1]
+            is_dir = not hasattr(item, "size")
+            size = getattr(item, "size", 0)
+
+            size_str = format_size(size) if not is_dir else "-"
+
+            files_and_folders.append({
+                "name": name,
+                "path": item.path,
+                "is_dir": is_dir,
+                "size": size,
+                "size_str": size_str
+            })
+
+        files_and_folders.sort(key=lambda x: (not x["is_dir"], x["name"].lower()))
+
+        _set_cache(cache_key, files_and_folders)
+        return files_and_folders
 
 async def list_files_recursive(path: str):
     try:

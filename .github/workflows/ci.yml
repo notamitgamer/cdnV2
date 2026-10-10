@@ -36,6 +36,11 @@ jobs:
       - name: Prefetch script unit tests
         run: node --test tests/*.test.js
 
+      - name: Server fast-path tests (HTML caching + gzip, skipped HEAD, single-flight listings)
+        env:
+          HF_BUCKET_ID: ci/placeholder
+        run: python tests/test_server_fastpaths.py
+
       - name: Smoke test (app imports, static pages render)
         env:
           HF_BUCKET_ID: ci/placeholder

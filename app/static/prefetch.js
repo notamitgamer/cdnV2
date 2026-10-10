@@ -9,7 +9,7 @@
  * Deliberately conservative:
  *   - same-origin links only; never /api/*, /admin, /mask/*, /pack/*, /static/*, /raw/*, downloads,
  *     links with target/download, or anything inside data-turbo="false" / data-no-prefetch
- *   - at most 16 pages per page view, 2 at a time, page content before navbar links, visible links
+ *   - at most 16 pages per page view, 3 at a time, page content before navbar links, visible links
  *     first, and only while the tab is visible
  *   - idle time only; cancelled the moment you navigate so it never competes with a real click
  *   - skipped entirely on Save-Data, 2g connections and prefers-reduced-data
@@ -20,7 +20,9 @@
 (function (global) {
   'use strict';
 
-  const DEFAULTS = { maxLinks: 16, concurrency: 2, ttlMs: 50000 };
+  // ttlMs stays below the pages' Cache-Control max-age (app/fast_html.py, 30 s): a page this old is
+  // re-fetched, one younger is still in the browser's cache and needs no work.
+  const DEFAULTS = { maxLinks: 16, concurrency: 3, ttlMs: 25000 };
 
   // First path segments that belong to the app itself, not to the CDN's content. Anything under them is
   // an API, a redirect, an admin page or a download, so it must never be fetched speculatively.
@@ -58,13 +60,12 @@
     const cfg = Object.assign({}, DEFAULTS, opts.config);
     const now = opts.now || Date.now;
     const seen = new Map(); // url -> when it last finished; stops repeat fetches inside the cache TTL
-    const inflight = new Set();
+    const inflight = new Map(); // url -> AbortController, so one request can be cancelled on its own
     let queue = [];
     let queued = new Set();
     let active = 0;
     let used = 0; // pages accepted for the current page view (the budget)
     let paused = false;
-    let controller = new AbortController();
 
     function fresh(url) {
       const t = seen.get(url);
@@ -73,14 +74,14 @@
 
     function run(url) {
       active++;
-      inflight.add(url);
-      const signal = controller.signal;
+      const ctl = new AbortController();
+      inflight.set(url, ctl);
       Promise.resolve()
-        .then(() => opts.fetchFn(url, signal))
+        .then(() => opts.fetchFn(url, ctl.signal))
         .then(
           () => seen.set(url, now()),
           // A failed fetch is remembered too, so a flaky or 404 link is not retried in a loop.
-          () => { if (!signal.aborted) seen.set(url, now()); }
+          () => { if (!ctl.signal.aborted) seen.set(url, now()); }
         )
         .then(() => {
           active--;
@@ -116,10 +117,11 @@
         pump();
         return added;
       },
-      // Cancel in-flight requests and forget the queue (called when navigating away).
-      abort() {
-        controller.abort();
-        controller = new AbortController();
+      // Cancel in-flight requests and forget the queue (called when navigating away). A request for
+      // `keepUrl` (the page being opened) is left running: it is exactly what the click needs, and the
+      // browser can hand its response to the navigation instead of starting over.
+      abort(keepUrl) {
+        for (const [url, ctl] of inflight) if (url !== keepUrl) ctl.abort();
         queue = [];
         queued = new Set();
       },
@@ -197,7 +199,7 @@
       pf.enqueue(found.map((f) => f.url));
     }
 
-    // Wait for the page to finish loading and the browser to go idle before touching the network.
+    // Wait for the document to be parsed and the browser to go idle before touching the network.
     let pending = false;
     let pendingFresh = false;
     function request(freshPage) {
@@ -211,11 +213,12 @@
           pendingFresh = false;
           scan(f);
         };
-        if (win.requestIdleCallback) win.requestIdleCallback(run, { timeout: 2000 });
-        else win.setTimeout(run, 300);
+        if (win.requestIdleCallback) win.requestIdleCallback(run, { timeout: 500 });
+        else win.setTimeout(run, 100);
       };
-      if (doc.readyState === 'complete') go();
-      else win.addEventListener('load', go, { once: true });
+      // The HTML is enough to know the links; don't wait for every image and script to finish.
+      if (doc.readyState !== 'loading') go();
+      else doc.addEventListener('DOMContentLoaded', go, { once: true });
     }
 
     request(true);
@@ -232,7 +235,15 @@
     doc.addEventListener('visibilitychange', () => pf.setPaused(doc.hidden));
 
     // Navigating: stop prefetching so the real request gets the connection to itself.
-    doc.addEventListener('turbo:before-visit', () => pf.abort());
+    doc.addEventListener('turbo:before-visit', (event) => {
+      let keep = null;
+      try {
+        const u = new URL(event.detail.url);
+        u.hash = '';
+        keep = u.href;
+      } catch (e) { /* no usable URL: cancel everything */ }
+      pf.abort(keep);
+    });
     win.addEventListener('pagehide', () => pf.abort());
   }
 

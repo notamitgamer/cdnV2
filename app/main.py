@@ -17,11 +17,11 @@ from pathlib import Path
 from pydantic import BaseModel
 from fastapi import FastAPI, Request, File, UploadFile, HTTPException, Form
 from fastapi.responses import StreamingResponse, HTMLResponse, PlainTextResponse, RedirectResponse, FileResponse
-from fastapi.templating import Jinja2Templates
+from .fast_html import FastTemplates
 
 from .storage import (
     is_file,
-    get_file_info,
+    get_path_info,
     list_directory,
     list_files_recursive,
     upload_temp_file,
@@ -44,7 +44,7 @@ from .admin import router as admin_router, record_upload, is_banned, gh_check, g
 app = FastAPI()
 app.include_router(admin_router)
 app.include_router(stats_router)
-templates = Jinja2Templates(directory="app/templates")
+templates = FastTemplates(directory="app/templates")
 
 STATIC_DIR = Path(__file__).parent / "static"
 _NO_STORE_FILES = {"manifest.json", "sw.js"}
@@ -1011,7 +1011,7 @@ async def serve(request: Request, path: str):
         )
 
     if clean_path:
-        info = await get_file_info(clean_path)
+        info = await get_path_info(clean_path)
 
         if info["exists"]:
             filename = clean_path.split("/")[-1]

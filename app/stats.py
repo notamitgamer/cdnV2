@@ -14,12 +14,12 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
-from fastapi.templating import Jinja2Templates
+from .fast_html import FastTemplates
 
 from . import storage
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
+templates = FastTemplates(directory="app/templates")
 
 STATS_TTL = 600
 _cache: dict = {"at": 0.0, "data": None}
