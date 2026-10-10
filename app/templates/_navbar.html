@@ -21,6 +21,8 @@
 }
 .navlinks a svg { flex-shrink: 0; }
 .navlinks a:hover { color: var(--ui-text); background: var(--ui-surface); }
+.navlinks a.nav-admin { padding: 0.4rem 0.5rem; margin-left: 0.25rem; border: 1px solid var(--ui-border); }
+.navlinks a.nav-admin span { display: none; }
 .navlinks a.active { color: var(--ui-accent); background: var(--ui-accent-bg); font-weight: 500; }
 .nav-toggle {
     display: none; align-items: center; justify-content: center;
@@ -38,6 +40,8 @@
     .navlinks { display: none; flex-basis: 100%; flex-direction: column; align-items: stretch; gap: 0.15rem; padding-top: 0.5rem; }
     .navlinks.open { display: flex; }
     .navlinks a { padding: 0.65rem 0.75rem; font-size: 1rem; }
+    .navlinks a.nav-admin { padding: 0.65rem 0.75rem; margin-left: 0; border: 0; }
+    .navlinks a.nav-admin span { display: inline; }
 }
 .breadcrumb-container { max-width: var(--ui-width); margin: 0 auto; padding: 0 1rem 0.75rem; }
 .breadcrumb {
@@ -76,6 +80,7 @@
             <a href="/stats" class="{{ 'active' if page == 'stats' }}"{{ ' aria-current="page"'|safe if page == 'stats' }}><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="20" x2="6" y2="12"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="9"/></svg><span>Stats</span></a>
             <a href="/gh-sync" class="{{ 'active' if page == 'gh-sync' }}"{{ ' aria-current="page"'|safe if page == 'gh-sync' }}><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg><span>Sync</span></a>
             <a href="/documentation" class="{{ 'active' if page == 'documentation' }}"{{ ' aria-current="page"'|safe if page == 'documentation' }}><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span>Docs</span></a>
+            <a href="/admin" class="nav-admin" title="Admin" aria-label="Admin"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>Admin</span></a>
         </nav>
     </header>
     {% if not (page == 'listing' and not path) %}
