@@ -201,8 +201,8 @@ jobs:
         extension and by file contents (renaming won't help). If the repo contains one, the whole sync is
         rejected and nothing is uploaded. Leave videos out of the archive, for example by adding
         <code>--exclude='*.mp4'</code> to the <code>tar</code> command.</li>
-    <li><strong>No rate limit.</strong> There's no limit on file count, archive size or how often you sync. What protects it instead is your
-        sign-in identity, the approval rule, bans and the no-video rule. A smaller archive syncs faster, so leave build output out, for example
+    <li><strong>No rate limit, but the compressed archive can be at most 200&nbsp;MB.</strong> There's no limit on file count or on how often you sync. What protects it instead is your
+        sign-in identity, the approval rule, bans and the no-video rule. Keep the archive small by leaving build output out, for example
         <code>--exclude='node_modules'</code> in the <code>tar</code> command.
         <a href="/documentation#rate-limits">How rate limits work</a>.</li>
     <li>Each sync fully replaces the contents of <em>your own</em> <code>username/repo</code> folder only
@@ -220,6 +220,7 @@ jobs:
     <li><code>403</code> <em>"First sync from '&lt;you&gt;' was accepted; further syncs need approval…"</em> — your account
         has already synced once and is waiting to be approved. Nothing is wrong with your workflow; ask the CDN owner to
         approve the account, then re-run the job.</li>
+    <li><code>413</code> <em>"Archive too large…"</em> — the compressed archive is over 200&nbsp;MB. Exclude build output and dependency folders (<code>--exclude</code>) and run it again.</li>
     <li><code>403</code> <em>"…banned…"</em> — the account (or the network the job ran from) has been blocked.</li>
     <li><code>415</code> <em>"Video files are not allowed…"</em> — the message names the file; remove it from the repo
         or exclude it from the archive.</li>

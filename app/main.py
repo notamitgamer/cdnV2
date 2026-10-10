@@ -405,13 +405,20 @@ async def gh_sync(
         raise HTTPException(status_code=403, detail="You are banned from this CDN.")
     await gh_check(owner, claims["owner_id"])
 
-    contents = await archive.read()  # no size/rate limit on GitHub sync (identity, approval, bans and the video rule apply)
+    archive.file.seek(0, os.SEEK_END)
+    archive_size = archive.file.tell()
+    archive.file.seek(0)
+    if archive_size > GH_SYNC_MAX_ARCHIVE_BYTES:  # checked before anything is read into memory
+        raise HTTPException(
+            status_code=413,
+            detail=f"Archive too large (limit {format_size(GH_SYNC_MAX_ARCHIVE_BYTES)} after compression).",
+        )
 
     with tempfile.TemporaryDirectory() as tmp_upload, tempfile.TemporaryDirectory() as tmp_extract:
         archive_path = os.path.join(tmp_upload, "payload.tar.gz")
 
         with open(archive_path, "wb") as f:
-            f.write(contents)
+            shutil.copyfileobj(archive.file, f)  # streamed to disk, never held in memory
 
         try:
             with tarfile.open(archive_path, "r:gz") as tar:
@@ -437,7 +444,7 @@ async def gh_sync(
             repo,
         )
 
-    await gh_record(owner, claims["owner_id"], repo, claims["actor"], client_ip, len(contents), dest_prefix)
+    await gh_record(owner, claims["owner_id"], repo, claims["actor"], client_ip, archive_size, dest_prefix)
 
     return {
         "synced_to": dest_prefix,
@@ -497,6 +504,7 @@ async def mask_redirect(request: Request, short_id: str):
 
 
 _MAX_URL_UPLOAD_BYTES = URL_UPLOAD_LIMIT_PER_HOUR
+GH_SYNC_MAX_ARCHIVE_BYTES = 200 * 1024 * 1024    # GitHub sync: compressed .tar.gz size (no rate limit)
 
 
 def _assert_public_url(url: str):
