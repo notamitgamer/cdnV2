@@ -140,6 +140,7 @@
         <li>Reads <code>repository_owner</code>, <code>repository</code> and the numeric <code>repository_owner_id</code> straight out of the <em>verified</em> token claims — this is the destination folder and the identity of the sender, and it is never taken from anything else in the request. A workflow file cannot forge these claims because GitHub itself stamps them for the run.</li>
         <li>Refuses banned visitors and banned GitHub accounts, then applies the <strong>approval rule</strong>: the <em>first</em> sync from a GitHub account is accepted automatically; after that, the account must have been approved by the CDN owner or the sync is refused with <code>403</code>. Accounts are tracked by GitHub's numeric owner ID, so renaming an account or re-registering an old username does not bypass this. The CDN owner's own account is always allowed.</li>
         
+        <li>Rejects the archive with <code>413</code> if the compressed <code>.tar.gz</code> is larger than <strong>200&nbsp;MB</strong>, before reading any of it into memory.</li>
         <li>Extracts the tar archive into a temp directory, rejecting anything that tries to write outside that directory (path traversal) or that is a symlink.</li>
         <li>Rejects the <strong>whole sync</strong> if any file is a video, detected by extension <em>and</em> by file signature (so renaming a video does not help). Nothing is uploaded in that case.</li>
         <li>Uploads that folder to the Hugging Face storage bucket with the destination and the delete scope both limited to exactly <code>&lt;owner&gt;/&lt;repo&gt;/</code> — so the call can create, update, or delete files only inside that one folder, never anywhere else. Files deleted from the source repo are removed from the CDN folder too (this is a mirror, not an accumulate-forever upload). The bucket keeps no version history, so those removals are permanent.</li>
@@ -159,13 +160,14 @@
         <li><span class="err-code">401</span> Token missing, expired, badly signed, wrong audience, or its owner/repository claims don't line up (malformed token).</li>
         <li><span class="err-code">400</span> Archive isn't a readable <code>.tar.gz</code>, or it contains an unsafe path / a symlink.</li>
         <li><span class="err-code">403</span> The sender's IP or GitHub account is banned, <em>or</em> this account's first sync was already accepted and further syncs need approval from the CDN owner. The message says which.</li>
+        <li><span class="err-code">413</span> The compressed archive is larger than 200&nbsp;MB. Nothing is synced.</li>
         <li><span class="err-code">415</span> The archive contains a video file. The message names the file and nothing is synced.</li>
         
       </ul>
 
       <h3>Limits, currently</h3>
-      <p>Any file type except video. <strong>GitHub sync has no rate limit</strong> and no limit on the size or number of files:
-         what protects it instead is the sign-in identity, the approval rule, bans and the video rule above. See <a href="#rate-limits">Rate limits</a>.</p>
+      <p>Any file type except video, and no limit on the number of files. <strong>GitHub sync has no rate limit</strong>, but the compressed <code>.tar.gz</code> can be at most
+         <strong>200&nbsp;MB</strong>. What protects it instead is the sign-in identity, the approval rule, bans and the video rule above. See <a href="#rate-limits">Rate limits</a>.</p>
     </div>
   </section>
 
@@ -295,7 +297,7 @@
       <tr><td style="white-space:nowrap"><code>/api/put</code></td><td class="desc"><strong>200&nbsp;MB per hour</strong>, counted in bytes, per IP. No per-minute limit. A single file can be at most 200&nbsp;MB.</td></tr>
       <tr><td style="white-space:nowrap"><code>/api/put-url</code></td><td class="desc"><strong>50&nbsp;MB per hour</strong>, counted in bytes, per IP. This is a separate allowance from file uploads. A single file can be at most 50&nbsp;MB.</td></tr>
       <tr><td style="white-space:nowrap"><code>/api/shorten</code></td><td class="desc"><strong>10 per minute</strong> and <strong>50 per hour</strong>, counted in requests, per IP.</td></tr>
-      <tr><td style="white-space:nowrap"><code>/api/gh-sync</code></td><td class="desc"><strong>No rate limit.</strong></td></tr>
+      <tr><td style="white-space:nowrap"><code>/api/gh-sync</code></td><td class="desc"><strong>No rate limit.</strong> The compressed archive can be at most 200&nbsp;MB.</td></tr>
     </table>
 
     <h3>How the limits work</h3>
@@ -307,7 +309,7 @@
       <li><strong>Biggest single file.</strong> 200&nbsp;MB for file uploads and 50&nbsp;MB from a link. A file over that is refused with <code>413</code> rather than <code>429</code>, because waiting would not help. From a link, the download stops as soon as it passes 50&nbsp;MB.</li>
       <li><strong>Batches stop at the limit.</strong> If you upload several files in one request and the limit is reached partway, the request fails with <code>429</code>. Files already stored earlier in that request stay stored.</li>
       <li><strong>What does not count.</strong> Uploads refused before the limit check (banned IP, VPN/proxy address, video) do not use your allowance. Shortener requests <em>do</em> count even when the URL turns out to be invalid, because the limit is checked before the link is examined.</li>
-      <li><strong>GitHub sync is not rate-limited.</strong> It is protected by the sign-in identity, the approval rule, bans and the video rule instead (see <a href="#gh-sync">GitHub Actions sync</a>).</li>
+      <li><strong>GitHub sync is not rate-limited,</strong> but the compressed archive can be at most 200&nbsp;MB. It is protected by the sign-in identity, the approval rule, bans and the video rule (see <a href="#gh-sync">GitHub Actions sync</a>).</li>
       <li><strong>In memory.</strong> Counters are kept in the server's memory, so a restart or redeploy clears them.</li>
       
     </ul>
@@ -318,7 +320,8 @@
 { "detail": "URL upload rate limit exceeded: 50.00 MB/hour. Try again later." }
 { "detail": "Rate limit exceeded: 10 requests/minute. Try again shortly." }
 { "detail": "Rate limit exceeded: 50 requests/hour. Try again later." }
-{ "detail": "File too large (limit 200.00 MB per file)." }</pre>
+{ "detail": "File too large (limit 200.00 MB per file)." }
+{ "detail": "Archive too large (limit 200.00 MB after compression)." }</pre>
     <p>After a <em>minute</em> message, wait up to a minute. After an <em>hour</em> message, wait until earlier uploads are an hour old. For <em>file too large</em>, waiting doesn't help: make the file smaller or split it.</p>
 
     <h3>Staying under the limits</h3>
