@@ -330,53 +330,53 @@ async def admin_delete(request: Request, body: PathBody):
             r["status"] = "deleted"
     return await _mutate_and_save()
 
-
 _PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>CDN admin</title>
 <style>
 :root{--bg:#0d1117;--sf:#161b22;--bd:#30363d;--ln:#21262d;--tx:#e6edf3;--dim:#9da7b3;--red:#ff7b72;--grn:#56d364;--amb:#d29922;--blu:#58a6ff}
 *{box-sizing:border-box}
-body{font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;margin:0 auto;padding:12px 12px 64px;background:var(--bg);color:var(--tx);max-width:1200px;-webkit-text-size-adjust:100%}
-header.bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
-h1{font-size:18px;margin:0}h2{font-size:14px;margin:16px 0 8px;color:var(--dim);font-weight:600;scroll-margin-top:54px}
+body{font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;margin:0 auto;padding:14px 14px 64px;background:var(--bg);color:var(--tx);max-width:1200px;-webkit-text-size-adjust:100%}
+header.bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+h1{font-size:18px;margin:0}h2{font-size:14px;margin:20px 0 8px;color:var(--dim);font-weight:600;scroll-margin-top:54px}
 a{color:var(--blu);text-decoration:none}
 .links{display:flex;gap:8px;align-items:center}
-.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px}
-.tile{display:block;background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:8px 10px;color:var(--tx);text-decoration:none}
-.tile b{display:block;font-size:18px;line-height:1.2}.tile span{font-size:11px;color:var(--dim)}.tile.amb{border-color:var(--amb)}.tile.amb b{color:var(--amb)}
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+.tile{display:block;background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:8px 12px;color:var(--tx);text-decoration:none}
+.tile b{display:block;font-size:20px;line-height:1.2}.tile span{font-size:11px;color:var(--dim)}.tile.amb{border-color:var(--amb)}.tile.amb b{color:var(--amb)}
 
-/* Sticky Mobile Quick Nav Bar */
-.jump-bar{position:sticky;top:0;z-index:10;background:var(--bg);padding:6px 0 8px;display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;border-bottom:1px solid var(--ln)}
+/* Sticky Mobile Quick Nav */
+.jump-bar{position:sticky;top:0;z-index:20;background:var(--bg);padding:6px 0 8px;display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;border-bottom:1px solid var(--ln);margin-bottom:8px}
 .jump-bar::-webkit-scrollbar{display:none}
 .jump-bar a{white-space:nowrap;font-size:12px;background:var(--sf);border:1px solid var(--bd);padding:4px 10px;border-radius:14px;color:var(--tx)}
 .jump-bar a.has-badge{border-color:var(--amb);color:var(--amb)}
 
-/* Tables (Desktop) */
+/* Standard Desktop Table Layout */
 table{width:100%;border-collapse:collapse;font-size:13px}
-th,td{text-align:left;padding:8px;border-bottom:1px solid var(--ln);vertical-align:middle}th{color:var(--dim);font-weight:600}
-.act{white-space:nowrap}.name{overflow-wrap:anywhere}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--ln);vertical-align:middle}
+th{color:var(--dim);font-weight:600}
+.act{white-space:nowrap;text-align:right}.name{overflow-wrap:anywhere}
 button{font:inherit;font-size:12px;min-height:28px;padding:3px 8px;border-radius:6px;border:1px solid var(--bd);background:var(--sf);color:var(--tx);cursor:pointer}
 button.red{border-color:#da3633;color:var(--red)}button.green{border-color:#238636;color:var(--grn)}button:active{background:var(--ln)}
 input{font:inherit;font-size:14px;padding:8px 10px;border-radius:6px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);width:100%;max-width:420px}
-.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;overflow-wrap:break-word}.nw{white-space:nowrap}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;overflow-wrap:break-word}.nw{white-space:nowrap}
 .dim{color:var(--dim)}.bad{color:var(--red)}.ok{color:var(--grn)}.warn{color:var(--amb)}
-.badge{display:inline-block;padding:1px 6px;border-radius:4px;font-size:11px;font-weight:600;text-transform:uppercase}
+.badge{display:inline-block;padding:1px 5px;border-radius:4px;font-size:10px;font-weight:600;text-transform:uppercase}
 .badge.ok{background:#1f3522;color:var(--grn)}.badge.bad{background:#3d1d1d;color:var(--red)}.badge.dim{background:var(--ln);color:var(--dim)}.badge.warn{background:#3a2d12;color:var(--amb)}
-.banner{background:#3d1d1d;border:1px solid #da3633;padding:8px 10px;border-radius:6px;margin:8px 0;font-size:13px}
+.banner{background:#3d1d1d;border:1px solid #da3633;padding:8px 12px;border-radius:6px;margin:10px 0;font-size:13px}
 .sec{border-radius:8px;scroll-margin-top:54px;margin-bottom:12px}
 .sec.attn{border-left:3px solid var(--amb);padding-left:8px}
 
-/* Collapsible Mobile Drawers */
-details.box{background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:8px 10px;margin-bottom:8px;scroll-margin-top:54px}
+/* Collapsible sections */
+details.box{background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin-bottom:10px;scroll-margin-top:54px}
 details.box summary{cursor:pointer;font-weight:600;font-size:13px;color:var(--tx);display:flex;align-items:center;justify-content:space-between;list-style:none}
 details.box summary::-webkit-details-marker{display:none}
 details.box summary::after{content:'+';font-size:14px;color:var(--dim)}
 details.box[open] summary::after{content:'−'}
-details.box .content{margin-top:8px}
+details.box .content{margin-top:10px}
 .who p{margin:6px 0 0;font-size:12px}
 
 #login{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:20px}#login input{flex:1 1 220px}
-#qrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}#qrow input{flex:1 1 200px}
+#qrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}#qrow input{flex:1 1 240px}
 #qinfo{font-size:12px}
 
 @media(min-width:721px){
@@ -386,29 +386,35 @@ details.box .content{margin-top:8px}
   details.box summary{display:none}
   details.box .content{margin-top:0}
 }
+
+/* Mobile-optimized Card View */
 @media(max-width:720px){
-  /* Card layouts for mobile items */
-  table.cards,table.cards tbody{display:block}
-  table.cards tr{display:block;background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:8px 10px;margin:0 0 8px}
-  table.cards tr:first-child{display:none}
+  body{padding:10px 10px 64px}
+  table.cards,table.cards tbody{display:block;width:100%}
+  table.cards tr{display:block;background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin:0 0 8px}
+  table.cards tr:first-child{display:none} /* hide table headers on mobile */
   
-  /* Dense 2-Line Upload Card styling */
-  table.cards.log-cards tr{display:flex;flex-direction:column;gap:3px;padding:7px 9px}
-  table.cards.log-cards .log-row-head{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
-  table.cards.log-cards .log-name{font-weight:600;font-size:13px;overflow-wrap:anywhere}
-  table.cards.log-cards .log-meta{display:flex;flex-wrap:wrap;gap:6px 10px;font-size:11px;color:var(--dim);align-items:center}
-  table.cards.log-cards .log-acts{display:flex;gap:6px;margin-top:4px;padding-top:4px;border-top:1px solid var(--ln)}
-  table.cards.log-cards .log-acts button{flex:1;min-height:30px}
-  
-  /* Generic compact drawer row cards */
-  table.cards:not(.log-cards) td{display:flex;gap:8px;justify-content:space-between;align-items:baseline;border:0;padding:2px 0;text-align:right}
-  table.cards:not(.log-cards) td::before{content:attr(data-l);color:var(--dim);font-size:12px}
+  /* Upload card row structure */
+  table.cards.log-cards tr{display:grid;grid-template-areas:"name status" "meta meta" "act act";grid-template-columns:1fr auto;gap:4px 8px;align-items:center}
+  table.cards.log-cards td{border:0;padding:0}
+  table.cards.log-cards td.td-name{grid-area:name;font-weight:600;font-size:13px;overflow-wrap:anywhere}
+  table.cards.log-cards td.td-status{grid-area:status;text-align:right}
+  table.cards.log-cards td.td-meta{grid-area:meta;font-size:11px;color:var(--dim);display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
+  table.cards.log-cards td.td-meta span{display:inline-block}
+  table.cards.log-cards td.td-act{grid-area:act;display:flex;gap:6px;margin-top:4px;padding-top:6px;border-top:1px solid var(--ln)}
+  table.cards.log-cards td.td-act button{flex:1;min-height:30px}
+
+  /* Other mobile cards (Bans, GitHub) */
+  table.cards:not(.log-cards) td{display:flex;gap:8px;justify-content:space-between;align-items:baseline;border:0;padding:3px 0;text-align:right}
+  table.cards:not(.log-cards) td::before{content:attr(data-l);color:var(--dim);font-size:12px;flex:none;text-align:left}
   table.cards:not(.log-cards) td.name{display:block;text-align:left;font-size:13px;font-weight:600}
   table.cards:not(.log-cards) td.name::before,table.cards:not(.log-cards) td.act::before{display:none}
-  table.cards:not(.log-cards) td.act{display:flex;gap:6px;margin-top:4px;padding-top:4px;border-top:1px solid var(--ln)}
+  table.cards:not(.log-cards) td.act{display:flex;gap:6px;margin-top:4px;padding-top:6px;border-top:1px solid var(--ln)}
   table.cards:not(.log-cards) td.act button{flex:1;min-height:30px}
   table.cards td.empty{display:block;text-align:left;color:var(--dim)}
-  table.kv tr{display:block;padding:4px 0;border-bottom:1px solid var(--ln)}table.kv td{display:block;border:0;padding:1px 0}table.kv td:first-child{color:var(--dim);font-size:11px}
+  table.kv tr{display:block;padding:4px 0;border-bottom:1px solid var(--ln)}
+  table.kv td{display:block;border:0;padding:1px 0}
+  table.kv td:first-child{color:var(--dim);font-size:11px}
 }
 </style></head><body>
 <header class="bar"><h1>CDN admin</h1><div class="links" id="nav" style="display:none"><a href="/stats">Stats</a><button onclick="logout()">Log out</button></div></header>
@@ -417,7 +423,7 @@ details.box .content{margin-top:8px}
 <div class="jump-bar" id="jumpbar"></div>
 <div id="top"></div>
 <h2 id="uploads-h">Recent uploads</h2>
-<div id="qrow"><input id="q" type="search" placeholder="Search files, links, IPs, status..." autocomplete="off"><span id="qinfo" class="dim"></span></div>
+<div id="qrow"><input id="q" type="search" placeholder="Search file name, link, IP, status..." autocomplete="off"><span id="qinfo" class="dim"></span></div>
 <div id="uploads"></div>
 <div id="rest"></div>
 </div>
@@ -460,7 +466,6 @@ function logout(){sessionStorage.removeItem('t');T='';if(timer){clearInterval(ti
 function render(s){
   const banned=s.bans,nb=Object.keys(banned).length,pend=s.gh.filter(([k,g])=>g.status==='pending'&&g.syncs>=1);
   
-  // Jump bar
   document.getElementById('jumpbar').innerHTML=`
     <a href="#uploads-h">Uploads (${nf(s.matched)})</a>
     <a href="#pending"${pend.length?' class="has-badge"':''}>Approval (${pend.length})</a>
@@ -470,60 +475,53 @@ function render(s){
   `;
 
   const tile=(n,l,c,href)=>`<${href?`a href="${href}"`:'div'} class="tile ${c||''}"><b>${n}</b><span>${l}</span></${href?'a':'div'}>`;
-  let t=`<div class="tiles">${tile(nf(s.total),'saved')}${tile(nf(s.blocked),'blocked',s.blocked?'amb':'')}${tile(nb,'banned IPs','','#bans')}${tile(pend.length,'approvals',pend.length?'amb':'','#pending')}</div>`;
+  let t=`<div class="tiles">${tile(nf(s.total),'uploads saved')}${tile(nf(s.blocked),'blocked attempts',s.blocked?'amb':'')}${tile(nb,'banned IPs','','#bans')}${tile(pend.length,'awaiting approval',pend.length?'amb':'','#pending')}</div>`;
   if(s.error)t+=`<div class="banner">${esc(s.error)}</div>`;
   
-  // Pending Approval Drawer (auto-opens if any items are pending)
   t+=`<details id="pending" class="box sec${pend.length?' attn':''}" ${pend.length?'open':''}>
     <summary>Waiting for approval (${pend.length})</summary><div class="content">`;
   if(pend.length){
     t+='<table class="cards"><tr><th>GitHub account</th><th>Repos</th><th>Syncs</th><th>Last sync</th><th></th></tr>';
     for(const [k,g] of pend)t+=`<tr>${cell('Account',`<a href="https://github.com/${encodeURIComponent(g.owner)}" target="_blank" rel="noopener">${esc(g.owner)}</a>`,'name')}${cell('Repos',esc((g.repos||[]).join(', ')))}${cell('Syncs',g.syncs)}${cell('Last sync',fmt(g.last))}<td class="act">${btn('Allow','green',GH,{key:k,action:'allow'})}${btn('Ban','red',GH,{key:k,action:'ban'},'Ban this GitHub account?')}</td></tr>`;
     t+='</table>';
-  }else t+='<p class="dim" style="margin:4px 0">Nothing waiting. New accounts show up here after their 1st sync.</p>';
+  }else t+='<p class="dim" style="margin:2px 0">Nothing waiting. A new GitHub account shows up here after its first sync.</p>';
   t+='</div></details>';
 
-  // Banned IPs Drawer
   t+=`<details id="bans" class="box sec"><summary>Banned IPs (${nb})</summary><div class="content"><table class="cards"><tr><th>IP</th><th>Since</th><th>Note</th><th></th></tr>`;
   for(const ip in banned)t+=`<tr>${cell('IP',esc(ip),'name mono')}${cell('Since',fmt(banned[ip].t))}${cell('Note',esc(banned[ip].note||''))}<td class="act">${btn('Unban','','/api/admin/unban',{ip})}</td></tr>`;
   if(!nb)t+=empty(4,'None.');
   t+='</table></div></details>';
   document.getElementById('top').innerHTML=t;
 
-  // Ultra-compact Uploads Section
-  let u='<table class="cards log-cards"><tr><th>File</th><th>Time</th><th>IP</th><th>Size</th><th>Via</th><th>Status</th><th></th></tr>';
+  // Render valid HTML tables that transform into cards on mobile
+  let u='<table class="cards log-cards"><tr><th>File</th><th>Status</th><th>Meta</th><th class="act"></th></tr>';
   for(const r of s.log){
     const stBadge=r.status==='ok'?'<span class="badge ok">OK</span>':r.status==='deleted'?'<span class="badge dim">DEL</span>':`<span class="badge bad">${esc(r.status)}</span>`;
     const live=r.path&&r.status==='ok';
-    const acts=(r.method==='github'?'':r.ip in banned?'<span class="dim" style="font-size:11px">IP banned</span>':btn('Ban IP','red','/api/admin/ban',{ip:r.ip},'Ban '+r.ip+'?'))+(live?btn('Delete','red','/api/admin/delete',{path:r.path},'Delete '+r.path+' from the CDN?'):'');
-    const link=live?`<a href="/${encodeURI(r.path)}" target="_blank" rel="noopener">${esc(r.name)}</a>`:esc(r.name);
+    const acts=(r.method==='github'?'':r.ip in banned?'<span class="dim" style="font-size:11px">Banned</span>':btn('Ban IP','red','/api/admin/ban',{ip:r.ip},'Ban '+r.ip+'?'))+(live?btn('Delete','red','/api/admin/delete',{path:r.path},'Delete '+r.path+' from the CDN?'):'');
+    const nameLink=live?`<a href="/${encodeURI(r.path)}" target="_blank" rel="noopener">${esc(r.name)}</a>`:esc(r.name);
     
-    // Desktop row cells
-    const deskCells=`${cell('File',link+(r.extra?`<div class="dim">${esc(r.extra)}</div>`:''),'name')}${cell('Time',fmt(r.t),'nw')}${cell('IP',esc(r.ip),'mono')}${cell('Size',sz(r.size),'nw')}${cell('Via',esc(r.method))}${cell('Status',stBadge)}${acts?`<td class="act">${acts}</td>`:'<td class="act" style="display:none"></td>'}`;
-
-    // Mobile compact card representation
     u+=`<tr>
-      <div class="log-row-head"><span class="log-name">${link}</span>${stBadge}</div>
-      <div class="log-meta">
+      <td class="td-name">${nameLink}</td>
+      <td class="td-status">${stBadge}</td>
+      <td class="td-meta">
         <span>${fmt(r.t)}</span>
-        <span>•</span>
+        <span class="dim">•</span>
         <span class="mono">${esc(r.ip)}</span>
-        <span>•</span>
+        <span class="dim">•</span>
         <span>${sz(r.size)}</span>
-        <span>•</span>
+        <span class="dim">•</span>
         <span>${esc(r.method)}</span>
-        ${r.extra?`<span>• <i class="dim">${esc(r.extra)}</i></span>`:''}
-      </div>
-      ${acts?`<div class="log-acts">${acts}</div>`:''}
-      ${deskCells}
+        ${r.extra?`<span class="dim">• ${esc(r.extra)}</span>`:''}
+      </td>
+      <td class="td-act act">${acts}</td>
     </tr>`;
   }
-  if(!s.log.length)u+=empty(7,Q?'Nothing matches your search.':'No uploads recorded yet.');
+  if(!s.log.length)u+=empty(4,Q?'Nothing matches your search.':'No uploads recorded yet.');
   document.getElementById('uploads').innerHTML=u+'</table>';
   document.getElementById('qinfo').textContent=Q?`${s.matched} match${s.matched===1?'':'es'} of ${s.total}`:`${nf(s.total)} saved`;
 
-  // GitHub Accounts Drawer
-  let r=`<details id="gh-sec" class="box sec"><summary>GitHub Accounts (${s.gh.length})</summary><div class="content"><table class="cards"><tr><th>Account</th><th>Status</th><th>Repos</th><th>Syncs</th><th>Last IP</th><th>Last sync</th><th></th></tr>`;
+  let r=`<details id="gh-sec" class="box sec"><summary>GitHub accounts (${s.gh.length})</summary><div class="content"><table class="cards"><tr><th>Account</th><th>Status</th><th>Repos</th><th>Syncs</th><th>Last IP</th><th>Last sync</th><th></th></tr>`;
   for(const [k,g] of s.gh){
     const c=g.status==='allowed'?'ok':g.status==='banned'?'bad':'warn';
     r+=`<tr>${cell('Account',esc(g.owner),'name')}${cell('Status',esc(g.status),c)}${cell('Repos',esc((g.repos||[]).join(', ')))}${cell('Syncs',g.syncs)}${cell('Last IP',esc(g.last_ip),'mono')}${cell('Last sync',fmt(g.last))}<td class="act">${g.status!=='allowed'?btn('Allow','green',GH,{key:k,action:'allow'}):btn('Revoke','',GH,{key:k,action:'revoke'})}${g.status!=='banned'?btn('Ban','red',GH,{key:k,action:'ban'},'Ban this GitHub account?'):''}</td></tr>`;
@@ -531,9 +529,8 @@ function render(s){
   if(!s.gh.length)r+=empty(7,'No GitHub syncs yet.');
   r+=`</table><p class="dim" style="font-size:12px;margin:8px 0 0">Always allowed: ${esc(s.always_allow.join(', ')||'none')}</p></div></details>`;
 
-  // Server IP Diagnostics Drawer
   const w=s.whoami,kv=(a,b)=>`<tr><td>${a}</td><td class="mono">${esc(b==null||b===''?'-':b)}</td></tr>`;
-  r+=`<details id="who" class="box sec who"${!w.ok?' open':''}><summary>Server IP: <span class="mono ${w.ok?'ok':'bad'}">${esc(w.detected)}</span> ${w.ok?'&#10003;':'&#10007; looks wrong'}</summary><div class="content"><table class="kv">${kv('X-Forwarded-For',w.x_forwarded_for)}${kv('CF-Connecting-IP',w.cf_connecting_ip)}${kv('Socket peer',w.socket_peer)}${kv('Settings','TRUST_CF_CONNECTING_IP='+(w.trust_cf_header?1:0)+', TRUSTED_PROXY_HOPS='+w.proxy_hops)}</table><p class="dim">This must be your real public IP, or bans will hit the wrong address.</p></div></details>`;
+  r+=`<details id="who" class="box sec who"${!w.ok?' open':''}><summary>Your IP: <span class="mono ${w.ok?'ok':'bad'}">${esc(w.detected)}</span> ${w.ok?'&#10003;':'&#10007; looks wrong'}</summary><div class="content"><table class="kv">${kv('X-Forwarded-For',w.x_forwarded_for)}${kv('CF-Connecting-IP',w.cf_connecting_ip)}${kv('Socket peer',w.socket_peer)}${kv('Settings','TRUST_CF_CONNECTING_IP='+(w.trust_cf_header?1:0)+', TRUSTED_PROXY_HOPS='+w.proxy_hops)}</table><p class="dim">Must be your real public IP, or bans will hit the wrong address.</p></div></details>`;
   document.getElementById('rest').innerHTML=r;
 }
 document.getElementById('q').addEventListener('input',e=>{clearTimeout(qt);qt=setTimeout(()=>{Q=e.target.value.trim();load()},250)});
