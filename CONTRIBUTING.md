@@ -35,10 +35,13 @@ CI runs these on every pull request; please run them locally first:
 pip install ruff
 ruff check --select E9,F63,F7,F82 app   # syntax errors and undefined names
 python -m compileall -q app
+node --test tests/*.test.js              # unit tests for the browser-side prefetcher (Node 20+)
+HF_BUCKET_ID=ci/x python tests/test_server_fastpaths.py   # offline checks for the caching/gzip/listing fast paths
 docker build -t cdnv2 .                  # the image must still build
 ```
 
-There is no full test suite yet. If you add logic that can be tested without network access (parsing,
+There is no full Python test suite yet; `tests/test_server_fastpaths.py` is a plain script (no pytest)
+that runs against a fake bucket. If you add logic that can be tested without network access (parsing,
 validation, rate limiting), adding a test alongside it is very much appreciated.
 
 ## Pull requests

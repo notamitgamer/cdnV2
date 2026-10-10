@@ -17,11 +17,11 @@ from pathlib import Path
 from pydantic import BaseModel
 from fastapi import FastAPI, Request, File, UploadFile, HTTPException, Form
 from fastapi.responses import StreamingResponse, HTMLResponse, PlainTextResponse, RedirectResponse, FileResponse
-from fastapi.templating import Jinja2Templates
+from .fast_html import FastTemplates
 
 from .storage import (
     is_file,
-    get_file_info,
+    get_path_info,
     list_directory,
     list_files_recursive,
     upload_temp_file,
@@ -44,23 +44,26 @@ from .admin import router as admin_router, record_upload, is_banned, gh_check, g
 app = FastAPI()
 app.include_router(admin_router)
 app.include_router(stats_router)
-templates = Jinja2Templates(directory="app/templates")
+templates = FastTemplates(directory="app/templates")
 
 STATIC_DIR = Path(__file__).parent / "static"
 _NO_STORE_FILES = {"manifest.json", "sw.js"}
+_REVALIDATE_FILES = {"prefetch.js"}
 
 
 @app.get("/static/{filename}")
 async def static_no_cache_root(filename: str):
-    if filename not in _NO_STORE_FILES:
+    if filename in _NO_STORE_FILES:
+        cache_control = "no-store, no-cache, must-revalidate, max-age=0"
+    elif filename in _REVALIDATE_FILES:
+        # Short cache: full page loads don't re-download it, and a deploy still shows up within minutes.
+        cache_control = "public, max-age=300"
+    else:
         raise HTTPException(status_code=404)
     file_path = STATIC_DIR / filename
     if not file_path.is_file():
         raise HTTPException(status_code=404)
-    return FileResponse(
-        file_path,
-        headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"},
-    )
+    return FileResponse(file_path, headers={"Cache-Control": cache_control})
 
 
 @app.get("/static/icons/{filename}")
@@ -1008,7 +1011,7 @@ async def serve(request: Request, path: str):
         )
 
     if clean_path:
-        info = await get_file_info(clean_path)
+        info = await get_path_info(clean_path)
 
         if info["exists"]:
             filename = clean_path.split("/")[-1]
