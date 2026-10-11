@@ -1,3 +1,4 @@
+{% from "_listing.html" import crumb_container, crumb_link, crumb_collapsed, copy_btn %}
 {% include "_styles.html" %}
 <style>
 /* Navbar + breadcrumb. Uses the shared --ui- tokens from _styles.html. */
@@ -83,9 +84,7 @@
             <a href="/admin" class="nav-admin" title="Admin" aria-label="Admin"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>Admin</span></a>
         </nav>
     </header>
-    {% if not (page == 'listing' and not path) %}
-        <div class="breadcrumb-container" data-cdn-base="{{ cdn_base_url }}">
-            <div class="breadcrumb" id="breadcrumb">
+    {% if skeleton %}<!--@breadcrumb-->{% elif not (page == 'listing' and not path) %}
                 {% set current = namespace(val='') %}
                 {% set ns = namespace(items=[{'name': 'root', 'href': '/'}]) %}
                 {% if path %}
@@ -114,34 +113,27 @@
                     {% set ns.items = ns.items + [{'name': filename, 'href': none}] %}
                 {% endif %}
 
+                {% set crumbs %}
                 {% if ns.items|length > 4 %}
                     {% set hidden = ns.items[1:-2] %}
-                    <a href="{{ ns.items[0].href }}">{{ ns.items[0].name }}</a>
-                    <div class="breadcrumb-collapsed">
-                        <button type="button" class="breadcrumb-ellipsis" onclick="event.stopPropagation(); toggleBreadcrumbMenu(this)" aria-label="Show hidden path segments">&hellip;</button>
-                        <div class="breadcrumb-menu">
-                            {% for c in hidden %}
-                            <a href="{{ c.href }}">{{ c.name }}</a>
-                            {% endfor %}
-                        </div>
-                    </div>
+                    {{ crumb_link(ns.items[0].href, ns.items[0].name) }}
+                    {% set menu %}
+                    {% for c in hidden %}
+                    {{ crumb_link(c.href, c.name) }}
+                    {% endfor %}
+                    {% endset %}
+                    {{ crumb_collapsed(menu) }}
                     {% for c in ns.items[-2:] %}
-                    / {% if c.href %}<a href="{{ c.href }}">{{ c.name }}</a>{% else %}{{ c.name }}{% endif %}
+                    / {% if c.href %}{{ crumb_link(c.href, c.name) }}{% else %}{{ c.name }}{% endif %}
                     {% endfor %}
                 {% else %}
                     {% for c in ns.items %}
-                        {% if loop.first %}<a href="{{ c.href }}">{{ c.name }}</a>
-                        {% else %}/ {% if c.href %}<a href="{{ c.href }}">{{ c.name }}</a>{% else %}{{ c.name }}{% endif %}
+                        {% if loop.first %}{{ crumb_link(c.href, c.name) }}
+                        {% else %}/ {% if c.href %}{{ crumb_link(c.href, c.name) }}{% else %}{{ c.name }}{% endif %}
                         {% endif %}
                     {% endfor %}
                 {% endif %}
-
-                {% if path or page == 'file' %}
-                <button type="button" class="copy-path-btn" title="Copy path" onclick="copyBreadcrumbPath(this)" data-path="{{ path }}">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                </button>
-                {% endif %}
-            </div>
-        </div>
+                {% endset %}
+                {{ crumb_container(crumbs, cdn_base_url, copy_btn(path) if (path or page == 'file') else '') }}
         {% endif %}
 </div>

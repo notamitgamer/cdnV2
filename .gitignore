@@ -23,3 +23,6 @@ android/.gradle/
 .idea/
 .vscode/
 .DS_Store
+
+# JS test dependency, installed on demand (npm install --no-save jsdom)
+node_modules/

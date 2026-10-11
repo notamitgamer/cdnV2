@@ -33,13 +33,22 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Prefetch script unit tests
+      - name: Install JS test dependencies (not part of the app)
+        run: npm install --no-save --no-package-lock jsdom@30.1.2 @hotwired/turbo@8.0.4
+
+      - name: JS tests (prefetcher, instant folders, jsdom + real Turbo)
         run: node --test tests/*.test.js
 
       - name: Server fast-path tests (HTML caching + gzip, skipped HEAD, single-flight listings)
         env:
           HF_BUCKET_ID: ci/placeholder
         run: python tests/test_server_fastpaths.py
+
+      - name: Instant-folder tests (local pages == server pages, endpoints, end to end with Turbo)
+        env:
+          HF_BUCKET_ID: ci/placeholder
+          REQUIRE_E2E: "1"
+        run: python tests/test_fast_tree.py
 
       - name: Smoke test (app imports, static pages render)
         env:
@@ -54,7 +63,7 @@ jobs:
 
           m.repo_stats = no_stats
           c = TestClient(m.app)
-          for path in ["/new", "/static/manifest.json", "/static/prefetch.js"]:
+          for path in ["/new", "/static/manifest.json", "/static/prefetch.js", "/static/fasttree.js"]:
               r = c.get(path)
               assert r.status_code == 200, (path, r.status_code)
               print(path, r.status_code)

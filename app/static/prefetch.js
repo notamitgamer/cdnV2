@@ -187,6 +187,8 @@
           base
         );
         if (!url || dedupe.has(url)) return;
+        // A folder the instant-navigation tree can build locally needs no server round trip at all.
+        if (win.__cdnFast && win.__cdnFast.handles(url)) return;
         dedupe.add(url);
         const r = a.getBoundingClientRect();
         // Page content first (on-screen links, plus a screenful below, ahead of the rest), then site
