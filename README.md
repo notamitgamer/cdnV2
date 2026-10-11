@@ -99,6 +99,7 @@ template.
 | `VPN_ALLOWLIST` | unset | Comma-separated IPs exempt from VPN blocking. |
 | `TRUST_CF_CONNECTING_IP` | `0` | Trust `CF-Connecting-IP` (set to `1` behind Cloudflare). |
 | `TRUSTED_PROXY_HOPS` | `1` | Number of trusted reverse proxies in front of the app. |
+| `FAST_TREE_MAX_FILES` | `20000` | Above this many files, `/api/tree` is not shipped and instant folder navigation turns itself off. |
 
 > **Self-hosting checklist:** the defaults above point at the original deployment. Before going live,
 > set `HF_BUCKET_ID`, `CDN_BASE_URL`, `RAW_DOMAIN`/`RAW_BASE_URL`, `OIDC_AUDIENCE` and `GH_ALWAYS_ALLOW`
@@ -120,6 +121,8 @@ trust. The admin dashboard shows how the server currently sees your connection.
 | `POST /api/put` | Upload files (`multipart/form-data`: `files`, `folder`). |
 | `POST /api/put-url` | Fetch a remote URL into the CDN. |
 | `GET /api/find?q=…` | Search all files. |
+| `GET /api/tree` | Every file as `[path, size]` (ETag + gzip) for instant folder navigation. |
+| `GET /api/shell` | Folder page skeleton + HTML fragments the browser fills in locally. |
 | `GET /api/pack/{path}` | Zip a folder (`/api/pack-info/{path}` returns its size first). |
 | `POST /api/shorten` | Create a short link. |
 | `POST /api/gh-sync` | Sync a GitHub repo (GitHub Actions OIDC token + tar.gz archive). |
@@ -133,26 +136,49 @@ compressed archive. Video files are refused.
 
 ## Fast navigation
 
-Moving around is meant to feel close to a static site. Three things work together:
+Moving around is meant to feel like a static site. Four things work together:
 
-1. **Link prefetching.** `app/static/prefetch.js` (loaded from `<head>` on the public pages, not the
-   admin dashboard) fetches the pages linked from the current one as soon as the browser is idle.
-2. **Browser-cached, gzipped pages.** Rendered pages are identical for everyone, so they are sent with
-   `Cache-Control: private, max-age=30` and gzip (`app/fast_html.py`). A prefetched page therefore sits
-   in the browser's cache and the click is answered with no network at all; a page that wasn't
-   prefetched in time still arrives about 5x smaller (a typical folder listing is ~60 KB of HTML, ~12 KB
-   gzipped).
-3. **Fewer storage round trips.** Opening a folder used to cost a wasted `HEAD` request plus the
-   listing. When the parent folder's listing is cached (it is, because that's the page you clicked
-   from), the `HEAD` is skipped, and simultaneous requests for one folder share a single Hugging Face call.
+1. **Instant folders.** The browser keeps the whole file tree (`/api/tree`, a few KB gzipped) and a page
+   "shell" (`/api/shell`) in localStorage. Clicking a folder link builds that folder's page locally and
+   hands it to [Turbo](https://turbo.hotwired.dev), so there is **no request at all**. It works on the very
+   first click after a page loads, even before anything has been prefetched, and for returning visitors
+   even before the network answers, because last visit's tree is already stored. (`app/static/fasttree.js`)
+2. **Link prefetching** for everything else (file pages, other pages). `app/static/prefetch.js` fetches
+   the pages linked from the current one as soon as the browser is idle.
+3. **Browser-cached, gzipped pages.** Rendered pages are identical for everyone, so they are sent with
+   `Cache-Control: private, max-age=30` and gzip (`app/fast_html.py`). A prefetched page is answered from
+   the browser's cache; one that wasn't arrives about 5x smaller (a typical folder listing is ~60 KB of
+   HTML, ~12 KB gzipped).
+4. **Fewer storage round trips.** Opening a folder used to cost a wasted `HEAD` request plus the listing.
+   When the parent folder's listing is cached (it is, because that's the page you clicked from) the `HEAD`
+   is skipped, and simultaneous requests for one folder share a single Hugging Face call.
 
-**Freshness trade-off:** because pages are cached for 30 s in the browser (on top of the server's 60 s
-listing cache), a file you just uploaded can take up to a minute or two to show in a folder you
-already had open. A hard refresh (Ctrl/Cmd+Shift+R) always fetches fresh.
+### How instant folders stay correct
+
+- **One copy of the markup.** The folder page's HTML lives in `app/templates/_listing.html` as Jinja
+  macros. `/api/shell` ships the server-rendered page skeleton plus each fragment with `@@placeholders@@`;
+  the browser only substitutes data (names, sizes, counts, the breadcrumb). There is no second copy of the
+  markup to drift. `tests/test_fast_tree.py` asserts that a locally built page equals the server's page for
+  a set of awkward folders (deep paths, `&` `'` `<` in names, emoji, rounding ties in sizes).
+- **Fresh.** The tree is revalidated in the background on page load, every 15 s while you browse, when the
+  tab regains focus, and straight after an upload (an unchanged tree is a tiny `304`). If the page on screen
+  turns out to have been built from an older tree, it is quietly rebuilt. The server clears its own caches on
+  every upload, delete and sync, so `/api/tree` is current right away.
+- **Falls back, never breaks.** No saved tree yet, a folder that isn't in the tree, a modified click
+  (Ctrl/Cmd/Shift/middle), a link with a query string or hash, `target`/`download` links, or any error all
+  just do the normal navigation, which is today's behaviour. File pages are not built locally.
+- **Bounded.** Buckets with more than `FAST_TREE_MAX_FILES` files (default 20,000) don't ship a tree and
+  the feature switches itself off. It stores roughly 100-200 KB in localStorage.
+- **Opt out** of it for a page with `<meta name="cdn-fast" content="off">`.
+
+**Freshness trade-off:** pages that *are* fetched from the server are cached for 30 s in the browser, so
+reopening one within 30 s can show a listing that is up to 30 s old. A hard refresh
+(Ctrl/Cmd+Shift+R) always fetches fresh.
 
 ### What gets prefetched
 
-The prefetcher is deliberately conservative:
+The prefetcher covers pages that instant folders can't build (file pages, other pages), and skips
+folder links the tree already handles. It is deliberately conservative:
 
 - Same-origin links only, and never `/api/*`, `/admin`, `/mask/*`, `/pack/*`, `/static/*`, `/raw/*`,
   downloads, `target`/`download` links, or anything inside `data-turbo="false"`.
@@ -173,6 +199,7 @@ header, and they don't show up in the Recent/Visited history, which is recorded 
 app/
   main.py          routes, uploads, zip packing, GitHub sync endpoint
   fast_html.py     browser-cache + gzip headers for rendered pages
+  fast_tree.py     /api/tree and /api/shell payloads for instant folder navigation
   storage.py       Hugging Face bucket access, listing, caching, search
   upload_guard.py  upload checks: video blocking, VPN detection, client IP
   admin.py         /admin dashboard, bans, GitHub allowlist (encrypted state)
@@ -180,8 +207,8 @@ app/
   shortener.py     URL shortener
   stats.py         /stats
   templates/       Jinja2 pages (index.html renders most page types)
-  static/          icons, manifest, service worker, prefetch.js
-tests/             prefetcher unit tests (node) + offline server fast-path checks (python)
+  static/          icons, manifest, service worker, prefetch.js, fasttree.js
+tests/             JS unit/DOM/end-to-end tests (node) + offline server checks (python)
 Dockerfile · render.yaml · start.sh
 ```
 

@@ -35,7 +35,9 @@ CI runs these on every pull request; please run them locally first:
 pip install ruff
 ruff check --select E9,F63,F7,F82 app   # syntax errors and undefined names
 python -m compileall -q app
-node --test tests/*.test.js              # unit tests for the browser-side prefetcher (Node 20+)
+npm install --no-save --no-package-lock jsdom@30.1.2 @hotwired/turbo@8.0.4   # test-only; nothing is added to the repo
+node --test tests/*.test.js              # JS unit + jsdom tests (prefetcher, instant folders), Node 20+
+HF_BUCKET_ID=ci/x python tests/test_fast_tree.py   # a locally built folder page must equal the server's
 HF_BUCKET_ID=ci/x python tests/test_server_fastpaths.py   # offline checks for the caching/gzip/listing fast paths
 docker build -t cdnv2 .                  # the image must still build
 ```
@@ -68,3 +70,11 @@ validation, rate limiting), adding a test alongside it is very much appreciated.
 
 This project is licensed under the [MIT License](LICENSE). By submitting a contribution you agree that
 it is licensed under the same terms, and that you have the right to submit it.
+
+## Changing the folder page markup
+
+The folder listing's HTML lives in `app/templates/_listing.html` (Jinja macros) and is used both by the
+server and, via `/api/shell`, by the browser's instant-folder navigation. Edit the macros there, not
+inline in `index.html`. If you add something that depends on the folder's contents, the client has to be
+able to fill it in from the file tree; `python tests/test_fast_tree.py` fails with a diff if the locally
+built page no longer equals the server-rendered one.

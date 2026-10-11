@@ -18,10 +18,12 @@ from pydantic import BaseModel
 from fastapi import FastAPI, Request, File, UploadFile, HTTPException, Form
 from fastapi.responses import StreamingResponse, HTMLResponse, PlainTextResponse, RedirectResponse, FileResponse
 from .fast_html import FastTemplates
+from .fast_tree import tree_payload, shell_payload, json_response
 
 from .storage import (
     is_file,
     get_path_info,
+    _get_full_tree,
     list_directory,
     list_files_recursive,
     upload_temp_file,
@@ -48,7 +50,7 @@ templates = FastTemplates(directory="app/templates")
 
 STATIC_DIR = Path(__file__).parent / "static"
 _NO_STORE_FILES = {"manifest.json", "sw.js"}
-_REVALIDATE_FILES = {"prefetch.js"}
+_REVALIDATE_FILES = {"prefetch.js", "fasttree.js"}
 
 
 @app.get("/static/{filename}")
@@ -788,6 +790,31 @@ async def download_zip(path: str):
 async def api_search(q: str = ""):
     results = await search_files(q)
     return {"results": results}
+
+
+@app.get("/api/tree")
+async def api_tree(request: Request):
+    """Every non-hidden file as [path, size], for instant folder navigation (static/fasttree.js)."""
+    items = await _get_full_tree()
+    if not items:
+        # Storage hiccup (or an empty bucket): say so rather than hand the browser an empty tree
+        # that would replace a good cached one.
+        raise HTTPException(status_code=503, detail="File tree unavailable")
+    payload, etag = tree_payload(items)
+    return json_response(request, payload, etag)
+
+
+@app.get("/api/shell")
+async def api_shell(request: Request):
+    """A folder page skeleton plus the HTML fragments the browser fills in locally."""
+    ctx = {
+        "cdn_base_url": CDN_BASE_URL,
+        "raw_base_url": RAW_BASE_URL,
+        "repo_file_count": None,   # the footer stats slot is filled in from the tree
+        "repo_size_str": None,
+    }
+    payload, etag = shell_payload(templates.env, ctx)
+    return json_response(request, payload, etag)
 
 
 @app.get("/pack/{batch_id}")
