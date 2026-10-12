@@ -1,131 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GitHub Actions Sync · amit/cdn</title>
-<meta name="description" content="Push any repo's files to the CDN automatically on every git push.">
-<link rel="icon" href="/favicon.ico" sizes="any">
-<link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16x16.png">
-<link rel="icon" type="image/svg+xml" href="/static/icons/logo.svg">
-<link rel="apple-touch-icon" sizes="180x180" href="/static/icons/apple-touch-icon.png">
-<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0d1117" media="(prefers-color-scheme: dark)">
-<meta name="color-scheme" content="light dark">
+{% extends "base.html" %}
+{% set page_title = 'GitHub Actions sync' %}
+{% set page_description = "Push any repo's files to the CDN automatically on every git push." %}
+{% block page_class %}prose{% endblock %}
 
-<style>
-  :root {
-    --bg: var(--ui-bg);
-    --surface: var(--ui-surface);
-    --surface-2: var(--ui-surface);
-    --border: var(--ui-border);
-    --text: var(--ui-text);
-    --muted: var(--ui-muted);
-    --accent: var(--ui-accent);
-  }
-
-  *,
-  *::before,
-  *::after {
-    box-sizing: border-box;
-  }
-
-  *,
-  *::before,
-  *::after,
-  html {
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--ui-font);
-    margin: 0;
-    line-height: 1.6;
-  }
-
-  .wrap {
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: 48px 20px 96px;
-  }
-
-  h1 {
-    font-family: var(--ui-font);
-    font-weight: 600;
-    font-size: 1.9rem;
-    margin-bottom: .2em;
-  }
-
-  h2 {
-    font-size: 1.25rem;
-    margin-top: 2.4em;
-    border-top: 1px solid var(--border);
-    padding-top: 1.2em;
-  }
-
-  p {
-    color: var(--muted);
-  }
-
-  code, pre {
-    font-family: var(--ui-mono);
-  }
-
-  code {
-    background: var(--surface-2);
-    padding: .15em .4em;
-    border-radius: 4px;
-    font-size: .9em;
-    color: var(--text);
-    word-break: break-word;
-    overflow-wrap: anywhere;
-  }
-
-  pre {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 16px;
-    overflow-x: auto;
-    font-size: .85rem;
-  }
-
-  ul {
-    color: var(--muted);
-  }
-
-  .badge {
-    display: inline-block;
-    background: var(--surface-2);
-    color: var(--accent);
-    border-radius: 6px;
-    padding: 2px 8px;
-    font-size: .75rem;
-    margin-left: 8px;
-    vertical-align: middle;
-  }
-
-  a {
-    color: var(--accent);
-  }
-
-  footer {
-    margin-top: 4rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--border);
-    font-size: 0.85rem;
-    color: var(--muted);
-  }
-</style>
-    <script src="/static/prefetch.js" defer></script>
-    <script src="/static/fasttree.js" defer></script>
-</head>
-<body>
-{% include "_navbar.html" %}
-<div class="wrap">
+{% block content %}
   <h1>Auto-sync any repo to the CDN <span class="badge">GitHub Actions</span></h1>
   <p>Add one workflow file to a repo. On every push, its contents land in the CDN under
      <code>/&lt;your-github-username&gt;/&lt;repo-name&gt;/</code> — no PAT, no shared secret, and it's
@@ -231,10 +109,4 @@ jobs:
     
   </ul>
   <p>The full request/response details are in the <a href="/documentation#gh-sync">documentation</a>.</p>
-
-  <footer>
-    <p>&copy; 2025 - 2026 notamitgamer. All rights reserved.</p>
-  </footer>
-</div>
-</body>
-</html>
+{% endblock %}

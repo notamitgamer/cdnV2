@@ -1,0 +1,103 @@
+{% from "_listing.html" import footer_stats %}
+{#- Shared page layout. Child templates set `page_title` (and optionally `page_description`) at the top level and
+    fill `head_extra`, `page_class`, `content` and `scripts`. Everything shared (head, header, breadcrumb, footer,
+    dialogs, toasts) lives here so a change is made once.
+    The three pieces the fast-navigation code depends on are kept intact: the <!--@breadcrumb--> slot
+    (_breadcrumb.html), the <!--@stats--> slot (footer below) and <meta name="cdn-fast"> opt-out. -#}
+{% set site_name = 'amit/cdn' %}
+{% set full_title = (page_title ~ ' · ' ~ site_name) if page_title else site_name %}
+{% set description = page_description or "Static file host for amit's projects. Browse, upload, and grab direct links." %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>{{ full_title }}</title>
+    <meta name="description" content="{{ description }}">
+
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16x16.png">
+    <link rel="icon" type="image/svg+xml" href="/static/icons/logo.svg">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/icons/apple-touch-icon.png">
+
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#fafaf9" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0f1012" media="(prefers-color-scheme: dark)">
+    <meta name="color-scheme" content="light dark">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="{{ site_name }}">
+
+    <meta property="og:site_name" content="{{ site_name }}">
+    <meta property="og:title" content="{{ full_title }}">
+    <meta property="og:description" content="{{ description }}">
+    <meta property="og:image" content="{{ (cdn_base_url ~ '/static/icons/og-logo.png') if cdn_base_url else '/static/icons/og-logo.png' }}">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
+
+    {#- Applies the saved (or system) colour theme before first paint, so there is no flash. Identical on every
+        page, so Turbo treats it as already-run. app.js owns the toggle. -#}
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem('cdn_theme');
+                if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                document.documentElement.setAttribute('data-theme', t);
+            } catch (e) {}
+        })();
+    </script>
+
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@8.0.4/dist/turbo.es2017-esm.js"></script>
+    <link rel="stylesheet" href="/static/app.css?v={{ asset_v }}">
+    <script src="/static/app.js?v={{ asset_v }}" defer></script>
+    <script src="/static/prefetch.js" defer></script>
+    <script src="/static/fasttree.js" defer></script>
+    {% block head_extra %}{% endblock %}
+</head>
+<body data-page="{{ page }}">
+    <a class="skip-link" href="#main">Skip to content</a>
+    {% include "_navbar.html" %}
+    {% include "_breadcrumb.html" %}
+
+    <main id="main" class="page {% block page_class %}{% endblock %}" tabindex="-1">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+        <div class="site-footer__inner">
+            <p class="site-footer__about">
+                amit/cdn · built by <a href="https://github.com/notamitgamer">notamitgamer</a><br>
+                nothing here is a permanent fixture.
+            </p>
+            {% if skeleton %}<!--@stats-->{% elif repo_file_count is defined and repo_file_count is not none %}
+            {{ footer_stats(repo_file_count, '' if repo_file_count == 1 else 's', repo_size_str) }}
+            {% endif %}
+        </div>
+    </footer>
+
+    <dialog id="zip-dialog" class="dialog" aria-labelledby="zip-dialog-title">
+        <div class="dialog__body">
+            <h2 id="zip-dialog-title">Download as .zip</h2>
+            <p id="zip-dialog-text"></p>
+            <div class="dialog__actions">
+                <button type="button" class="btn" data-action="dialog-close">Cancel</button>
+                <a href="#" class="btn btn-primary" id="zip-dialog-confirm" data-turbo="false" data-action="dialog-close">Download (.zip)</a>
+            </div>
+        </div>
+    </dialog>
+    <dialog id="error-dialog" class="dialog" aria-labelledby="error-dialog-title">
+        <div class="dialog__body">
+            <h2 id="error-dialog-title">Something went wrong</h2>
+            <p id="error-dialog-text"></p>
+            <div class="dialog__actions">
+                <button type="button" class="btn" data-action="dialog-close">Close</button>
+            </div>
+        </div>
+    </dialog>
+
+    <div id="toasts" class="toasts" role="status" aria-live="polite"></div>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

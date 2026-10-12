@@ -22,11 +22,17 @@ placeholder contract only.
 
 ## Phases
 
-- [ ] **1. Foundation (no visual change)** - shared `base.html`, CSS to `static/app.css`, JS to `static/app.js`,
-      one token set, legacy aliases and `!important` removed, `index.html` split into per-page partials.
-- [ ] **2. Design system** - type/spacing scale, accent, radius, light/dark/system toggle.
-- [ ] **3. Components** - navbar, listing (file-type icons, sort, density), file previews, upload queue,
-      toasts, accessible dialogs, docs/sync code blocks, 404/empty states.
+- [x] **1. Foundation** - shared `base.html`, CSS to `static/app.css`, JS to `static/app.js` (both cache-busted with a
+      content hash), one token set, legacy aliases and `!important` hacks removed, `index.html` split into
+      per-page `_page_*.html` partials, all five templates on one layout. The shared JS now loads on every page
+      (before, `/documentation`, `/stats`, etc. had no breadcrumb JS on a direct load).
+- [x] **2. Design system** - tokens for surfaces/text/brand/status/file-types, light + dark + system with a persistent
+      toggle (applied before first paint, no flash), brand blue accent with the logo's orange as a rare highlight.
+- [x] **3. Components** - navbar with a More menu, listing with colour-coded file-type icons and sorting, file page with
+      previews (image/video/audio/PDF/text) + labelled link rows + embed snippets, upload queue, toasts, native
+      `<dialog>` modals, tabs, empty/404 states.
+      (Upload stays a single request per drop so multi-file drops keep their shared batch page; the queue shows
+      per-file rows with one shared progress value.)
 - [ ] **4. Polish** - a11y pass, mobile pass, manifest/OG fixes, SRI for Turbo, configurable site name.
 
 ## Safety rule for previews

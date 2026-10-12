@@ -1,3 +1,4 @@
+import hashlib
 import os
 import shutil
 import time
@@ -50,7 +51,21 @@ templates = FastTemplates(directory="app/templates")
 
 STATIC_DIR = Path(__file__).parent / "static"
 _NO_STORE_FILES = {"manifest.json", "sw.js"}
-_REVALIDATE_FILES = {"prefetch.js", "fasttree.js"}
+_REVALIDATE_FILES = {"prefetch.js", "fasttree.js", "app.css", "app.js"}
+
+
+def _asset_version() -> str:
+    """Short content hash of the UI's own stylesheet and script, used as ?v= so a deploy is never paired with stale files."""
+    h = hashlib.sha1()
+    for name in ("app.css", "app.js"):
+        try:
+            h.update((STATIC_DIR / name).read_bytes())
+        except OSError:
+            pass
+    return h.hexdigest()[:10]
+
+
+templates.env.globals["asset_v"] = _asset_version()
 
 
 @app.get("/static/{filename}")

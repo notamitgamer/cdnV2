@@ -1,0 +1,38 @@
+{% from "_icons.html" import icon %}
+<section class="page-head">
+    <h1>Upload</h1>
+    <p class="lede">Drop files here to get direct links. Can't remember a link later? Check the <a href="/uploads">uploads folder</a>, or your <a href="/history">history</a>.</p>
+</section>
+
+<div class="upload">
+    <div class="field">
+        <span class="field-label" id="folder-label">Save to</span>
+        <div class="segmented" role="group" aria-labelledby="folder-label" id="folder-picker">
+            <button type="button" class="segmented__btn is-active" aria-pressed="true" data-folder="uploads">uploads</button>
+            <button type="button" class="segmented__btn" aria-pressed="false" data-folder="third-party">third-party</button>
+        </div>
+    </div>
+
+    <p class="callout callout-warning" role="note">
+        {{ icon('clock', 18) }}
+        <span><strong>Rate limits apply.</strong> Each IP can upload <strong>200&nbsp;MB per hour</strong> (a single file can be at most <strong>200&nbsp;MB</strong>). Uploading from a link is limited to <strong>50&nbsp;MB per hour</strong>. Going over returns an error until your allowance comes back. <a href="/documentation#rate-limits">How rate limits work</a></span>
+    </p>
+
+    <label class="dropzone" id="dropzone" for="file-input">
+        <span class="dropzone__icon">{{ icon('upload', 26, 1.75) }}</span>
+        <span class="dropzone__title">Drag &amp; drop files here</span>
+        <span class="dropzone__sub">or <u>click to browse</u> · you can also paste an image</span>
+        <input type="file" id="file-input" class="sr-only" multiple>
+    </label>
+
+    <div class="field">
+        <label class="field-label" for="url-input">Or fetch a file from a link</label>
+        <div class="input-row">
+            <input type="url" id="url-input" class="text-input" placeholder="https://example.com/file.zip" autocomplete="off" spellcheck="false">
+            <button type="button" class="btn" id="url-upload-btn">{{ icon('link') }}<span>Fetch &amp; upload</span></button>
+        </div>
+    </div>
+
+    <p id="error-box" class="alert alert-danger" role="alert" hidden></p>
+    <ul id="results" class="upload-queue" aria-live="polite"></ul>
+</div>
