@@ -710,7 +710,22 @@ html[data-notice="off"] .site-notice { display: none; }
     text-align: right; color: var(--muted); opacity: 0.65; border-right: 1px solid var(--border);
     user-select: none; -webkit-user-select: none;
 }
-.preview__note { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.55rem 1rem; border-top: 1px solid var(--border); background: var(--surface-2); color: var(--muted); font-size: var(--fs-xs); }
+.preview__bar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 2.9rem; padding: 0.4rem 0.75rem 0.4rem 1rem; border-bottom: 1px solid var(--border); background: var(--surface-2); color: var(--muted); font-size: var(--fs-sm); }
+.preview__text.is-ready { animation: page-in 0.2s var(--ease) both; }
+
+/* skeletons: shown while a preview loads, then swapped out in one go */
+.sk { display: block; height: 0.8rem; border-radius: 4px; background: linear-gradient(90deg, var(--surface-3) 25%, var(--surface-2) 50%, var(--surface-3) 75%); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; }
+.sk-label { width: 5.5rem; }
+.sk-btn { width: 7rem; height: 2rem; border-radius: var(--r-sm); }
+.sk-lines { display: grid; gap: 0.85rem; padding: 1.1rem 1rem 1.3rem; min-height: 16rem; align-content: start; }
+html[data-js] .preview--image.is-loading, html[data-js] .preview--pdf.is-loading { min-height: 16rem; }
+html[data-js] .preview--image.is-loading img { opacity: 0; }
+html[data-js] .preview--pdf.is-loading iframe { opacity: 0; }
+html[data-js] .preview--image.is-loading::after, html[data-js] .preview--pdf.is-loading::after {
+    content: ""; position: absolute; inset: 0; z-index: 1;
+    background: linear-gradient(90deg, var(--surface-3) 25%, var(--surface-2) 50%, var(--surface-3) 75%); background-size: 200% 100%; animation: shimmer 1.4s linear infinite;
+}
+.preview--image img, .preview--pdf iframe { transition: opacity 0.2s var(--ease); }
 
 .link-list { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 1.1rem 1.25rem 0.4rem; box-shadow: var(--shadow-sm); }
 .link-list .section-title { margin-bottom: 0.5rem; }

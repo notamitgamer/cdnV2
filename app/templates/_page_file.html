@@ -65,7 +65,7 @@
         {% endif %}
     </section>
 
-    <section class="preview preview--{{ kind.v or 'none' }}" aria-label="Preview">
+    <section class="preview preview--{{ kind.v or 'none' }}{{ ' is-loading' if kind.v in ('image', 'pdf') }}" aria-label="Preview">
         {% if kind.v == 'image' %}
         <img src="{{ raw_url }}" alt="Preview of {{ filename }}" decoding="async">
         {% elif kind.v == 'video' %}
@@ -76,8 +76,10 @@
         <iframe src="{{ raw_url }}" title="PDF preview of {{ filename }}" loading="lazy"></iframe>
         <p class="preview__hint">Nothing showing? Your browser may not display PDFs inline — <a href="{{ raw_url }}" target="_blank" rel="noopener" data-turbo="false">open it directly</a>.</p>
         {% elif kind.v == 'text' %}
-        <div class="preview__text" data-text-src="{{ raw_url }}" data-text-ext="{{ ext }}" data-state="idle">
-            <p class="preview__status">Loading preview…</p>
+        <div class="preview__text is-skeleton" data-text-src="{{ raw_url }}" data-text-ext="{{ ext }}" data-state="idle" aria-busy="true">
+            <div class="preview__bar" aria-hidden="true"><span class="sk sk-label"></span><span class="sk sk-btn"></span></div>
+            <div class="sk-lines" aria-hidden="true">{% for w in [58, 82, 40, 70, 92, 34, 66, 78, 48, 86, 30, 72] %}<span class="sk" style="width: {{ w }}%"></span>{% endfor %}</div>
+            <p class="sr-only">Loading preview…</p>
         </div>
         {% else %}
         <div class="preview__none">

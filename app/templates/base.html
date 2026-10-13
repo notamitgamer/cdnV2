@@ -41,6 +41,7 @@
         page, so Turbo treats it as already-run. app.js owns the toggle. -#}
     <script>
         (function () {
+            document.documentElement.setAttribute('data-js', '');
             try {
                 var t = localStorage.getItem('cdn_theme');
                 if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';

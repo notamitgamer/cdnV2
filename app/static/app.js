@@ -767,7 +767,7 @@
   async function loadTextPreview(box) {
     if (box.getAttribute('data-state') === 'done' || box.getAttribute('data-state') === 'loading') return;
     box.setAttribute('data-state', 'loading');
-    const status = (msg) => { box.innerHTML = '<p class="preview__status"></p>'; box.firstChild.textContent = msg; };
+    const status = (msg) => { box.innerHTML = '<p class="preview__status"></p>'; box.firstChild.textContent = msg; box.classList.remove('is-skeleton'); box.setAttribute('aria-busy', 'false'); };
     try {
       const res = await fetch(box.getAttribute('data-text-src'));
       if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -802,13 +802,15 @@
       const code = document.createElement('code');
       lines.forEach((l) => { const s = document.createElement('span'); s.className = 'ln'; s.textContent = l; code.appendChild(s); });
       pre.appendChild(code);
-      box.innerHTML = '';
-      box.appendChild(pre);
-      const note = document.createElement('div');
-      note.className = 'preview__note';
-      note.innerHTML = '<span></span><button type="button" class="btn btn-sm" data-copy-preview><span>Copy contents</span></button>';
-      note.firstChild.textContent = lines.length + ' line' + (lines.length !== 1 ? 's' : '') + (truncated ? ' · preview truncated' : '');
-      box.appendChild(note);
+      const bar = document.createElement('div');
+      bar.className = 'preview__bar';
+      bar.innerHTML = '<span></span><button type="button" class="btn btn-sm" data-copy-preview><span>Copy contents</span></button>';
+      bar.firstChild.textContent = lines.length + ' line' + (lines.length !== 1 ? 's' : '') + (truncated ? ' · preview truncated' : '');
+      // everything is built off-screen above, then swapped in at once (replacing the skeleton)
+      box.replaceChildren(bar, pre);
+      box.classList.remove('is-skeleton');
+      box.classList.add('is-ready');
+      box.setAttribute('aria-busy', 'false');
       box.setAttribute('data-state', 'done');
     } catch (err) {
       status("Couldn't load a preview. Use Open raw instead.");
@@ -824,14 +826,31 @@
     if (ok) { flashButton(b, 'Copied'); toast('Contents copied'); } else toast('Could not copy', { type: 'error' });
   });
   // an image that fails to load (deleted upstream, blocked host) degrades to the plain no-preview state
+  function imageFailed(box) {
+    box.className = 'preview preview--none';
+    box.innerHTML = '<div class="preview__none"><p>This image could not be loaded.</p></div>';
+  }
   document.addEventListener('error', (e) => {
     const img = e.target;
     if (!(img instanceof HTMLImageElement)) return;
     const box = img.closest('.preview--image');
-    if (!box) return;
-    box.className = 'preview preview--none';
-    box.innerHTML = '<div class="preview__none"><p>This image could not be loaded.</p></div>';
+    if (box) imageFailed(box);
   }, true);
+  // images and PDFs sit behind a shimmer until they have loaded, then appear at once
+  document.addEventListener('load', (e) => {
+    const t = e.target;
+    if (!(t instanceof HTMLImageElement || t instanceof HTMLIFrameElement)) return;
+    const box = t.closest('.preview.is-loading');
+    if (box) box.classList.remove('is-loading');
+  }, true);
+  function settleLoadingPreviews() {
+    $$('.preview.is-loading').forEach((box) => {
+      const img = $('img', box);
+      if (img && img.complete) { if (img.naturalWidth > 0) box.classList.remove('is-loading'); else imageFailed(box); return; }
+      // never leave a skeleton up forever (e.g. a PDF viewer that doesn't fire load)
+      setTimeout(() => box.classList.remove('is-loading'), 8000);
+    });
+  }
 
   // ---------------------------------------------------------------------------------------------
   // lifecycle
@@ -852,6 +871,7 @@
     }
     if (page === 'history') renderHistory();
     $$('.preview__text[data-text-src]').forEach(loadTextPreview);
+    settleLoadingPreviews();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
@@ -867,6 +887,7 @@
   document.addEventListener('turbo:before-cache', () => {
     // don't freeze open menus into the cached snapshot
     closeMenus(null);
+    $$('.preview__text[data-state="loading"]').forEach((el) => el.setAttribute('data-state', 'idle'));
     const nav = $('#primary-nav'); if (nav) nav.classList.remove('is-open');
     const tgl = $('.nav-toggle'); if (tgl) tgl.setAttribute('aria-expanded', 'false');
   });
