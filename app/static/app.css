@@ -195,7 +195,9 @@ pre {
 pre code { background: none; border: 0; padding: 0; font-size: inherit; }
 
 :focus { outline: none; }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* controls that draw their own focus indicator (ring or underline) must not also get the generic outline */
+.text-input:focus-visible, .select:focus-visible, .url-input:focus-visible, .filter-input:focus-visible, .search-input:focus-visible, .link-row__value:focus-visible { outline: none; }
 main:focus { outline: none; }
 
 img, svg, video { max-width: 100%; }
@@ -594,7 +596,8 @@ body.turbo-loading .page { opacity: 0.55; pointer-events: none; transition: opac
 .list-group .filter-input, .list-group .search-input {
     border: 0; border-radius: 0; background: transparent; box-shadow: none; min-height: 3.1rem;
 }
-.list-group .filter-input:focus, .list-group .search-input:focus { background: var(--surface); box-shadow: inset 0 -2px 0 var(--accent); }
+.list-group .filter-input:focus, .list-group .search-input:focus { box-shadow: inset 0 -2px 0 var(--accent); }
+.list-group .input-group:focus-within { background: var(--surface); }
 
 .list-item {
     display: flex; align-items: center; justify-content: space-between; gap: 1rem;

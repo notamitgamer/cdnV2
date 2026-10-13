@@ -318,10 +318,18 @@
     const list = $('#file-list');
     const select = $('#sort-select');
     if (!list || !select) return;
-    const mode = store.get('cdn_sort_v1', 'default');
-    select.value = $$('option', select).some((o) => o.value === mode) ? mode : 'default';
     const rows = Array.from(list.children).filter((r) => r.classList.contains('list-item'));
     if (!rows.length) return;
+    // Folders have no size, so a folder with only sub-folders has nothing to size-sort. Disable those options
+    // there, show "Default order" instead of a stale saved choice (without overwriting it), and hide the control
+    // entirely when there is nothing to reorder.
+    const hasSizes = rows.some((r) => rowBytes(r) >= 0);
+    $$('option', select).forEach((o) => { if (o.value.indexOf('size') === 0) o.disabled = !hasSizes; });
+    let mode = store.get('cdn_sort_v1', 'default');
+    if (!hasSizes && mode.indexOf('size') === 0) mode = 'default';
+    select.value = $$('option', select).some((o) => o.value === mode && !o.disabled) ? mode : 'default';
+    const wrap = select.closest('.select-wrap');
+    if (wrap) wrap.hidden = rows.filter((r) => r.getAttribute('data-name') !== '..').length < 2;
     rows.forEach((r, i) => { if (!r.dataset.i) r.dataset.i = String(i); });
     const isUp = (r) => r.getAttribute('data-name') === '..';
     const isDir = (r) => !!$('.folder-link', r) && !$('.size-label', r);
