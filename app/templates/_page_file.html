@@ -39,7 +39,8 @@
             </p>
         </div>
         <div class="file-head__actions">
-            <a href="/api/get/{{ path | urlencode }}" class="btn btn-primary" data-turbo="false">{{ icon('download') }}<span>Download</span></a>
+            <button type="button" class="btn btn-primary" data-copy="{{ raw_url }}" title="Copy the raw link (for embedding)">{{ icon('copy') }}<span>Copy link</span></button>
+            <a href="/api/get/{{ path | urlencode }}" class="btn" data-turbo="false">{{ icon('download') }}<span>Download</span></a>
             <a href="{{ raw_url }}" class="btn" data-turbo="false" target="_blank" rel="noopener">{{ icon('external') }}<span>Open raw</span></a>
         </div>
     </header>

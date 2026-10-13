@@ -12,6 +12,8 @@
         </a>
 
         <div class="site-header__tools">
+            <a href="/find" class="icon-btn quick-action{{ ' is-active' if page == 'search' }}" aria-label="Find a file" title="Find"{{ ' aria-current="page"'|safe if page == 'search' }}>{{ icon('search', 18) }}</a>
+            <a href="/new" class="icon-btn quick-action quick-action--primary{{ ' is-active' if page == 'upload' }}" aria-label="Upload" title="Upload"{{ ' aria-current="page"'|safe if page == 'upload' }}>{{ icon('upload', 18) }}</a>
             <button type="button" class="icon-btn theme-toggle" data-action="theme-toggle" aria-label="Switch colour theme" title="Switch colour theme">
                 <span class="i-sun">{{ icon('sun', 18) }}</span><span class="i-moon">{{ icon('moon', 18) }}</span>
             </button>
@@ -21,7 +23,7 @@
         </div>
 
         <nav class="site-nav" id="primary-nav" aria-label="Primary">
-            {{ nav_link('/find', 'search', 'Find', 'search') }}
+            {{ nav_link('/find', 'search', 'Find', 'search', 'nav-dup') }}
             {{ nav_link('/shorten', 'shorten', 'Shorten', 'link') }}
             {{ nav_link('/gh-sync', 'gh-sync', 'Sync', 'sync') }}
             {{ nav_link('/documentation', 'documentation', 'Docs', 'book') }}
@@ -35,7 +37,7 @@
                     <a href="/admin" class="nav-link">{{ icon('shield') }}<span>Admin</span></a>
                 </div>
             </div>
-            {{ nav_link('/new', 'upload', 'Upload', 'upload', 'nav-cta') }}
+            {{ nav_link('/new', 'upload', 'Upload', 'upload', 'nav-cta nav-dup') }}
         </nav>
     </div>
 </header>

@@ -190,6 +190,11 @@
       // an <a data-action="dialog-close"> still follows its href (the zip download)
       return;
     }
+    if (action === 'dismiss-notice') {
+      store.set('cdn_notice_off_v1', '1');
+      document.documentElement.setAttribute('data-notice', 'off');
+      return;
+    }
     if (action === 'clear-history') {
       store.del(act.getAttribute('data-key'));
       renderHistory();
@@ -355,6 +360,7 @@
     const downloadUrl = batchId ? '/api/pack-batch/' + batchId : '/api/pack/' + path;
     const spinner = $('#zip-spinner');
     const label = $('#zip-btn-text');
+    const labelHtml = label ? label.innerHTML : '';
     btn.disabled = true;
     if (spinner) spinner.style.display = 'block';
     if (label) label.textContent = 'Calculating…';
@@ -373,7 +379,7 @@
     } finally {
       btn.disabled = false;
       if (spinner) spinner.style.display = 'none';
-      if (label) label.textContent = 'Download all (.zip)';
+      if (label) label.innerHTML = labelHtml;
     }
   }
   function showErrorDialog(message) {

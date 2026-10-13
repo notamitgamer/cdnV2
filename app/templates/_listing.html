@@ -12,11 +12,12 @@
 {% macro root_header() %}
         <section class="hero">
             <h1>A small file shelf for <a href="https://amit.is-a.dev">my</a> projects.</h1>
-            <p class="callout site-notice">
-                {{ icon('info', 18) }}
+            <p class="site-notice" role="note">
+                {{ icon('info', 16) }}
                 <span>Files here can now be synced straight from GitHub on every push — click
                 <a href="/gh-sync">Sync</a> at the top to see how to set it up. Project assets live here;
                 files and paths may change over time, so use direct links with that in mind.</span>
+                <button type="button" class="notice-close" data-action="dismiss-notice" aria-label="Dismiss this notice" title="Dismiss">{{ icon('close', 14, 2.5) }}</button>
             </p>
         </section>
 {% endmacro %}
@@ -43,19 +44,20 @@
             </p>
             <div class="listing-toolbar__actions">
                 <label class="select-wrap" title="Sort this folder">
+                    {{ icon('sort', 14) }}
                     <span class="sr-only">Sort by</span>
                     <select id="sort-select" class="select" data-action="sort">
-                        <option value="default">Default order</option>
-                        <option value="name">Name (A–Z)</option>
-                        <option value="name-desc">Name (Z–A)</option>
-                        <option value="size-desc">Size (largest)</option>
-                        <option value="size-asc">Size (smallest)</option>
+                        <option value="default">Default</option>
+                        <option value="name">Name A–Z</option>
+                        <option value="name-desc">Name Z–A</option>
+                        <option value="size-desc">Largest</option>
+                        <option value="size-asc">Smallest</option>
                     </select>
                 </label>
-                <button id="download-zip-btn" type="button" class="btn" data-path="{{ path }}" title="Download everything in this folder as a .zip">
+                <button id="download-zip-btn" type="button" class="btn" data-path="{{ path }}" title="Download everything in this folder as a .zip" aria-label="Download everything in this folder as a .zip">
                     <svg id="zip-spinner" class="spin-anim" style="display: none;" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
                     {{ icon('download') }}
-                    <span id="zip-btn-text">Download all (.zip)</span>
+                    <span id="zip-btn-text"><span class="zip-long">Download all (.zip)</span><span class="zip-short">.zip</span></span>
                 </button>
             </div>
         </div>
