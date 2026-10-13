@@ -664,17 +664,8 @@ html[data-notice="off"] .site-notice { display: none; }
 /* ============================== 7. File page ============================== */
 .file-view { display: grid; gap: 1.5rem; }
 .file-head {
-    display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
-    align-items: center; gap: 1rem 1.25rem;
-}
-.ft-badge {
-    --ft: var(--muted);
-    display: grid; place-items: center;
-    width: 4rem; height: 4rem; border-radius: 16px;
-    background: color-mix(in srgb, var(--ft) 14%, var(--surface));
-    border: 1px solid color-mix(in srgb, var(--ft) 35%, var(--border));
-    color: color-mix(in srgb, var(--ft) 62%, var(--text));
-    font-family: var(--mono); font-size: 0.8rem; font-weight: 800; letter-spacing: 0.02em;
+    display: grid; grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center; gap: 0.9rem 1.25rem;
 }
 .file-name { font-size: clamp(1.35rem, 1rem + 1.6vw, 1.9rem); overflow-wrap: anywhere; letter-spacing: -0.02em; }
 .file-meta-row { display: flex; align-items: center; flex-wrap: wrap; gap: 0.4rem 0.5rem; margin: 0.55rem 0 0; }
@@ -911,10 +902,9 @@ html[data-notice="off"] .site-notice { display: none; }
 @media (max-width: 640px) {
     :root { --gutter: 1rem; }
     .page { padding-top: 1.1rem; }
-    .file-head { grid-template-columns: auto minmax(0, 1fr); }
-    .file-head__actions { grid-column: 1 / -1; justify-content: stretch; }
+    .file-head { grid-template-columns: minmax(0, 1fr); }
+    .file-head__actions { justify-content: stretch; }
     .file-head__actions .btn { flex: 1 1 0; }
-    .ft-badge { width: 3.2rem; height: 3.2rem; border-radius: 13px; font-size: 0.7rem; }
     .link-row { grid-template-columns: minmax(0, 1fr) auto; }
     .link-row__label { grid-column: 1 / -1; }
     .link-row__label small { display: inline; margin-left: 0.4rem; }

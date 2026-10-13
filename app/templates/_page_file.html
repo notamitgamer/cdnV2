@@ -29,7 +29,6 @@
 
 <article class="file-view">
     <header class="file-head">
-        <div class="ft-badge" data-name="{{ filename }}" aria-hidden="true"><span>{{ ext[:5] | upper if ext else 'FILE' }}</span></div>
         <div class="file-head__main">
             <h1 class="file-name">{{ filename }}</h1>
             <p class="file-meta-row">
@@ -44,6 +43,27 @@
             <a href="{{ raw_url }}" class="btn" data-turbo="false" target="_blank" rel="noopener">{{ icon('external') }}<span>Open raw</span></a>
         </div>
     </header>
+
+    <section class="link-list" aria-labelledby="links-title">
+        <h2 id="links-title" class="section-title">Links</h2>
+        {% macro link_row(label, value, hint='') %}
+        <div class="link-row">
+            <span class="link-row__label">{{ label }}{% if hint %}<small>{{ hint }}</small>{% endif %}</span>
+            <input class="link-row__value" type="text" readonly value="{{ value }}" aria-label="{{ label }}" data-select-on-focus>
+            <button type="button" class="btn btn-sm" data-copy="{{ value }}" aria-label="Copy {{ label }}">{{ icon('copy', 14) }}<span>Copy</span></button>
+        </div>
+        {% endmacro %}
+        {{ link_row('CDN page', page_url, 'This page') }}
+        {{ link_row('Raw link', raw_url, 'For embedding') }}
+        {{ link_row('Download link', dl_url, 'Starts a download') }}
+        {% if embed %}
+        <div class="link-row link-row--code">
+            <span class="link-row__label">Embed<small>HTML snippet</small></span>
+            <code class="link-row__code">{{ embed }}</code>
+            <button type="button" class="btn btn-sm" data-copy="{{ embed }}" aria-label="Copy embed snippet">{{ icon('copy', 14) }}<span>Copy</span></button>
+        </div>
+        {% endif %}
+    </section>
 
     <section class="preview preview--{{ kind.v or 'none' }}" aria-label="Preview">
         {% if kind.v == 'image' %}
@@ -63,27 +83,6 @@
         <div class="preview__none">
             <div class="preview__icon">{{ icon('file', 34, 1.5) }}</div>
             <p>No preview for this file type.</p>
-        </div>
-        {% endif %}
-    </section>
-
-    <section class="link-list" aria-labelledby="links-title">
-        <h2 id="links-title" class="section-title">Links</h2>
-        {% macro link_row(label, value, hint='') %}
-        <div class="link-row">
-            <span class="link-row__label">{{ label }}{% if hint %}<small>{{ hint }}</small>{% endif %}</span>
-            <input class="link-row__value" type="text" readonly value="{{ value }}" aria-label="{{ label }}" data-select-on-focus>
-            <button type="button" class="btn btn-sm" data-copy="{{ value }}" aria-label="Copy {{ label }}">{{ icon('copy', 14) }}<span>Copy</span></button>
-        </div>
-        {% endmacro %}
-        {{ link_row('CDN page', page_url, 'This page') }}
-        {{ link_row('Raw link', raw_url, 'For embedding') }}
-        {{ link_row('Download link', dl_url, 'Starts a download') }}
-        {% if embed %}
-        <div class="link-row link-row--code">
-            <span class="link-row__label">Embed<small>HTML snippet</small></span>
-            <code class="link-row__code">{{ embed }}</code>
-            <button type="button" class="btn btn-sm" data-copy="{{ embed }}" aria-label="Copy embed snippet">{{ icon('copy', 14) }}<span>Copy</span></button>
         </div>
         {% endif %}
     </section>
