@@ -924,6 +924,11 @@ html[data-js] .preview--image.is-loading::after, html[data-js] .preview--pdf.is-
     .link-row__label { grid-column: 1 / -1; }
     .link-row__label small { display: inline; margin-left: 0.4rem; }
     .toc ol { columns: 1; }
+    /* small copy buttons become icon-only: the copy glyph is universal, and the link box gets the room back */
+    .link-row .btn > span, [data-copy-preview] > span { display: none; }
+    .link-row .btn-sm, .preview__bar .btn-sm { width: 2.6rem; min-width: 2.6rem; height: 2.6rem; padding: 0; }
+    .preview__bar { padding-right: 0.5rem; }
+    .sk-btn { width: 2.6rem; height: 2.6rem; }
     .list-item { padding-left: 0.85rem; padding-right: 0.85rem; }
     .item-name { gap: 0.65rem; }
     .listing-toolbar { flex-wrap: nowrap; }
