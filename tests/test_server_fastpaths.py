@@ -166,5 +166,12 @@ r = c.get("/no/such/folder", headers=gz)
 check(r.status_code == 404 and "max-age" not in r.headers.get("cache-control", ""), "404 pages are not cached")
 r = c.get("/static/sw.js", headers=gz)
 check(r.headers["cache-control"].startswith("no-store") and "content-encoding" not in r.headers, "service worker is still no-store and untouched")
+for name in ("app.css", "app.js"):
+    r = c.get(f"/static/{name}", headers=gz)
+    plain = (m.STATIC_DIR / name).read_bytes()
+    check(r.headers.get("content-encoding") == "gzip" and r.content == plain and len(r.headers.get("content-length", "0")) > 0
+          and r.headers["vary"] == "Accept-Encoding", f"/static/{name} is gzipped and decodes to the original")
+    r = c.get(f"/static/{name}", headers={"accept-encoding": "identity"})
+    check("content-encoding" not in r.headers and r.content == plain, f"/static/{name} stays plain for clients without gzip")
 
 print("\nall server fast-path checks passed")

@@ -33,7 +33,11 @@ placeholder contract only.
       `<dialog>` modals, tabs, empty/404 states.
       (Upload stays a single request per drop so multi-file drops keep their shared batch page; the queue shows
       per-file rows with one shared progress value.)
-- [ ] **4. Polish** - a11y pass, mobile pass, manifest/OG fixes, SRI for Turbo, configurable site name.
+- [x] **4. Polish** - axe-core audit clean (0 violations on 13 pages x light/dark x desktop/mobile), underlined in-text
+      links, focusable scroll regions, contrast fixes, h1 on every page, manifest colours match the page, absolute
+      `og:image`, README updated, `app.css`/`app.js` served gzipped (~22 KB total, cached).
+      Not done: SRI on the Turbo script (can't verify the live CDN bytes from here; vendoring Turbo is the safer
+      follow-up) and a configurable site name (needs a backend setting).
 
 ## Safety rule for previews
 

@@ -34,7 +34,7 @@
     --highlight: #ff6a42;
 
     /* status */
-    --success: #15803d;
+    --success: #166534;
     --success-soft: #e8f6ec;
     --warning: #a14a08;
     --warning-soft: #fdf3e1;
@@ -167,6 +167,10 @@ p { margin: 0 0 1em; }
 
 a { color: var(--accent); text-decoration: none; }
 a:hover { color: var(--accent-hover); text-decoration: underline; text-underline-offset: 3px; }
+/* links inside running text must not rely on colour alone */
+p a, li a, .lede a, .callout a, .hero h1 a, .footnote a { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.hero h1 a { text-decoration-thickness: 0.07em; text-underline-offset: 0.14em; }
+.site-footer p a { text-decoration: underline; text-decoration-color: var(--border-strong); }
 
 code, kbd, samp, pre { font-family: var(--mono); }
 code {
@@ -644,7 +648,7 @@ body.turbo-loading .page { opacity: 0.55; pointer-events: none; transition: opac
     width: 4rem; height: 4rem; border-radius: 16px;
     background: color-mix(in srgb, var(--ft) 14%, var(--surface));
     border: 1px solid color-mix(in srgb, var(--ft) 35%, var(--border));
-    color: var(--ft);
+    color: color-mix(in srgb, var(--ft) 62%, var(--text));
     font-family: var(--mono); font-size: 0.8rem; font-weight: 800; letter-spacing: 0.02em;
 }
 .file-name { font-size: clamp(1.35rem, 1rem + 1.6vw, 1.9rem); overflow-wrap: anywhere; letter-spacing: -0.02em; }
@@ -763,7 +767,7 @@ body.turbo-loading .page { opacity: 0.55; pointer-events: none; transition: opac
 .prose h1 { margin-bottom: 0.4rem; }
 .prose h2 { margin: 2.5rem 0 0.75rem; font-size: 1.4rem; }
 .prose > h2 { padding-top: 1.2rem; border-top: 1px solid var(--border); }
-.prose h3 { margin: 1.2rem 0 0.4rem; color: var(--muted); font-size: var(--fs-xs); font-weight: 650; text-transform: uppercase; letter-spacing: 0.06em; }
+.toc-title, .prose h3 { margin: 1.2rem 0 0.4rem; color: var(--muted); font-size: var(--fs-xs); font-weight: 650; text-transform: uppercase; letter-spacing: 0.06em; }
 .prose p, .prose li { color: var(--muted); }
 .prose p { margin: 0.4em 0 0.8em; }
 .prose section { margin-top: 2.75rem; scroll-margin-top: calc(var(--header-h) + 1rem); }
@@ -774,7 +778,7 @@ body.turbo-loading .page { opacity: 0.55; pointer-events: none; transition: opac
 .footnote { margin-top: 3rem; padding-top: 1.2rem; border-top: 1px solid var(--border); color: var(--muted); font-size: var(--fs-sm); }
 
 .toc { margin: 1.5rem 0 2.5rem; padding: 1.1rem 1.3rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); }
-.toc h3 { margin-top: 0; }
+.toc .toc-title { margin-top: 0; }
 .toc ol { margin: 0; padding-left: 1.2em; columns: 2; column-gap: 2rem; font-size: var(--fs-md); }
 .toc a { color: var(--text); }
 .toc a:hover { color: var(--accent); }

@@ -784,6 +784,7 @@
       if (lines.length > PREVIEW_LINES) { lines = lines.slice(0, PREVIEW_LINES); truncated = true; }
       // build with textContent so file contents can never become markup
       const pre = document.createElement('pre');
+      pre.setAttribute('aria-label', 'File contents');
       const code = document.createElement('code');
       lines.forEach((l) => { const s = document.createElement('span'); s.className = 'ln'; s.textContent = l; code.appendChild(s); });
       pre.appendChild(code);
@@ -827,6 +828,14 @@
     applySort();
     scheduleTruncate();
     const page = document.body && document.body.dataset.page;
+    // scrollable code blocks must be reachable by keyboard
+    $$('pre, .link-row__code').forEach((el) => { if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0'); });
+    // folder pages have no visible heading (the breadcrumb is the title); give assistive tech one
+    if (page === 'listing' && !$('main h1')) {
+      const name = decodeURIComponent(location.pathname.split('/').filter(Boolean).pop() || '');
+      const main = $('#main');
+      if (name && main) { const h = document.createElement('h1'); h.className = 'sr-only'; h.textContent = name; main.insertBefore(h, main.firstChild); }
+    }
     if (page === 'history') renderHistory();
     $$('.preview__text[data-text-src]').forEach(loadTextPreview);
   }
