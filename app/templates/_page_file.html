@@ -1,4 +1,5 @@
 {% from "_icons.html" import icon %}
+{% from "_skeleton.html" import file_skeleton %}
 {#- Everything here is built from values the server already has (path, extension, size), so the page costs
     nothing extra to render. Previews load straight from the raw domain; text is fetched by app.js. -#}
 {% set raw_url = raw_base_url ~ '/' ~ (path | urlencode) %}
@@ -19,6 +20,7 @@
 } %}
 {% for k, exts in kinds.items() %}{% if ext in exts %}{% set kind.v = k %}{% endif %}{% endfor %}
 
+{% set pending = kind.v in ('image', 'pdf', 'text') %}
 {% set embed = none %}
 {% if kind.v == 'image' %}{% set embed = '<img src="' ~ raw_url ~ '" alt="">' %}
 {% elif ext == 'css' %}{% set embed = '<link rel="stylesheet" href="' ~ raw_url ~ '">' %}
@@ -27,7 +29,9 @@
 {% elif kind.v == 'audio' %}{% set embed = '<audio src="' ~ raw_url ~ '" controls></audio>' %}
 {% endif %}
 
-<article class="file-view">
+<article class="file-view{{ ' is-pending' if pending }}"{{ ' aria-busy="true"'|safe if pending }}>
+    {{ file_skeleton() }}
+    <div class="file-view__content">
     <header class="file-head">
         <div class="file-head__main">
             <h1 class="file-name">{{ filename }}</h1>
@@ -49,7 +53,7 @@
         {% macro link_row(label, value, hint='') %}
         <div class="link-row">
             <span class="link-row__label">{{ label }}{% if hint %}<small>{{ hint }}</small>{% endif %}</span>
-            <input class="link-row__value" type="text" readonly value="{{ value }}" aria-label="{{ label }}" data-select-on-focus>
+            <code class="link-row__value" data-link="{{ label }}">{{ value }}</code>
             <button type="button" class="btn btn-sm" data-copy="{{ value }}" aria-label="Copy {{ label }}">{{ icon('copy', 14) }}<span>Copy</span></button>
         </div>
         {% endmacro %}
@@ -59,7 +63,7 @@
         {% if embed %}
         <div class="link-row link-row--code">
             <span class="link-row__label">Embed<small>HTML snippet</small></span>
-            <code class="link-row__code">{{ embed }}</code>
+            <code class="link-row__value" data-link="Embed">{{ embed }}</code>
             <button type="button" class="btn btn-sm" data-copy="{{ embed }}" aria-label="Copy embed snippet">{{ icon('copy', 14) }}<span>Copy</span></button>
         </div>
         {% endif %}
@@ -73,7 +77,7 @@
         {% elif kind.v == 'audio' %}
         <div class="preview__audio">{{ icon('file', 28, 1.5) }}<audio src="{{ raw_url }}" controls preload="metadata"></audio></div>
         {% elif kind.v == 'pdf' %}
-        <iframe src="{{ raw_url }}" title="PDF preview of {{ filename }}" loading="lazy"></iframe>
+        <iframe src="{{ raw_url }}" title="PDF preview of {{ filename }}"></iframe>
         <p class="preview__hint">Nothing showing? Your browser may not display PDFs inline — <a href="{{ raw_url }}" target="_blank" rel="noopener" data-turbo="false">open it directly</a>.</p>
         {% elif kind.v == 'text' %}
         <div class="preview__text is-skeleton" data-text-src="{{ raw_url }}" data-text-ext="{{ ext }}" data-state="idle" aria-busy="true">
@@ -88,4 +92,5 @@
         </div>
         {% endif %}
     </section>
+    </div>
 </article>

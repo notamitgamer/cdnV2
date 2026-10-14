@@ -1,4 +1,5 @@
 {% from "_listing.html" import footer_stats %}
+{% from "_skeleton.html" import file_skeleton %}
 {#- Shared page layout. Child templates set `page_title` (and optionally `page_description`) at the top level and
     fill `head_extra`, `page_class`, `content` and `scripts`. Everything shared (head, header, breadcrumb, footer,
     dialogs, toasts) lives here so a change is made once.
@@ -99,6 +100,7 @@
         </div>
     </dialog>
 
+    <template id="file-skel-tpl">{{ file_skeleton() }}</template>
     <div id="toasts" class="toasts" role="status" aria-live="polite"></div>
     {% block scripts %}{% endblock %}
 </body>

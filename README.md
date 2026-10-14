@@ -239,3 +239,8 @@ jsDelivr.
   shown as source and never executed on the main origin.
 - **File-type colours** come from the file name alone (`[data-name$=".png" i]` rules at the end of `app.css`),
   so server-rendered and browser-built rows look identical without extra placeholders.
+- **File pages and Turbo.** Turbo refuses to follow URLs that don't look like HTML (`/assets/app.js`), which would make
+  every tap on a file a full page reload. `app.js` therefore starts those visits itself (`Turbo.session.navigator.startVisit`,
+  with a plain-link fallback). A file page shows a whole-page skeleton and reveals everything at once when its preview is
+  ready (capped at 0.7 s); while a tapped file page is still being fetched, the same skeleton is shown after 140 ms, and is
+  never put in Turbo's cache.

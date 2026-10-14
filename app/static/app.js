@@ -815,7 +815,9 @@
       box.setAttribute('data-state', 'done');
     } catch (err) {
       status("Couldn't load a preview. Use Open raw instead.");
-      box.setAttribute('data-state', 'idle');
+      box.setAttribute('data-state', 'failed');
+    } finally {
+      settleFileView();
     }
   }
   document.addEventListener('click', async (e) => {
@@ -830,6 +832,7 @@
   function imageFailed(box) {
     box.className = 'preview preview--none';
     box.innerHTML = '<div class="preview__none"><p>This image could not be loaded.</p></div>';
+    settleFileView();
   }
   document.addEventListener('error', (e) => {
     const img = e.target;
@@ -837,12 +840,28 @@
     const box = img.closest('.preview--image');
     if (box) imageFailed(box);
   }, true);
+  // File pages show a whole-page skeleton and appear at once when the preview is ready, or after a short cap
+  // so a huge image can never hold the links back.
+  const REVEAL_CAP_MS = 700;
+  function revealFileView(view) {
+    if (!view.classList.contains('is-pending')) return;
+    view.classList.remove('is-pending');
+    view.classList.add('is-revealed');
+    view.removeAttribute('aria-busy');
+  }
+  function settleFileView() {
+    const view = $('.file-view.is-pending');
+    if (!view) return;
+    const waiting = $('.preview__text[data-state="idle"], .preview__text[data-state="loading"], .preview.is-loading', view);
+    if (!waiting) { revealFileView(view); return; }
+    if (!view._capTimer) view._capTimer = setTimeout(() => revealFileView(view), REVEAL_CAP_MS);
+  }
   // images and PDFs sit behind a shimmer until they have loaded, then appear at once
   document.addEventListener('load', (e) => {
     const t = e.target;
     if (!(t instanceof HTMLImageElement || t instanceof HTMLIFrameElement)) return;
     const box = t.closest('.preview.is-loading');
-    if (box) box.classList.remove('is-loading');
+    if (box) { box.classList.remove('is-loading'); settleFileView(); }
   }, true);
   function settleLoadingPreviews() {
     $$('.preview.is-loading').forEach((box) => {
@@ -863,7 +882,7 @@
     scheduleTruncate();
     const page = document.body && document.body.dataset.page;
     // scrollable code blocks must be reachable by keyboard
-    $$('pre, .link-row__code').forEach((el) => { if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0'); });
+    $$('pre').forEach((el) => { if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0'); });
     // folder pages have no visible heading (the breadcrumb is the title); give assistive tech one
     if (page === 'listing' && !$('main h1')) {
       const name = decodeURIComponent(location.pathname.split('/').filter(Boolean).pop() || '');
@@ -873,6 +892,7 @@
     if (page === 'history') renderHistory();
     $$('.preview__text[data-text-src]').forEach(loadTextPreview);
     settleLoadingPreviews();
+    settleFileView();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
@@ -892,6 +912,62 @@
     const nav = $('#primary-nav'); if (nav) nav.classList.remove('is-open');
     const tgl = $('.nav-toggle'); if (tgl) tgl.setAttribute('aria-expanded', 'false');
   });
+
+  // Tapping a file in a list: if the server takes more than a beat, show the file-page skeleton right away
+  // (like GitHub) instead of leaving the old page dimmed. Fast or prefetched visits never flash it.
+  let tappedFile = '';
+  let skelTimer = 0;
+  let savedMain = null;
+  function showFileSkeleton() {
+    const main = $('#main'); const tpl = $('#file-skel-tpl');
+    if (!main || !tpl || savedMain) return;
+    savedMain = { html: main.innerHTML, cls: main.className };
+    const node = tpl.content.firstElementChild.cloneNode(true);
+    node.classList.add('is-standalone');
+    main.replaceChildren(node);
+    main.setAttribute('aria-busy', 'true');
+    window.scrollTo(0, 0);
+  }
+  function clearFileSkeleton(restore) {
+    clearTimeout(skelTimer);
+    const main = $('#main');
+    if (restore && savedMain && main) { main.innerHTML = savedMain.html; main.className = savedMain.cls; main.removeAttribute('aria-busy'); }
+    savedMain = null;
+  }
+  // Turbo only follows URLs that look like HTML, so a tap on /assets/app.js (or any file with an extension) would be
+  // a full page reload: no skeleton, no smooth transition. File pages are ordinary HTML pages, so visit them through
+  // Turbo's navigator ourselves. Anything unusual (modifier keys, new tab, Turbo missing) is left to the browser.
+  function turboVisitFile(url) {
+    const nav = window.Turbo && window.Turbo.session && window.Turbo.session.navigator;
+    if (!nav || typeof nav.startVisit !== 'function') return false;
+    try {
+      // startVisit (unlike proposeVisit/Turbo.visit) skips the "looks like HTML" URL check
+      const id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random();
+      nav.startVisit(url, id);
+      return true;
+    } catch (err) { return false; }
+  }
+  document.addEventListener('click', (e) => {
+    const a = e.target instanceof Element && e.target.closest('a.file-link');
+    tappedFile = '';
+    if (!a) return;
+    const url = new URL(a.href, location.href);
+    tappedFile = url.pathname;
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    if (a.target || url.origin !== location.origin) return;
+    if (turboVisitFile(url)) e.preventDefault();
+  }, true);
+  document.addEventListener('turbo:visit', (e) => {
+    clearFileSkeleton(true);
+    const url = e.detail && e.detail.url;
+    if (!tappedFile || !url) return;
+    let path = ''; try { path = new URL(url).pathname; } catch (err) { return; }
+    if (path !== tappedFile) return;
+    skelTimer = setTimeout(showFileSkeleton, 140);
+  });
+  // the new page is about to replace this one: stop the timer, and never let Turbo cache the skeleton
+  document.addEventListener('turbo:before-cache', () => clearFileSkeleton(true));
+  document.addEventListener('turbo:before-render', () => { clearTimeout(skelTimer); savedMain = null; tappedFile = ''; });
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
