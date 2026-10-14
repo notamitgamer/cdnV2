@@ -147,8 +147,9 @@ Moving around is meant to feel like a static site. Four things work together:
    the pages linked from the current one as soon as the browser is idle.
 3. **Browser-cached, gzipped pages.** Rendered pages are identical for everyone, so they are sent with
    `Cache-Control: private, max-age=30` and gzip (`app/fast_html.py`). A prefetched page is answered from
-   the browser's cache; one that wasn't arrives about 5x smaller (a typical folder listing is ~60 KB of
-   HTML, ~12 KB gzipped).
+   the browser's cache; one that wasn't arrives about 5x smaller. The shared stylesheet and script are
+   separate cache-busted files (`static/app.css`, `static/app.js`, ~10 KB and ~12 KB gzipped, cached across
+   every page), so the page HTML itself is only markup: a small folder listing is ~38 KB raw, ~5 KB gzipped.
 4. **Fewer storage round trips.** Opening a folder used to cost a wasted `HEAD` request plus the listing.
    When the parent folder's listing is cached (it is, because that's the page you clicked from) the `HEAD`
    is skipped, and simultaneous requests for one folder share a single Hugging Face call.
@@ -206,8 +207,10 @@ app/
   gh_oidc.py       GitHub Actions OIDC token verification
   shortener.py     URL shortener
   stats.py         /stats
-  templates/       Jinja2 pages (index.html renders most page types)
-  static/          icons, manifest, service worker, prefetch.js, fasttree.js
+  templates/       Jinja2 pages: base.html (shared layout), index.html + _page_*.html (listing, file, batch,
+                   upload, history, search, 404), _listing.html (fragments shared with fasttree.js),
+                   _navbar/_breadcrumb/_icons partials, plus documentation / gh_sync_docs / stats / url_shortener
+  static/          app.css + app.js (the whole UI), icons, manifest, service worker, prefetch.js, fasttree.js
 tests/             JS unit/DOM/end-to-end tests (node) + offline server checks (python)
 Dockerfile · render.yaml · start.sh
 ```
@@ -223,3 +226,21 @@ governed by the [Code of Conduct](CODE_OF_CONDUCT.md). To report a vulnerability
 [MIT](LICENSE) © 2026 Amit Dutta. All runtime dependencies are under permissive licenses (MIT, BSD,
 Apache-2.0, Unlicense). The only third-party browser asset is [Turbo](https://github.com/hotwired/turbo) (MIT), loaded from
 jsDelivr.
+
+## UI notes
+
+- **One stylesheet, one script.** All styling is in `app/static/app.css` (tokens at the top; light/dark via
+  `html[data-theme]`, set before first paint) and all behaviour in `app/static/app.js`. Both are loaded on every
+  page and versioned with a content hash (`?v=`), so a deploy never pairs new HTML with old CSS.
+- **Delegated events only.** Turbo swaps `<body>` on each visit, so `app.js` binds everything on `document`
+  (via `data-action`, `data-copy`, ids) and re-runs an idempotent `init()` on `turbo:load`.
+- **File previews** (`_page_file.html`): images, video, audio and PDF are plain elements loading from the raw
+  domain; text/code is fetched by `app.js` (first 256 KB) and rendered with `textContent`. HTML and SVG-as-text are
+  shown as source and never executed on the main origin.
+- **File-type colours** come from the file name alone (`[data-name$=".png" i]` rules at the end of `app.css`),
+  so server-rendered and browser-built rows look identical without extra placeholders.
+- **File pages and Turbo.** Turbo refuses to follow URLs that don't look like HTML (`/assets/app.js`), which would make
+  every tap on a file a full page reload. `app.js` therefore starts those visits itself (`Turbo.session.navigator.startVisit`,
+  with a plain-link fallback). A file page shows a whole-page skeleton and reveals everything at once when its preview is
+  ready (capped at 0.7 s); while a tapped file page is still being fetched, the same skeleton is shown after 140 ms, and is
+  never put in Turbo's cache.

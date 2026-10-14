@@ -1,0 +1,18 @@
+{#- Placeholder shown while a file page is getting ready (see .file-view.is-pending in app.css and the
+    turbo:visit handler in app.js). Pure decoration: hidden from assistive tech. -#}
+{% macro file_skeleton() %}
+<div class="file-skel" aria-hidden="true">
+    <div class="file-skel__head">
+        <span class="sk sk-title"></span>
+        <span class="sk sk-pills"></span>
+        <div class="file-skel__actions"><span class="sk sk-action"></span><span class="sk sk-action"></span><span class="sk sk-action"></span></div>
+    </div>
+    <div class="file-skel__card">
+        {% for i in range(4) %}<div class="file-skel__row"><span class="sk sk-rowlabel"></span><span class="sk sk-rowbar"></span></div>{% endfor %}
+    </div>
+    <div class="file-skel__preview">
+        <span class="sk sk-previewbar"></span>
+        {% for w in [58, 82, 40, 70, 92, 34, 66] %}<span class="sk" style="width: {{ w }}%"></span>{% endfor %}
+    </div>
+</div>
+{% endmacro %}

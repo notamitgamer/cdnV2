@@ -1,0 +1,10 @@
+{% from "_icons.html" import icon %}
+<section class="notfound">
+    <div class="notfound__icon">{{ icon('alert', 36, 1.5) }}</div>
+    <h1>404 — Not found</h1>
+    <p class="lede">The file or directory you're looking for doesn't exist. It may have been moved, renamed or removed.</p>
+    <div class="notfound__actions">
+        <a href="/" class="btn btn-primary">Go to root</a>
+        <a href="/find" class="btn">{{ icon('search') }}<span>Find a file</span></a>
+    </div>
+</section>

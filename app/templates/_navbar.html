@@ -1,139 +1,43 @@
-{% from "_listing.html" import crumb_container, crumb_link, crumb_collapsed, copy_btn %}
-{% include "_styles.html" %}
-<style>
-/* Navbar + breadcrumb. Uses the shared --ui- tokens from _styles.html. */
-.navbar-wrapper {
-    position: sticky; top: 0; z-index: 100;
-    background: var(--ui-bg);
-    border-bottom: 1px solid var(--ui-border);
-    margin-bottom: 1.5rem;
-    font-family: var(--ui-font);
-}
-.navbar {
-    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-    max-width: var(--ui-width); margin: 0 auto; padding: 0.75rem 1rem;
-}
-.wordmark { font-weight: 600; font-size: 1rem; color: var(--ui-text) !important; text-decoration: none !important; white-space: nowrap; }
-.navlinks { display: flex; align-items: center; gap: 0.25rem; }
-.navlinks a {
-    display: inline-flex; align-items: center; gap: 0.4rem;
-    padding: 0.4rem 0.65rem; border-radius: var(--ui-radius);
-    color: var(--ui-muted); font-size: 0.9rem; text-decoration: none; white-space: nowrap;
-}
-.navlinks a svg { flex-shrink: 0; }
-.navlinks a:hover { color: var(--ui-text); background: var(--ui-surface); }
-.navlinks a.nav-admin { padding: 0.4rem 0.5rem; margin-left: 0.25rem; border: 1px solid var(--ui-border); }
-.navlinks a.nav-admin span { display: none; }
-.navlinks a.active { color: var(--ui-accent); background: var(--ui-accent-bg); font-weight: 500; }
-.nav-toggle {
-    display: none; align-items: center; justify-content: center;
-    width: 2.25rem; height: 2.25rem; padding: 0;
-    background: transparent; border: 1px solid var(--ui-border); border-radius: var(--ui-radius);
-    color: var(--ui-text); cursor: pointer;
-}
-.nav-toggle:hover { background: var(--ui-surface); }
-.nav-toggle .icon-close { display: none; }
-.nav-toggle[aria-expanded="true"] .icon-open { display: none; }
-.nav-toggle[aria-expanded="true"] .icon-close { display: block; }
-@media (max-width: 720px) {
-    .navbar { flex-wrap: wrap; }
-    .nav-toggle { display: inline-flex; }
-    .navlinks { display: none; flex-basis: 100%; flex-direction: column; align-items: stretch; gap: 0.15rem; padding-top: 0.5rem; }
-    .navlinks.open { display: flex; }
-    .navlinks a { padding: 0.65rem 0.75rem; font-size: 1rem; }
-    .navlinks a.nav-admin { padding: 0.65rem 0.75rem; margin-left: 0; border: 0; }
-    .navlinks a.nav-admin span { display: inline; }
-}
-.breadcrumb-container { max-width: var(--ui-width); margin: 0 auto; padding: 0 1rem 0.75rem; }
-.breadcrumb {
-    display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;
-    color: var(--ui-muted); font-family: var(--ui-mono); font-size: 0.85rem;
-}
-.breadcrumb a { color: var(--ui-accent); text-decoration: none; }
-.breadcrumb a:hover { text-decoration: underline; }
-.breadcrumb-collapsed { position: relative; display: inline-flex; }
-.breadcrumb-ellipsis, .copy-path-btn {
-    background: var(--ui-surface); border: 1px solid var(--ui-border); border-radius: var(--ui-radius);
-    color: var(--ui-muted); cursor: pointer; font: inherit; line-height: 1.4;
-}
-.breadcrumb-ellipsis { padding: 0.1rem 0.6rem; }
-.copy-path-btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.3rem; margin-left: 0.4rem; }
-.breadcrumb-ellipsis:hover, .copy-path-btn:hover { color: var(--ui-text); border-color: var(--ui-muted); }
-.breadcrumb-menu {
-    display: none; position: absolute; top: calc(100% + 6px); left: 0;
-    min-width: 180px; max-width: 70vw; max-height: 260px; overflow-y: auto;
-    flex-direction: column; gap: 0.15rem; padding: 0.35rem; z-index: 20;
-    background: var(--ui-bg); border: 1px solid var(--ui-border); border-radius: var(--ui-radius);
-}
-.breadcrumb-menu.open { display: flex; }
-.breadcrumb-menu a { padding: 0.5rem 0.75rem; border-radius: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.breadcrumb-menu a:hover { background: var(--ui-surface); text-decoration: none; }
-</style>
-<div class="navbar-wrapper">
-    <header class="navbar">
-        <a href="/" class="wordmark">amit/cdn</a>
-        <button type="button" class="nav-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="primary-nav" onclick="var o=document.getElementById('primary-nav').classList.toggle('open');this.setAttribute('aria-expanded',o)"><svg class="icon-open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg><svg class="icon-close" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>
-        <nav class="navlinks" id="primary-nav" aria-label="Primary">
-            <a href="/find" class="{{ 'active' if page == 'search' }}"{{ ' aria-current="page"'|safe if page == 'search' }}><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span>Find</span></a>
-            <a href="/new" class="{{ 'active' if page == 'upload' }}"{{ ' aria-current="page"'|safe if page == 'upload' }}><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span>Upload</span></a>
-            <a href="/shorten" class="{{ 'active' if page == 'shorten' }}"{{ ' aria-current="page"'|safe if page == 'shorten' }}><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><span>Shorten</span></a>
-            <a href="/history" class="{{ 'active' if page == 'history' }}"{{ ' aria-current="page"'|safe if page == 'history' }}><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>History</span></a>
-            <a href="/stats" class="{{ 'active' if page == 'stats' }}"{{ ' aria-current="page"'|safe if page == 'stats' }}><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="20" x2="6" y2="12"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="9"/></svg><span>Stats</span></a>
-            <a href="/gh-sync" class="{{ 'active' if page == 'gh-sync' }}"{{ ' aria-current="page"'|safe if page == 'gh-sync' }}><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg><span>Sync</span></a>
-            <a href="/documentation" class="{{ 'active' if page == 'documentation' }}"{{ ' aria-current="page"'|safe if page == 'documentation' }}><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span>Docs</span></a>
-            <a href="/admin" class="nav-admin" title="Admin" aria-label="Admin"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>Admin</span></a>
-        </nav>
-    </header>
-    {% if skeleton %}<!--@breadcrumb-->{% elif not (page == 'listing' and not path) %}
-                {% set current = namespace(val='') %}
-                {% set ns = namespace(items=[{'name': 'root', 'href': '/'}]) %}
-                {% if path %}
-                    {% set path_parts = path.split('/') %}
-                    {% if page == 'file' %}{% set path_parts = path_parts[:-1] %}{% endif %}
-                    {% for part in path_parts %}
-                        {% set current.val = current.val + part + '/' %}
-                        {% set ns.items = ns.items + [{'name': part, 'href': '/' + current.val[:-1]}] %}
-                    {% endfor %}
-                {% endif %}
-                {% if page == 'upload' %}
-                    {% set ns.items = ns.items + [{'name': 'new', 'href': '/new'}] %}
-                {% elif page == 'search' %}
-                    {% set ns.items = ns.items + [{'name': 'find', 'href': '/find'}] %}
-                {% elif page == 'history' %}
-                    {% set ns.items = ns.items + [{'name': 'history', 'href': '/history'}] %}
-                {% elif page == 'stats' %}
-                    {% set ns.items = ns.items + [{'name': 'stats', 'href': '/stats'}] %}
-                {% elif page == 'documentation' %}
-                    {% set ns.items = ns.items + [{'name': 'documentation', 'href': '/documentation'}] %}
-                {% elif page == 'gh-sync' %}
-                    {% set ns.items = ns.items + [{'name': 'gh-sync', 'href': '/gh-sync'}] %}
-                {% elif page == 'shorten' %}
-                    {% set ns.items = ns.items + [{'name': 'shorten', 'href': '/shorten'}] %}
-                {% elif page == 'file' %}
-                    {% set ns.items = ns.items + [{'name': filename, 'href': none}] %}
-                {% endif %}
+{% from "_icons.html" import icon %}
+{#- Site header. `page` marks the active link. Keep this free of per-request data so the "instant folders"
+    shell (api/shell) and the server render stay identical. -#}
+{% macro nav_link(href, key, label, icon_name, extra='') -%}
+<a href="{{ href }}" class="nav-link {{ extra }}{{ ' is-active' if page == key }}"{{ ' aria-current="page"'|safe if page == key }}>{{ icon(icon_name) }}<span>{{ label }}</span></a>
+{%- endmacro %}
+<header class="site-header">
+    <div class="site-header__inner">
+        <a href="/" class="wordmark" aria-label="amit/cdn, home">
+            <img src="/static/icons/logo.svg" alt="" width="28" height="28" decoding="async">
+            <span class="wordmark__text">amit<b>/</b>cdn</span>
+        </a>
 
-                {% set crumbs %}
-                {% if ns.items|length > 4 %}
-                    {% set hidden = ns.items[1:-2] %}
-                    {{ crumb_link(ns.items[0].href, ns.items[0].name) }}
-                    {% set menu %}
-                    {% for c in hidden %}
-                    {{ crumb_link(c.href, c.name) }}
-                    {% endfor %}
-                    {% endset %}
-                    {{ crumb_collapsed(menu) }}
-                    {% for c in ns.items[-2:] %}
-                    / {% if c.href %}{{ crumb_link(c.href, c.name) }}{% else %}{{ c.name }}{% endif %}
-                    {% endfor %}
-                {% else %}
-                    {% for c in ns.items %}
-                        {% if loop.first %}{{ crumb_link(c.href, c.name) }}
-                        {% else %}/ {% if c.href %}{{ crumb_link(c.href, c.name) }}{% else %}{{ c.name }}{% endif %}
-                        {% endif %}
-                    {% endfor %}
-                {% endif %}
-                {% endset %}
-                {{ crumb_container(crumbs, cdn_base_url, copy_btn(path) if (path or page == 'file') else '') }}
-        {% endif %}
-</div>
+        <div class="site-header__tools">
+            <a href="/find" class="icon-btn quick-action{{ ' is-active' if page == 'search' }}" aria-label="Find a file" title="Find"{{ ' aria-current="page"'|safe if page == 'search' }}>{{ icon('search', 18) }}</a>
+            <a href="/new" class="icon-btn quick-action quick-action--primary{{ ' is-active' if page == 'upload' }}" aria-label="Upload" title="Upload"{{ ' aria-current="page"'|safe if page == 'upload' }}>{{ icon('upload', 18) }}</a>
+            <button type="button" class="icon-btn theme-toggle" data-action="theme-toggle" aria-label="Switch colour theme" title="Switch colour theme">
+                <span class="i-sun">{{ icon('sun', 18) }}</span><span class="i-moon">{{ icon('moon', 18) }}</span>
+            </button>
+            <button type="button" class="icon-btn nav-toggle" data-action="nav-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="primary-nav">
+                <span class="i-open">{{ icon('menu', 20) }}</span><span class="i-close">{{ icon('close', 20) }}</span>
+            </button>
+        </div>
+
+        <nav class="site-nav" id="primary-nav" aria-label="Primary">
+            {{ nav_link('/find', 'search', 'Find', 'search', 'nav-dup') }}
+            {{ nav_link('/shorten', 'shorten', 'Shorten', 'link') }}
+            {{ nav_link('/gh-sync', 'gh-sync', 'Sync', 'sync') }}
+            {{ nav_link('/documentation', 'documentation', 'Docs', 'book') }}
+            <div class="more">
+                <button type="button" class="nav-link more__toggle{{ ' is-active' if page in ('history', 'stats') }}" data-action="more-toggle" aria-expanded="false" aria-haspopup="true" aria-controls="more-menu">
+                    <span>More</span>{{ icon('chevron-down', 14) }}
+                </button>
+                <div class="more__menu" id="more-menu">
+                    {{ nav_link('/history', 'history', 'History', 'clock') }}
+                    {{ nav_link('/stats', 'stats', 'Stats', 'bars') }}
+                    <a href="/admin" class="nav-link">{{ icon('shield') }}<span>Admin</span></a>
+                </div>
+            </div>
+            {{ nav_link('/new', 'upload', 'Upload', 'upload', 'nav-cta nav-dup') }}
+        </nav>
+    </div>
+</header>

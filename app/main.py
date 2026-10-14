@@ -1,3 +1,5 @@
+import gzip
+import hashlib
 import os
 import shutil
 import time
@@ -16,7 +18,7 @@ from collections import deque
 from pathlib import Path
 from pydantic import BaseModel
 from fastapi import FastAPI, Request, File, UploadFile, HTTPException, Form
-from fastapi.responses import StreamingResponse, HTMLResponse, PlainTextResponse, RedirectResponse, FileResponse
+from fastapi.responses import StreamingResponse, HTMLResponse, Response, PlainTextResponse, RedirectResponse, FileResponse
 from .fast_html import FastTemplates
 from .fast_tree import tree_payload, shell_payload, json_response
 
@@ -50,11 +52,37 @@ templates = FastTemplates(directory="app/templates")
 
 STATIC_DIR = Path(__file__).parent / "static"
 _NO_STORE_FILES = {"manifest.json", "sw.js"}
-_REVALIDATE_FILES = {"prefetch.js", "fasttree.js"}
+_REVALIDATE_FILES = {"prefetch.js", "fasttree.js", "app.css", "app.js"}
+
+
+def _asset_version() -> str:
+    """Short content hash of the UI's own stylesheet and script, used as ?v= so a deploy is never paired with stale files."""
+    h = hashlib.sha1()
+    for name in ("app.css", "app.js"):
+        try:
+            h.update((STATIC_DIR / name).read_bytes())
+        except OSError:
+            pass
+    return h.hexdigest()[:10]
+
+
+templates.env.globals["asset_v"] = _asset_version()
+
+
+_GZ_CACHE: dict = {}
+
+
+def _gzipped(path: Path) -> bytes:
+    """gzip of a static file, kept in memory (a few files, keyed by mtime so a redeploy is picked up)."""
+    key = (path.name, path.stat().st_mtime_ns)
+    data = _GZ_CACHE.get(key)
+    if data is None:
+        data = _GZ_CACHE[key] = gzip.compress(path.read_bytes(), 9)
+    return data
 
 
 @app.get("/static/{filename}")
-async def static_no_cache_root(filename: str):
+async def static_no_cache_root(filename: str, request: Request):
     if filename in _NO_STORE_FILES:
         cache_control = "no-store, no-cache, must-revalidate, max-age=0"
     elif filename in _REVALIDATE_FILES:
@@ -65,6 +93,13 @@ async def static_no_cache_root(filename: str):
     file_path = STATIC_DIR / filename
     if not file_path.is_file():
         raise HTTPException(status_code=404)
+    if filename in _REVALIDATE_FILES and "gzip" in request.headers.get("accept-encoding", "").lower():
+        media = "text/css" if filename.endswith(".css") else "text/javascript"
+        return Response(
+            _gzipped(file_path),
+            media_type=f"{media}; charset=utf-8",
+            headers={"Cache-Control": cache_control, "Content-Encoding": "gzip", "Vary": "Accept-Encoding"},
+        )
     return FileResponse(file_path, headers={"Cache-Control": cache_control})
 
 

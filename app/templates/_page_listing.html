@@ -1,0 +1,47 @@
+{% from "_listing.html" import root_header, counts, toolbar, go_up, row_dir, row_file, empty_state %}
+{% from "_icons.html" import icon %}
+{% if skeleton %}<!--@root-header-->{% elif not path %}
+{{ root_header() }}
+{% endif %}
+
+{% set visible_items = items | rejectattr("name", "equalto", ".gitattributes") | list %}
+{% set file_count = visible_items | rejectattr("is_dir") | list | length %}
+{% set dir_count = visible_items | selectattr("is_dir") | list | length %}
+{% set parent_path = '/' %}
+{% if path %}
+    {% set path_parts = path.split('/') %}
+    {% if path_parts|length > 1 %}{% set parent_path = '/' + path_parts[:-1]|join('/') %}{% endif %}
+{% endif %}
+<div class="input-group input-group--standalone" id="filter-group">
+    <span class="input-group__icon">{{ icon('search', 16) }}</span>
+    <input type="text" id="filter-input" class="filter-input" placeholder="Search this folder... (press / to focus)" aria-label="Filter this folder" autocomplete="off" spellcheck="false">
+    <button type="button" class="input-clear-btn" id="filter-clear" aria-label="Clear filter">{{ icon('close', 16, 2.5) }}</button>
+</div>
+{% if skeleton %}<!--@toolbar-->{% elif items %}
+{{ toolbar(counts(dir_count, file_count), path) }}
+{% endif %}
+        <div class="list-container">
+            <div class="list-group">
+                <div id="file-list">
+                    {% if skeleton %}<!--@list-->{% else %}
+                    {% if path %}
+                    {{ go_up(parent_path) }}
+                    {% endif %}
+
+                    {% for item in items %}
+                    {% if item.name != '.gitattributes' %}
+                    {% if item.is_dir %}
+                    {{ row_dir(item.name, item.path) }}
+                    {% else %}
+                    {{ row_file(item.name, item.path, item.size_str) }}
+                    {% endif %}
+                    {% endif %}
+                    {% endfor %}
+
+                    {% if not visible_items %}
+                    {{ empty_state() }}
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>

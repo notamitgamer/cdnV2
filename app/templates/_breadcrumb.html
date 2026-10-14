@@ -1,0 +1,46 @@
+{% from "_listing.html" import crumb_container, crumb_link, crumb_collapsed, copy_btn %}
+{#- Breadcrumb trail under the header. Folder pages get theirs from the instant-folders shell, which is why
+    the skeleton leaves a slot here instead of rendering it. -#}
+{% if skeleton %}<!--@breadcrumb-->{% elif not (page == 'listing' and not path) %}
+    {% set current = namespace(val='') %}
+    {% set ns = namespace(items=[{'name': 'root', 'href': '/'}]) %}
+    {% if path %}
+        {% set path_parts = path.split('/') %}
+        {% if page == 'file' %}{% set path_parts = path_parts[:-1] %}{% endif %}
+        {% for part in path_parts %}
+            {% set current.val = current.val + part + '/' %}
+            {% set ns.items = ns.items + [{'name': part, 'href': '/' + current.val[:-1]}] %}
+        {% endfor %}
+    {% endif %}
+    {% set leaf = {'upload': ('new', '/new'), 'search': ('find', '/find'), 'history': ('history', '/history'),
+                   'stats': ('stats', '/stats'), 'documentation': ('documentation', '/documentation'),
+                   'gh-sync': ('gh-sync', '/gh-sync'), 'shorten': ('shorten', '/shorten')} %}
+    {% if page in leaf %}
+        {% set ns.items = ns.items + [{'name': leaf[page][0], 'href': leaf[page][1]}] %}
+    {% elif page == 'file' %}
+        {% set ns.items = ns.items + [{'name': filename, 'href': none}] %}
+    {% endif %}
+
+    {% set crumbs %}
+    {% if ns.items|length > 4 %}
+        {% set hidden = ns.items[1:-2] %}
+        {{ crumb_link(ns.items[0].href, ns.items[0].name) }}
+        {% set menu %}
+        {% for c in hidden %}
+        {{ crumb_link(c.href, c.name) }}
+        {% endfor %}
+        {% endset %}
+        {{ crumb_collapsed(menu) }}
+        {% for c in ns.items[-2:] %}
+        / {% if c.href %}{{ crumb_link(c.href, c.name) }}{% else %}{{ c.name }}{% endif %}
+        {% endfor %}
+    {% else %}
+        {% for c in ns.items %}
+            {% if loop.first %}{{ crumb_link(c.href, c.name) }}
+            {% else %}/ {% if c.href %}{{ crumb_link(c.href, c.name) }}{% else %}{{ c.name }}{% endif %}
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+    {% endset %}
+    {{ crumb_container(crumbs, cdn_base_url, copy_btn(path) if (path or page == 'file') else '') }}
+{% endif %}

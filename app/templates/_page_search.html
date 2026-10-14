@@ -1,0 +1,14 @@
+{% from "_icons.html" import icon %}
+<section class="page-head">
+    <h1>Find a file</h1>
+    <p class="lede">Search every file and folder on the CDN by name or path.</p>
+</section>
+<div class="list-group search-box">
+    <div class="input-group input-group--lg" id="search-group">
+        <span class="input-group__icon">{{ icon('search', 18) }}</span>
+        <input type="search" id="search-input" class="search-input" placeholder="Find a file anywhere in the CDN..." aria-label="Search files" autocomplete="off" spellcheck="false" autofocus>
+        <button type="button" class="input-clear-btn" id="search-clear" aria-label="Clear search">{{ icon('close', 18, 2.5) }}</button>
+    </div>
+    <div id="search-status" class="search-status" role="status" aria-live="polite" hidden></div>
+    <div id="search-results"></div>
+</div>

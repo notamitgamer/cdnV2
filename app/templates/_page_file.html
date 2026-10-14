@@ -1,0 +1,96 @@
+{% from "_icons.html" import icon %}
+{% from "_skeleton.html" import file_skeleton %}
+{#- Everything here is built from values the server already has (path, extension, size), so the page costs
+    nothing extra to render. Previews load straight from the raw domain; text is fetched by app.js. -#}
+{% set raw_url = raw_base_url ~ '/' ~ (path | urlencode) %}
+{% set page_url = cdn_base_url ~ '/' ~ (path | urlencode) %}
+{% set dl_url = cdn_base_url ~ '/api/get/' ~ (path | urlencode) %}
+{% set ext = file_ext or '' %}
+
+{% set kind = namespace(v='') %}
+{% set kinds = {
+    'image': ['png', 'jpg', 'jpeg', 'gif', 'webp', 'avif', 'bmp', 'ico', 'svg'],
+    'video': ['mp4', 'webm', 'mov', 'm4v', 'ogv'],
+    'audio': ['mp3', 'wav', 'ogg', 'oga', 'flac', 'm4a', 'aac', 'opus'],
+    'pdf': ['pdf'],
+    'text': ['txt', 'md', 'markdown', 'rst', 'json', 'jsonc', 'js', 'mjs', 'cjs', 'ts', 'tsx', 'jsx', 'css', 'scss', 'sass', 'less',
+             'html', 'htm', 'xml', 'yml', 'yaml', 'toml', 'ini', 'cfg', 'conf', 'csv', 'tsv', 'log', 'py', 'rb', 'go', 'rs', 'c', 'h',
+             'cpp', 'hpp', 'cc', 'java', 'kt', 'swift', 'php', 'sh', 'bash', 'zsh', 'fish', 'bat', 'ps1', 'sql', 'lua', 'r', 'pl',
+             'vue', 'svelte', 'diff', 'patch', 'tex', 'srt', 'vtt', 'gitignore', 'map'],
+} %}
+{% for k, exts in kinds.items() %}{% if ext in exts %}{% set kind.v = k %}{% endif %}{% endfor %}
+
+{% set pending = kind.v in ('image', 'pdf', 'text') %}
+{% set embed = none %}
+{% if kind.v == 'image' %}{% set embed = '<img src="' ~ raw_url ~ '" alt="">' %}
+{% elif ext == 'css' %}{% set embed = '<link rel="stylesheet" href="' ~ raw_url ~ '">' %}
+{% elif ext in ('js', 'mjs') %}{% set embed = '<script src="' ~ raw_url ~ '"></script>' %}
+{% elif kind.v == 'video' %}{% set embed = '<video src="' ~ raw_url ~ '" controls></video>' %}
+{% elif kind.v == 'audio' %}{% set embed = '<audio src="' ~ raw_url ~ '" controls></audio>' %}
+{% endif %}
+
+<article class="file-view{{ ' is-pending' if pending }}"{{ ' aria-busy="true"'|safe if pending }}>
+    {{ file_skeleton() }}
+    <div class="file-view__content">
+    <header class="file-head">
+        <div class="file-head__main">
+            <h1 class="file-name">{{ filename }}</h1>
+            <p class="file-meta-row">
+                {% if ext %}<span class="file-pill">{{ ext | upper }}</span>{% endif %}
+                {% if file_size_str and file_size_str != '-' %}<span class="file-pill">{{ file_size_str }}</span>{% endif %}
+                <span class="file-path">{{ path }}</span>
+            </p>
+        </div>
+        <div class="file-head__actions">
+            <button type="button" class="btn btn-primary" data-copy="{{ raw_url }}" title="Copy the raw link (for embedding)">{{ icon('copy') }}<span>Copy link</span></button>
+            <a href="/api/get/{{ path | urlencode }}" class="btn" data-turbo="false">{{ icon('download') }}<span>Download</span></a>
+            <a href="{{ raw_url }}" class="btn" data-turbo="false" target="_blank" rel="noopener">{{ icon('external') }}<span>Open raw</span></a>
+        </div>
+    </header>
+
+    <section class="link-list" aria-labelledby="links-title">
+        <h2 id="links-title" class="section-title">Links</h2>
+        {% macro link_row(label, value, hint='') %}
+        <div class="link-row">
+            <span class="link-row__label">{{ label }}{% if hint %}<small>{{ hint }}</small>{% endif %}</span>
+            <code class="link-row__value" data-link="{{ label }}">{{ value }}</code>
+            <button type="button" class="btn btn-sm" data-copy="{{ value }}" aria-label="Copy {{ label }}">{{ icon('copy', 14) }}<span>Copy</span></button>
+        </div>
+        {% endmacro %}
+        {{ link_row('CDN page', page_url, 'This page') }}
+        {{ link_row('Raw link', raw_url, 'For embedding') }}
+        {{ link_row('Download link', dl_url, 'Starts a download') }}
+        {% if embed %}
+        <div class="link-row link-row--code">
+            <span class="link-row__label">Embed<small>HTML snippet</small></span>
+            <code class="link-row__value" data-link="Embed">{{ embed }}</code>
+            <button type="button" class="btn btn-sm" data-copy="{{ embed }}" aria-label="Copy embed snippet">{{ icon('copy', 14) }}<span>Copy</span></button>
+        </div>
+        {% endif %}
+    </section>
+
+    <section class="preview preview--{{ kind.v or 'none' }}{{ ' is-loading' if kind.v in ('image', 'pdf') }}" aria-label="Preview">
+        {% if kind.v == 'image' %}
+        <img src="{{ raw_url }}" alt="Preview of {{ filename }}" decoding="async">
+        {% elif kind.v == 'video' %}
+        <video src="{{ raw_url }}" controls preload="metadata" playsinline></video>
+        {% elif kind.v == 'audio' %}
+        <div class="preview__audio">{{ icon('file', 28, 1.5) }}<audio src="{{ raw_url }}" controls preload="metadata"></audio></div>
+        {% elif kind.v == 'pdf' %}
+        <iframe src="{{ raw_url }}" title="PDF preview of {{ filename }}"></iframe>
+        <p class="preview__hint">Nothing showing? Your browser may not display PDFs inline — <a href="{{ raw_url }}" target="_blank" rel="noopener" data-turbo="false">open it directly</a>.</p>
+        {% elif kind.v == 'text' %}
+        <div class="preview__text is-skeleton" data-text-src="{{ raw_url }}" data-text-ext="{{ ext }}" data-state="idle" aria-busy="true">
+            <div class="preview__bar" aria-hidden="true"><span class="sk sk-label"></span><span class="sk sk-btn"></span></div>
+            <div class="sk-lines" aria-hidden="true">{% for w in [58, 82, 40, 70, 92, 34, 66, 78, 48, 86, 30, 72] %}<span class="sk" style="width: {{ w }}%"></span>{% endfor %}</div>
+            <p class="sr-only">Loading preview…</p>
+        </div>
+        {% else %}
+        <div class="preview__none">
+            <div class="preview__icon">{{ icon('file', 34, 1.5) }}</div>
+            <p>No preview for this file type.</p>
+        </div>
+        {% endif %}
+    </section>
+    </div>
+</article>

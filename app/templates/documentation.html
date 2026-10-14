@@ -1,70 +1,16 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Documentation · amit/cdn</title>
-<meta name="description" content="Full endpoint reference for cdn.amit.is-a.dev - what each route does, what it needs, what it returns, and how it works.">
-<link rel="icon" href="/favicon.ico" sizes="any">
-<link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16x16.png">
-<link rel="icon" type="image/svg+xml" href="/static/icons/logo.svg">
-<link rel="apple-touch-icon" sizes="180x180" href="/static/icons/apple-touch-icon.png">
-<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0d1117" media="(prefers-color-scheme: dark)">
-<meta name="color-scheme" content="light dark">
-<style>
-  :root{--bg:var(--ui-bg);--surface:var(--ui-surface);--surface-2:var(--ui-surface);--border:var(--ui-border);--text:var(--ui-text);--muted:var(--ui-muted);--accent:var(--ui-accent);--get:var(--ui-success);--post:var(--ui-accent);--err:var(--ui-danger);}
-  *{box-sizing:border-box;}
-  body{background:var(--bg);color:var(--text);font-family:var(--ui-font);margin:0;line-height:1.6;}
-  .wrap{max-width:1000px;margin:0 auto;padding:48px 20px 96px;}
-  h1{font-family:var(--ui-font);font-weight:600;font-size:1.9rem;margin-bottom:.2em;}
-  h2{font-size:1.15rem;margin:0 0 1rem;font-family:var(--ui-mono);}
-  h3{font-size:.95rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:1.1em 0 .4em;}
-  p{color:var(--muted);margin:.4em 0;}
-  code{font-family:var(--ui-mono);background:var(--surface-2);padding:.15em .4em;border-radius:4px;font-size:.85em;color:var(--text);word-break:break-word;overflow-wrap:anywhere;}
-  pre{font-family:var(--ui-mono);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;overflow-x:auto;font-size:.82rem;margin:.5em 0;}
-  a{color:var(--accent);}
-  .lede{max-width:70ch;}
-  .toc{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1.1rem 1.3rem;margin:1.6rem 0 2.4rem;}
-  .toc h3{margin-top:0;}
-  .toc ol{margin:0;padding-left:1.2em;color:var(--muted);columns:2;font-size:.92rem;}
-  .toc a{color:var(--text);text-decoration:none;}
-  .toc a:hover{color:var(--accent);}
-  .endpoint{border:1px solid var(--border);border-radius:6px;padding:1.4rem 1.5rem;margin-bottom:1.6rem;background:var(--surface);scroll-margin-top:20px;}
-  .route-row{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:.6rem;}
-  .method{font-family:var(--ui-mono);font-weight:700;font-size:.78rem;padding:.2rem .5rem;border-radius:5px;letter-spacing:.03em;}
-  .method.get{background:color-mix(in srgb,var(--ui-success) 14%,transparent);color:var(--get);}
-  .method.post{background:var(--ui-accent-bg);color:var(--post);}
-  .route-path{font-family:var(--ui-mono);font-size:1rem;color:var(--text);}
-  .domain-tag{font-family:var(--ui-mono);font-size:.72rem;color:var(--muted);background:var(--surface-2);border:1px solid var(--border);border-radius:5px;padding:.15rem .4rem;}
-  .endpoint > p:first-of-type{margin-top:0;}
-  table{width:100%;border-collapse:collapse;margin:.5em 0;font-size:.88rem;}
-  th,td{text-align:left;padding:.4em .6em;border-bottom:1px solid var(--border);vertical-align:top;}
-  th{color:var(--muted);font-weight:500;font-size:.8rem;text-transform:uppercase;letter-spacing:.03em;}
-  td{color:var(--text);}
-  td.desc{color:var(--muted);}
-  .err-list{list-style:none;padding:0;margin:.4em 0;}
-  .err-list li{padding:.3em 0;font-size:.88rem;overflow:hidden;}
-  .err-code{font-family:var(--ui-mono);color:var(--err);font-weight:600;float:left;width:3.2em;margin-right:.6em;}
-  section{margin-top:2.6rem;}
-  section > h2 { font-family:var(--ui-font); font-size:1.4rem; font-weight:600; color:var(--text); }
-  .footnote{font-size:.82rem;color:var(--muted);margin-top:3rem;border-top:1px solid var(--border);padding-top:1.2rem;}
-  footer{margin-top:4rem;padding-top:1.5rem;border-top:1px solid var(--border);font-size:.85rem;color:var(--muted);}
-</style>
-    <script src="/static/prefetch.js" defer></script>
-    <script src="/static/fasttree.js" defer></script>
-</head>
-<body>
-{% include "_navbar.html" %}
-<div class="wrap">
+{% extends "base.html" %}
+{% set page_title = 'Documentation' %}
+{% set page_description = 'Full endpoint reference for cdn.amit.is-a.dev - what each route does, what it needs, what it returns, and how it works.' %}
+{% block page_class %}prose{% endblock %}
+
+{% block content %}
   <h1>Documentation</h1>
   <p class="lede">Every route this service exposes: what it's for, what it needs, what it returns, what makes it fail, and
      how it actually works under the hood. This page is generated from reading the live source, not from memory or
      guesswork — if something here is wrong, the code is the tie-breaker, and this page should get fixed to match it.</p>
 
   <div class="toc">
-    <h3>Jump to</h3>
+    <p class="toc-title">Jump to</p>
     <ol>
       <li><a href="#browsing">Browsing &amp; viewing</a></li>
       <li><a href="#gh-sync">GitHub Actions sync</a></li>
@@ -486,10 +432,4 @@
      (<code>app/main.py</code>, <code>app/storage.py</code>, <code>app/gh_oidc.py</code> in
      <a href="https://github.com/notamitgamer/cdnV2">notamitgamer/cdnV2</a>) over this page, and open an issue/PR
      so this page gets corrected.</p>
-
-  <footer>
-    <p>&copy; 2025 - 2026 notamitgamer. All rights reserved.</p>
-  </footer>
-</div>
-</body>
-</html>
+{% endblock %}

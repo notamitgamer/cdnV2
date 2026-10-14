@@ -1,0 +1,25 @@
+<section class="page-head">
+    <h1>History</h1>
+    <p class="lede">Uploads and pages you've opened, kept only in this browser. Nothing here is sent to the server.</p>
+</section>
+
+<div class="tabs" role="tablist" aria-label="History sections">
+    <button type="button" class="tab is-active" id="history-tab-uploads" role="tab" aria-selected="true" aria-controls="history-uploads-panel" data-history-tab="0">Recent uploads</button>
+    <button type="button" class="tab" id="history-tab-visited" role="tab" aria-selected="false" aria-controls="history-visited-panel" tabindex="-1" data-history-tab="1">Visited files &amp; folders</button>
+</div>
+
+<section class="tabpanel" id="history-uploads-panel" role="tabpanel" aria-labelledby="history-tab-uploads">
+    <div class="tabpanel__head">
+        <h2 class="section-title">Recent uploads</h2>
+        <button type="button" class="btn btn-sm btn-ghost-danger" data-action="clear-history" data-key="cdn_uploads_v1" data-target="history-uploads-list">Clear uploads</button>
+    </div>
+    <div class="list-group" id="history-uploads-list"></div>
+</section>
+
+<section class="tabpanel" id="history-visited-panel" role="tabpanel" aria-labelledby="history-tab-visited" hidden>
+    <div class="tabpanel__head">
+        <h2 class="section-title">Visited files &amp; folders</h2>
+        <button type="button" class="btn btn-sm btn-ghost-danger" data-action="clear-history" data-key="cdn_visited_v1" data-target="history-visited-list">Clear visits</button>
+    </div>
+    <div class="list-group" id="history-visited-list"></div>
+</section>
