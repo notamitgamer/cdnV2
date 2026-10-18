@@ -76,6 +76,33 @@ docker run --rm -p 8000:8000 --env-file .env cdnv2
 `ADMIN_DATA_KEY`) in the dashboard, and update `HF_BUCKET_ID`, `RAW_DOMAIN` and `RAW_BASE_URL` for your
 own deployment. Point two hostnames at the service: the main one and the raw one.
 
+### Bot protection with Anubis (optional)
+
+The Docker image bundles [Anubis](https://github.com/TecharoHQ/anubis), a proof-of-work check that
+stops scrapers from hammering the web UI. It is **off by default**. Set `ANUBIS_ENABLED=1` and
+Anubis listens on `$PORT` and forwards to the app on a loopback port.
+
+What it does and does not touch (see `anubis/botPolicies.yaml`):
+
+- **Never challenged:** the raw domain (any host starting `raw.`), `/api/gh-sync`, `/api/get/*`,
+  every non-GET `/api/*` request (uploads, shortening), `/static/*`, `/ping` and `/mask/*`.
+- **Terminal clients pass:** `curl`, `wget`, Python and similar clients don't send a `Mozilla` or
+  `Opera` user agent, so they are not weighed and are never challenged. A script that spoofs a
+  browser user agent will get the challenge page on HTML routes.
+- **Challenged:** browsers opening the web UI, once per cookie lifetime (7 days).
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `ANUBIS_ENABLED` | `0` | Set to `1` to run Anubis in front of the app. |
+| `ED25519_PRIVATE_KEY_HEX` | random | Signs the cookies. Set it (`python -c "import secrets;print(secrets.token_hex(32))"`) or visitors re-solve the challenge after every restart. |
+| `ANUBIS_DIFFICULTY` | `4` | Default challenge difficulty. |
+| `ANUBIS_REAL_IP_HEADER` | `X-Forwarded-For` | Header Anubis reads the client IP from. |
+| `ANUBIS_APP_PORT` | `8001` | Loopback port the app moves to. |
+
+Anubis appends its own hop to `X-Forwarded-For`, so **increase `TRUSTED_PROXY_HOPS` by 1** when you
+enable it, then confirm the "Your IP" box in `/admin` shows your real address. If your raw domain
+does not start with `raw.`, edit the `raw-domain` rule in the policy.
+
 ## Configuration
 
 All configuration is through environment variables. See [`.env.example`](.env.example) for a commented
