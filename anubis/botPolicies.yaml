@@ -1,0 +1,98 @@
+# Anubis bot policy for cdnV2.
+# Docs: https://anubis.techaro.lol/docs/admin/policies
+#
+# Rules are evaluated top to bottom; the first ALLOW/DENY/CHALLENGE wins, WEIGH
+# rules add up and feed the thresholds at the bottom.
+#
+# Anything a script, the GitHub Action or a <img>/<script> tag has to reach is
+# allowed outright, because those clients cannot solve a proof-of-work page.
+bots:
+  # --- Never challenge: machine-facing traffic -------------------------------
+  # Raw files are hot-linked from other sites (img/script/css tags), so a
+  # challenge page would break every embed. Matches any host starting "raw.".
+  # If your RAW_DOMAIN does not start with "raw.", change this regex.
+  - name: raw-domain
+    expression: host.startsWith("raw.")
+    action: ALLOW
+
+  # GitHub Actions sync (OIDC-authenticated by the app itself) and the plain
+  # file API that scripts use.
+  - name: gh-sync
+    path_regex: ^/api/gh-sync$
+    action: ALLOW
+  - name: api-get-file
+    path_regex: ^/api/get/
+    action: ALLOW
+
+  # Uploads, shortening, etc.: every non-GET/HEAD request under /api/.
+  - import: (data)/apps/allow-api-routes.yaml
+
+  - name: static-assets
+    path_regex: ^/static/
+    action: ALLOW
+  - name: health-check
+    path_regex: ^/ping$
+    action: ALLOW
+  # Short links get pasted into chats and forums, where link-preview bots follow them.
+  - name: short-links
+    path_regex: ^/mask/
+    action: ALLOW
+
+  # --- Stock Anubis rules ------------------------------------------------------
+  - import: (data)/bots/_deny-pathological.yaml
+  - import: (data)/bots/aggressive-brazilian-scrapers.yaml
+  - import: (data)/common/domain-fronting.yaml
+  - import: (data)/meta/ai-block-aggressive.yaml
+  - import: (data)/crawlers/_allow-good.yaml
+  - import: (data)/clients/x-firefox-ai.yaml
+  - import: (data)/crawlers/xai.yaml
+  - import: (data)/common/keep-internet-working.yaml
+
+  # Anything claiming to be a browser gets weighed; plain curl/wget/python
+  # clients (no "Mozilla"/"Opera" in the UA) stay at weight 0 and pass through.
+  - name: generic-browser
+    user_agent_regex: >-
+      Mozilla|Opera
+    action: WEIGH
+    weight:
+      adjust: 10
+
+dnsbl: false
+
+status_codes:
+  CHALLENGE: 200
+  DENY: 200
+
+# Solved-challenge cookies are signed, not stored, so nothing is kept server-side.
+store:
+  backend: memory
+  parameters: {}
+
+thresholds:
+  - name: minimal-suspicion
+    expression: weight <= 0
+    action: ALLOW
+  - name: moderate-suspicion
+    expression:
+      all:
+        - weight >= 10
+        - weight < 20
+    action: CHALLENGE
+    challenge:
+      algorithm: fast
+      difficulty: 2
+  - name: mild-proof-of-work
+    expression:
+      all:
+        - weight >= 20
+        - weight < 30
+    action: CHALLENGE
+    challenge:
+      algorithm: fast
+      difficulty: 4
+  - name: extreme-suspicion
+    expression: weight >= 30
+    action: CHALLENGE
+    challenge:
+      algorithm: fast
+      difficulty: 6

@@ -24,3 +24,11 @@ services:
 
       - key: ADMIN_DATA_KEY
         sync: false
+
+      # Optional bot protection (Anubis). Set ANUBIS_ENABLED=1 and bump
+      # TRUSTED_PROXY_HOPS by 1; see README "Bot protection with Anubis".
+      - key: ANUBIS_ENABLED
+        value: "0"
+
+      - key: ED25519_PRIVATE_KEY_HEX
+        sync: false
