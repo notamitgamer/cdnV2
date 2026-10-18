@@ -36,8 +36,17 @@ export POLICY_FNAME="${ANUBIS_POLICY_FNAME:-/app/anubis/botPolicies.yaml}"
 export DIFFICULTY="${ANUBIS_DIFFICULTY:-4}"
 export METRICS_BIND="${ANUBIS_METRICS_BIND:-127.0.0.1:9090}"
 export SERVE_ROBOTS_TXT="${ANUBIS_SERVE_ROBOTS_TXT:-0}"
-# Render/Cloudflare send X-Forwarded-For, not X-Real-Ip; Anubis needs one of them.
-export CUSTOM_REAL_IP_HEADER="${ANUBIS_REAL_IP_HEADER:-X-Forwarded-For}"
+# Anubis ties the "challenge passed" cookie to the visitor's IP. Behind Cloudflare its
+# default guess is a Cloudflare edge address that changes between requests, which
+# makes visitors fail the check again on every page. Point it at the real header.
+REAL_IP_HEADER="${ANUBIS_REAL_IP_HEADER:-}"
+if [ -z "$REAL_IP_HEADER" ] && [ "${TRUST_CF_CONNECTING_IP:-0}" = "1" ]; then
+    REAL_IP_HEADER="CF-Connecting-IP"
+fi
+if [ -n "$REAL_IP_HEADER" ]; then
+    export CUSTOM_REAL_IP_HEADER="$REAL_IP_HEADER"
+    echo "Anubis client IP header: $REAL_IP_HEADER"
+fi
 
 echo "Anubis enabled: :${PORT:-8000} -> ${TARGET}"
 

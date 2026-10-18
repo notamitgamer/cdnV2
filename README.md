@@ -96,7 +96,7 @@ What it does and does not touch (see `anubis/botPolicies.yaml`):
 | `ANUBIS_ENABLED` | `0` | Set to `1` to run Anubis in front of the app. |
 | `ED25519_PRIVATE_KEY_HEX` | random | Signs the cookies. Set it (`python -c "import secrets;print(secrets.token_hex(32))"`) or visitors re-solve the challenge after every restart. |
 | `ANUBIS_DIFFICULTY` | `4` | Default challenge difficulty. |
-| `ANUBIS_REAL_IP_HEADER` | `X-Forwarded-For` | Header Anubis reads the client IP from. |
+| `ANUBIS_REAL_IP_HEADER` | _(unset)_ | Header Anubis reads the visitor IP from. **Behind Cloudflare set `CF-Connecting-IP`** (or set `TRUST_CF_CONNECTING_IP=1`, which does it for you). Without it visitors are re-challenged on every page. |
 | `ANUBIS_APP_PORT` | `8001` | Loopback port the app moves to. |
 
 Anubis appends its own hop to `X-Forwarded-For`, so **increase `TRUSTED_PROXY_HOPS` by 1** when you
