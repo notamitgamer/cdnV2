@@ -17,9 +17,15 @@ fi
 # which moves to a loopback-only port.
 APP_PORT="${ANUBIS_APP_PORT:-8001}"
 
-if [ -z "${ED25519_PRIVATE_KEY_HEX:-}" ]; then
-    # Without a fixed key, solved challenges stop being valid on every restart.
-    echo "WARNING: ED25519_PRIVATE_KEY_HEX is not set; using a random key for this run." >&2
+# Pasting into a dashboard often adds a trailing newline or space; Anubis rejects those.
+ED25519_PRIVATE_KEY_HEX="$(printf '%s' "${ED25519_PRIVATE_KEY_HEX:-}" | tr -d '[:space:]')"
+
+if ! printf '%s' "$ED25519_PRIVATE_KEY_HEX" | grep -Eq '^[0-9a-fA-F]{64}$'; then
+    # Without a valid fixed key, solved challenges stop being valid on every restart.
+    if [ -n "$ED25519_PRIVATE_KEY_HEX" ]; then
+        echo "WARNING: ED25519_PRIVATE_KEY_HEX must be exactly 64 hex characters; ignoring it." >&2
+    fi
+    echo "WARNING: no valid ED25519_PRIVATE_KEY_HEX; using a random key for this run." >&2
     ED25519_PRIVATE_KEY_HEX="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
     export ED25519_PRIVATE_KEY_HEX
 fi
