@@ -145,7 +145,7 @@
   // --- rendering -----------------------------------------------------------------------------------
   function row(opts) {
     const r = el('div', 'pane-row' + (opts.active ? ' is-active' : ''));
-    if (opts.depth) r.style.paddingLeft = (0.4 + opts.depth * 0.95) + 'rem';
+    if (opts.depth) r.style.paddingLeft = (0.4 + opts.depth * 0.7) + 'rem';
     if (opts.twisty) {
       const t = el('button', 'pane-twisty' + (opts.open ? ' is-open' : ''));
       t.type = 'button';
@@ -261,13 +261,16 @@
       if (total > shown) {
         const more = el('a', 'pane-more', '+' + (total - shown) + ' more, open the folder');
         more.href = hrefFor(path);
-        more.style.marginLeft = (0.4 + depth * 0.95 + 1.6) + 'rem';
+        more.style.marginLeft = (0.4 + depth * 0.7 + 1.6) + 'rem';
         frag.appendChild(more);
       }
     };
     frag.appendChild(row({ icon: 'home', label: 'root', title: 'All files', href: '/', path: '', twisty: true, open: state.expanded.has(''), active: c.kind === 'folder' && !c.path }));
     if (state.expanded.has('')) walk('', 1);
-    body.appendChild(frag);
+    // one wrapper that is as wide as the longest name, so long names scroll sideways instead of being cut off
+    const wrap = el('div', 'pane-tree');
+    wrap.appendChild(frag);
+    body.appendChild(wrap);
   }
 
   function render(scrollToActive) {
