@@ -98,6 +98,8 @@ check(client.get("/static/fasttree.js").status_code == 200, "/static/fasttree.js
 import re as _re
 _assets = sorted(set(_re.findall(r'(?:src|href)="(/static/[\w.-]+\.(?:js|css))(?=[?"])', open("app/templates/base.html").read())))
 check(len(_assets) >= 4, "base.html references its static assets")
+_css = open("app/static/app.css").read()
+check(_css.count("{") == _css.count("}"), "app.css braces are balanced")
 for _a in _assets:
     check(client.get(_a).status_code == 200, f"{_a} (loaded by base.html) is served")
 

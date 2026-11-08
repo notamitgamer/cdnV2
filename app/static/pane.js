@@ -1,12 +1,11 @@
 /*!
- * cdnV2 side pane: bookmarks + recent "jumps" at the root, a GitHub-style file tree inside folders.
+ * cdnV2 side pane: a GitHub-style file tree for browsing, and a Tools list for the other pages.
  *
  * - The markup is static (templates/_sidebar.html) and marked data-turbo-permanent, so Turbo keeps this
  *   element (and everything built in it) across page visits; expanded folders do not reset on each click.
  * - The tree comes from the file index fasttree.js already keeps in localStorage (cdn_fast_v1), so there
  *   are no extra requests. If the tree is unavailable (too large, not fetched yet) the pane still shows
- *   bookmarks, jumps and tools, and picks the tree up as soon as it arrives (the "cdn:tree" event).
- * - Bookmarks live in this browser only (cdn_bookmarks_v1), like the visited-links history.
+ *   the tools, and picks the tree up as soon as it arrives (the "cdn:tree" event).
  * - Everything user-controlled (file names) is inserted with textContent, never as HTML.
  */
 (function () {
@@ -14,12 +13,9 @@
   if (window.__cdnPane) return;
   window.__cdnPane = true;
 
-  const K_BM = 'cdn_bookmarks_v1';
   const K_PANE = 'cdn_pane_v1';
   const K_TREE = 'cdn_fast_v1';
-  const K_VISITED = 'cdn_visited_v1';
   const MAX_ROWS = 500; // per expanded folder; the rest is one click away on the folder's own page
-  const MAX_JUMPS = 8;
   const DESKTOP = window.matchMedia ? window.matchMedia('(min-width: 821px)') : { matches: true, addEventListener() {} };
 
   const $ = (s, r) => (r || document).querySelector(s);
@@ -37,9 +33,8 @@
     folder: '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
     file: '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/>',
     chevron: '<polyline points="9 18 15 12 9 6"/>',
-    star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
-    clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
     link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+    clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
     sync: '<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>',
     book: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
     bars: '<line x1="6" y1="20" x2="6" y2="12"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="9"/>',
@@ -100,17 +95,6 @@
     return index;
   }
 
-  // --- bookmarks -----------------------------------------------------------------------------------
-  const bookmarks = () => ls.json(K_BM).filter((b) => b && typeof b.path === 'string');
-  const isBookmarked = (path) => bookmarks().some((b) => b.path === path);
-  function toggleBookmark(path, type) {
-    const list = bookmarks();
-    const i = list.findIndex((b) => b.path === path);
-    if (i >= 0) list.splice(i, 1); else list.unshift({ path, type, ts: Date.now() });
-    ls.set(K_BM, JSON.stringify(list.slice(0, 100)));
-    render();
-  }
-
   // --- state ---------------------------------------------------------------------------------------
   const state = { mode: 'quick', expanded: new Set(['']), lastPath: null, cur: { kind: 'other', path: '', page: '' } };
 
@@ -130,8 +114,8 @@
     state.lastPath = location.pathname;
     if (moved) {
       const c = state.cur;
-      // inside a folder (or on a file) -> the tree; root and the tool pages -> bookmarks and jumps
-      state.mode = (c.kind === 'folder' && c.path) || c.kind === 'file' ? 'tree' : 'quick';
+      // browsing (any folder, the root, a file) -> the file tree; the other pages -> the tools list
+      state.mode = c.kind === 'other' ? 'quick' : 'tree';
       if (c.kind !== 'other') {
         const segs = c.path ? c.path.split('/') : [];
         if (c.kind === 'file') segs.pop();
@@ -164,71 +148,22 @@
     a.appendChild(el('span', 'pane-link__text', opts.label));
     a.title = opts.title || opts.label;
     r.appendChild(a);
-    if (opts.pin) {
-      const on = isBookmarked(opts.path);
-      const b = el('button', 'pane-pin' + (on ? ' is-on' : ''));
-      b.type = 'button';
-      b.setAttribute('data-pane-pin', opts.path);
-      b.setAttribute('data-pane-type', opts.isFile ? 'file' : 'folder');
-      b.setAttribute('aria-pressed', String(on));
-      b.setAttribute('aria-label', (on ? 'Remove bookmark: ' : 'Bookmark: ') + (opts.label || 'root'));
-      b.appendChild(icon('star', 14, on));
-      r.appendChild(b);
-    }
     return r;
-  }
-
-  function section(title) {
-    const s = el('section', 'pane-sec');
-    s.appendChild(el('h3', 'pane-sec__title', title));
-    return s;
   }
 
   function renderQuick(body) {
     const c = state.cur;
-    // bookmark the place you are on
-    if ((c.kind === 'folder' && c.path) || c.kind === 'file') {
-      const on = isBookmarked(c.path);
-      const b = el('button', 'btn btn-sm pane-here' + (on ? ' is-on' : ''));
-      b.type = 'button';
-      b.setAttribute('data-pane-pin', c.path);
-      b.setAttribute('data-pane-type', c.kind);
-      b.setAttribute('aria-pressed', String(on));
-      b.appendChild(icon('star', 14, on));
-      b.appendChild(el('span', '', on ? 'Bookmarked' : 'Bookmark this ' + c.kind));
-      body.appendChild(b);
-    }
-
-    const bms = bookmarks();
-    const sBm = section('Bookmarks');
-    if (!bms.length) sBm.appendChild(el('p', 'pane-empty', 'Pin folders and files with the star and they show up here.'));
-    for (const b of bms) {
-      const dir = b.type !== 'file';
-      sBm.appendChild(row({ icon: dir ? 'folder' : 'file', label: baseName(b.path) + (dir ? '/' : ''), title: b.path, href: hrefFor(b.path), path: b.path, isFile: !dir, pin: true, active: c.path === b.path && c.kind !== 'other' }));
-    }
-    body.appendChild(sBm);
-
-    const visited = ls.json(K_VISITED).filter((v) => v && typeof v.path === 'string' && v.path).slice(0, MAX_JUMPS);
-    const sJump = section('Jumps');
-    if (!visited.length) sJump.appendChild(el('p', 'pane-empty', 'Places you open will be listed here.'));
-    for (const v of visited) {
-      const dir = v.type === 'folder';
-      sJump.appendChild(row({ icon: dir ? 'folder' : 'file', label: baseName(v.path) + (dir ? '/' : ''), title: v.path, href: hrefFor(v.path), path: v.path, isFile: !dir }));
-    }
-    body.appendChild(sJump);
-
     const tools = [
       ['/', 'All files', 'home', 'listing'], ['/shorten', 'URL shortener', 'link', 'shorten'], ['/gh-sync', 'GitHub sync', 'sync', 'gh-sync'],
       ['/documentation', 'Docs', 'book', 'documentation'], ['/history', 'History', 'clock', 'history'], ['/stats', 'Stats', 'bars', 'stats'], ['/admin', 'Admin', 'shield', 'admin'],
       ['/privacy', 'Privacy Policy', 'book', 'privacy'],
     ];
-    const sTools = section('Tools');
+    const list = el('div', 'pane-tools');
     for (const [href, label, ic, key] of tools) {
       const active = key === 'listing' ? (c.kind === 'folder' && !c.path) : c.page === key;
-      const r = row({ icon: ic, label, href, active });
-      sTools.appendChild(r);
+      list.appendChild(row({ icon: ic, label, href, active }));
     }
-    body.appendChild(sTools);
+    body.appendChild(list);
   }
 
   function renderTree(body) {
@@ -247,14 +182,14 @@
         if (shown >= MAX_ROWS) break;
         const p = path ? path + '/' + d : d;
         const open = state.expanded.has(p);
-        frag.appendChild(row({ icon: 'folder', label: d, href: hrefFor(p), path: p, depth, twisty: true, open, pin: true, active: c.kind === 'folder' && c.path === p }));
+        frag.appendChild(row({ icon: 'folder', label: d, href: hrefFor(p), path: p, depth, twisty: true, open, active: c.kind === 'folder' && c.path === p }));
         shown++;
         if (open) walk(p, depth + 1);
       }
       for (const n of f.files) {
         if (shown >= MAX_ROWS) break;
         const p = path ? path + '/' + n : n;
-        frag.appendChild(row({ icon: 'file', label: n, href: hrefFor(p), path: p, depth, isFile: true, pin: true, active: c.kind === 'file' && c.path === p }));
+        frag.appendChild(row({ icon: 'file', label: n, href: hrefFor(p), path: p, depth, isFile: true, active: c.kind === 'file' && c.path === p }));
         shown++;
       }
       const total = f.dirs.length + f.files.length;
@@ -324,8 +259,6 @@
       render(false);
       return;
     }
-    const pin = t.closest('[data-pane-pin]');
-    if (pin) { toggleBookmark(pin.getAttribute('data-pane-pin'), pin.getAttribute('data-pane-type') === 'file' ? 'file' : 'folder'); return; }
     // following a link inside the drawer closes it (phones)
     if (t.closest('#pane a[href]') && !DESKTOP.matches) setOpen(false);
   });
@@ -350,9 +283,8 @@
   // --- lifecycle -----------------------------------------------------------------------------------
   document.addEventListener('turbo:load', () => { setOpen(false); sync(); });
   document.addEventListener('cdn:tree', () => render(false));
-  window.addEventListener('storage', (e) => { if (e.key === K_BM || e.key === K_VISITED || e.key === K_TREE) render(false); });
-  // the visited list is written by an inline script on each page; draw again once that has run
-  document.addEventListener('turbo:render', () => setTimeout(() => render(false), 0));
+  window.addEventListener('storage', (e) => { if (e.key === K_TREE) render(false); });
+  try { localStorage.removeItem('cdn_bookmarks_v1'); } catch (e) { /* bookmarks were removed; drop the old key */ }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', sync); else sync();
 })();
