@@ -94,6 +94,12 @@ check("skeleton" not in shell["html"] and "{{" not in shell["html"], "the shell 
 check(shell["cdn_base"] == m.CDN_BASE_URL, "...and carries the CDN base URL for the visited-history entry")
 check(client.get("/api/shell", headers={"If-None-Match": r.headers["etag"]}).status_code == 304, "the shell revalidates with a 304 too")
 check(client.get("/static/fasttree.js").status_code == 200, "/static/fasttree.js is served")
+# every local script/stylesheet the base template loads must actually be served (static files are allow-listed)
+import re as _re
+_assets = sorted(set(_re.findall(r'(?:src|href)="(/static/[\w.-]+\.(?:js|css))(?=[?"])', open("app/templates/base.html").read())))
+check(len(_assets) >= 4, "base.html references its static assets")
+for _a in _assets:
+    check(client.get(_a).status_code == 200, f"{_a} (loaded by base.html) is served")
 
 # --- the page built in the browser == the page the server renders ------------------------------------
 

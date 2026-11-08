@@ -48,25 +48,20 @@
         </div>
     </header>
 
+    {#- One compact picker instead of a stack of long boxes: pick a link type, see it on one line, copy it. -#}
+    {% set links = [('CDN page', page_url), ('Raw', raw_url), ('Download', dl_url)] %}
+    {% if embed %}{% set links = links + [('Embed', embed)] %}{% endif %}
     <section class="link-list" aria-labelledby="links-title">
-        <h2 id="links-title" class="section-title">Links</h2>
-        {% macro link_row(label, value, hint='') %}
-        <div class="link-row">
-            <span class="link-row__label">{{ label }}{% if hint %}<small>{{ hint }}</small>{% endif %}</span>
-            <code class="link-row__value" data-link="{{ label }}">{{ value }}</code>
-            <button type="button" class="btn btn-sm" data-copy="{{ value }}" aria-label="Copy {{ label }}">{{ icon('copy', 14) }}<span>Copy</span></button>
+        <h2 id="links-title" class="sr-only">Links</h2>
+        <div class="link-tabs" role="group" aria-label="Link type">
+            {% for label, value in links %}
+            <button type="button" class="link-tab{{ ' is-active' if label == 'Raw' }}" data-action="pick-link" data-url="{{ value }}" aria-pressed="{{ 'true' if label == 'Raw' else 'false' }}" title="{{ {'CDN page': 'This page', 'Raw': 'For embedding', 'Download': 'Starts a download', 'Embed': 'HTML snippet'}[label] }}">{{ label }}</button>
+            {% endfor %}
         </div>
-        {% endmacro %}
-        {{ link_row('CDN page', page_url, 'This page') }}
-        {{ link_row('Raw link', raw_url, 'For embedding') }}
-        {{ link_row('Download link', dl_url, 'Starts a download') }}
-        {% if embed %}
-        <div class="link-row link-row--code">
-            <span class="link-row__label">Embed<small>HTML snippet</small></span>
-            <code class="link-row__value" data-link="Embed">{{ embed }}</code>
-            <button type="button" class="btn btn-sm" data-copy="{{ embed }}" aria-label="Copy embed snippet">{{ icon('copy', 14) }}<span>Copy</span></button>
+        <div class="link-show">
+            <code class="link-show__value" id="link-show-value" tabindex="0" title="{{ raw_url }}">{{ raw_url }}</code>
+            <button type="button" class="btn btn-sm" id="link-show-copy" data-copy="{{ raw_url }}" aria-label="Copy link">{{ icon('copy', 14) }}<span>Copy</span></button>
         </div>
-        {% endif %}
     </section>
 
     <section class="preview preview--{{ kind.v or 'none' }}{{ ' is-loading' if kind.v in ('image', 'pdf') }}" aria-label="Preview">

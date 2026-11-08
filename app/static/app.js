@@ -44,6 +44,9 @@
     folder: '<svg class="folder-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
     copy: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
     download: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>',
+    upload: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
+    grid: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
+    list: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="0.5"/><circle cx="3.5" cy="12" r="0.5"/><circle cx="3.5" cy="18" r="0.5"/></svg>',
   };
 
   function toast(message, opts) {
@@ -154,13 +157,6 @@
       setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark', true);
       return;
     }
-    if (action === 'nav-toggle') {
-      const nav = $('#primary-nav');
-      const open = !nav.classList.contains('is-open');
-      nav.classList.toggle('is-open', open);
-      act.setAttribute('aria-expanded', String(open));
-      return;
-    }
     if (action === 'more-toggle') {
       const more = act.closest('.more');
       const open = !more.classList.contains('is-open');
@@ -191,9 +187,19 @@
       // an <a data-action="dialog-close"> still follows its href (the zip download)
       return;
     }
-    if (action === 'dismiss-notice') {
-      store.set('cdn_notice_off_v1', '1');
-      document.documentElement.setAttribute('data-notice', 'off');
+    if (action === 'pick-link') {
+      const url = act.getAttribute('data-url') || '';
+      $$('.link-tab').forEach((b) => { const on = b === act; b.classList.toggle('is-active', on); b.setAttribute('aria-pressed', String(on)); });
+      const val = $('#link-show-value');
+      const copy = $('#link-show-copy');
+      if (val) { val.textContent = url; val.setAttribute('title', url); }
+      if (copy) copy.setAttribute('data-copy', url);
+      return;
+    }
+    if (action === 'view-toggle') {
+      const next = document.documentElement.getAttribute('data-view') === 'grid' ? 'list' : 'grid';
+      store.set(VIEW_KEY, next);
+      setView(next);
       return;
     }
     if (action === 'clear-history') {
@@ -255,8 +261,6 @@
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       closeMenus(null);
-      const nav = $('#primary-nav'), tgl = $('.nav-toggle');
-      if (nav && nav.classList.contains('is-open')) { nav.classList.remove('is-open'); if (tgl) { tgl.setAttribute('aria-expanded', 'false'); tgl.focus(); } }
       return;
     }
     // history tabs: arrow keys move between tabs
@@ -873,12 +877,60 @@
   }
 
   // ---------------------------------------------------------------------------------------------
+  // folder view: list <-> grid (a per-browser choice; pure progressive enhancement, no markup changes)
+  // ---------------------------------------------------------------------------------------------
+  const VIEW_KEY = 'cdn_view_v1';
+  function setView(view) {
+    document.documentElement.setAttribute('data-view', view);
+    const btn = $('#view-toggle');
+    if (!btn) return;
+    // the button shows the view you would switch TO
+    btn.innerHTML = view === 'grid' ? ICON.list : ICON.grid;
+    const label = view === 'grid' ? 'Switch to list view' : 'Switch to grid view';
+    btn.setAttribute('aria-label', label);
+    btn.setAttribute('title', label);
+  }
+  function applyView() {
+    const list = $('#file-list');
+    const page = document.body && document.body.dataset.page;
+    if (page !== 'listing' || !list) return;
+    // tag file rows with their extension; the grid card draws it as a small badge on the icon
+    $$('.list-item', list).forEach((row) => {
+      if (row.hasAttribute('data-ext') || !$('.file-link', row)) return;
+      const name = row.getAttribute('data-name') || '';
+      const dot = name.lastIndexOf('.');
+      if (dot > 0 && dot < name.length - 1) row.setAttribute('data-ext', name.slice(dot + 1, dot + 5).toUpperCase());
+    });
+    const actions = $('.listing-toolbar__actions');
+    if (actions && !$('#view-toggle', actions)) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.id = 'view-toggle';
+      btn.className = 'btn btn--icon';
+      btn.setAttribute('data-action', 'view-toggle');
+      actions.insertBefore(btn, actions.firstChild);
+    }
+    setView(store.get(VIEW_KEY, 'list') === 'grid' ? 'grid' : 'list');
+    // phone-style floating upload button (shown on small screens only, by CSS)
+    if (!$('#fab-upload')) {
+      const fab = document.createElement('a');
+      fab.id = 'fab-upload';
+      fab.className = 'fab';
+      fab.href = '/new';
+      fab.setAttribute('aria-label', 'Upload files');
+      fab.innerHTML = ICON.upload;
+      document.body.appendChild(fab);
+    }
+  }
+
+  // ---------------------------------------------------------------------------------------------
   // lifecycle
   // ---------------------------------------------------------------------------------------------
   function init() {
     syncThemeColor();
     applyPlaceholders();
     applySort();
+    applyView();
     scheduleTruncate();
     const page = document.body && document.body.dataset.page;
     // scrollable code blocks must be reachable by keyboard
@@ -909,8 +961,6 @@
     // don't freeze open menus into the cached snapshot
     closeMenus(null);
     $$('.preview__text[data-state="loading"]').forEach((el) => el.setAttribute('data-state', 'idle'));
-    const nav = $('#primary-nav'); if (nav) nav.classList.remove('is-open');
-    const tgl = $('.nav-toggle'); if (tgl) tgl.setAttribute('aria-expanded', 'false');
   });
 
   // Tapping a file in a list: if the server takes more than a beat, show the file-page skeleton right away

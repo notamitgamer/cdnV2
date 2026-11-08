@@ -207,6 +207,8 @@
           JSON.stringify({ tree: { v: state.tree.v, files: state.tree.files }, shell: state.shell })
         );
       } catch (e) { /* storage full or blocked: still works for this session */ }
+      // let the side pane redraw its file tree (it reads the same cache)
+      try { doc.dispatchEvent(new win.CustomEvent('cdn:tree')); } catch (e) { /* no DOM events in tests */ }
     }
 
     // Warm start: what we saved on the last visit is usable immediately, before any network.

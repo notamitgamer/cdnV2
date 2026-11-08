@@ -1,15 +1,14 @@
 {% from "_icons.html" import icon %}
-{#- Site header. `page` marks the active link. Keep this free of per-request data so the "instant folders"
+{#- Slim site header (phones, or desktop with the sidebar hidden). Navigation links live in the side pane (_sidebar.html / pane.js). Keep this free of per-request data so the "instant folders"
     shell (api/shell) and the server render stay identical. -#}
 {% macro nav_link(href, key, label, icon_name, extra='') -%}
 <a href="{{ href }}" class="nav-link {{ extra }}{{ ' is-active' if page == key }}"{{ ' aria-current="page"'|safe if page == key }}>{{ icon(icon_name) }}<span>{{ label }}</span></a>
 {%- endmacro %}
 <header class="site-header">
     <div class="site-header__inner">
-        <a href="/" class="wordmark" aria-label="amit/cdn, home">
-            <img src="/static/icons/logo.svg" alt="" width="28" height="28" decoding="async">
-            <span class="wordmark__text">amit<b>/</b>cdn</span>
-        </a>
+        <button type="button" class="icon-btn nav-toggle" data-action="pane-toggle" aria-label="Toggle sidebar" aria-expanded="false" aria-controls="pane">
+            <span class="i-open">{{ icon('menu', 20) }}</span><span class="i-close">{{ icon('close', 20) }}</span>
+        </button>
 
         <div class="site-header__tools">
             <a href="/find" class="icon-btn quick-action{{ ' is-active' if page == 'search' }}" aria-label="Find a file" title="Find"{{ ' aria-current="page"'|safe if page == 'search' }}>{{ icon('search', 18) }}</a>
@@ -17,27 +16,6 @@
             <button type="button" class="icon-btn theme-toggle" data-action="theme-toggle" aria-label="Switch colour theme" title="Switch colour theme">
                 <span class="i-sun">{{ icon('sun', 18) }}</span><span class="i-moon">{{ icon('moon', 18) }}</span>
             </button>
-            <button type="button" class="icon-btn nav-toggle" data-action="nav-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="primary-nav">
-                <span class="i-open">{{ icon('menu', 20) }}</span><span class="i-close">{{ icon('close', 20) }}</span>
-            </button>
         </div>
-
-        <nav class="site-nav" id="primary-nav" aria-label="Primary">
-            {{ nav_link('/find', 'search', 'Find', 'search', 'nav-dup') }}
-            {{ nav_link('/shorten', 'shorten', 'Shorten', 'link') }}
-            {{ nav_link('/gh-sync', 'gh-sync', 'Sync', 'sync') }}
-            {{ nav_link('/documentation', 'documentation', 'Docs', 'book') }}
-            <div class="more">
-                <button type="button" class="nav-link more__toggle{{ ' is-active' if page in ('history', 'stats') }}" data-action="more-toggle" aria-expanded="false" aria-haspopup="true" aria-controls="more-menu">
-                    <span>More</span>{{ icon('chevron-down', 14) }}
-                </button>
-                <div class="more__menu" id="more-menu">
-                    {{ nav_link('/history', 'history', 'History', 'clock') }}
-                    {{ nav_link('/stats', 'stats', 'Stats', 'bars') }}
-                    <a href="/admin" class="nav-link">{{ icon('shield') }}<span>Admin</span></a>
-                </div>
-            </div>
-            {{ nav_link('/new', 'upload', 'Upload', 'upload', 'nav-cta nav-dup') }}
-        </nav>
     </div>
 </header>
