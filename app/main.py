@@ -52,13 +52,13 @@ templates = FastTemplates(directory="app/templates")
 
 STATIC_DIR = Path(__file__).parent / "static"
 _NO_STORE_FILES = {"manifest.json", "sw.js"}
-_REVALIDATE_FILES = {"prefetch.js", "fasttree.js", "app.css", "app.js"}
+_REVALIDATE_FILES = {"prefetch.js", "fasttree.js", "pane.js", "app.css", "app.js"}
 
 
 def _asset_version() -> str:
-    """Short content hash of the UI's own stylesheet and script, used as ?v= so a deploy is never paired with stale files."""
+    """Short content hash of the UI's own stylesheet and scripts, used as ?v= so a deploy is never paired with stale files."""
     h = hashlib.sha1()
-    for name in ("app.css", "app.js"):
+    for name in ("app.css", "app.js", "pane.js"):
         try:
             h.update((STATIC_DIR / name).read_bytes())
         except OSError:
