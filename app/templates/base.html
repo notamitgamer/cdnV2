@@ -48,6 +48,7 @@
                 if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
                 document.documentElement.setAttribute('data-theme', t);
                 if (localStorage.getItem('cdn_notice_off_v1') === '1') document.documentElement.setAttribute('data-notice', 'off');
+                if (localStorage.getItem('cdn_pane_v1') === 'off') document.documentElement.setAttribute('data-pane', 'off');
             } catch (e) {}
         })();
     </script>
@@ -57,10 +58,12 @@
     <script src="/static/app.js?v={{ asset_v }}" defer></script>
     <script src="/static/prefetch.js" defer></script>
     <script src="/static/fasttree.js" defer></script>
+    <script src="/static/pane.js?v={{ asset_v }}" defer></script>
     {% block head_extra %}{% endblock %}
 </head>
 <body data-page="{{ page }}">
     <a class="skip-link" href="#main">Skip to content</a>
+    {% include "_sidebar.html" %}
     {% include "_navbar.html" %}
     {% include "_breadcrumb.html" %}
 

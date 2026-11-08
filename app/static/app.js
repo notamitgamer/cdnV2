@@ -157,13 +157,6 @@
       setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark', true);
       return;
     }
-    if (action === 'nav-toggle') {
-      const nav = $('#primary-nav');
-      const open = !nav.classList.contains('is-open');
-      nav.classList.toggle('is-open', open);
-      act.setAttribute('aria-expanded', String(open));
-      return;
-    }
     if (action === 'more-toggle') {
       const more = act.closest('.more');
       const open = !more.classList.contains('is-open');
@@ -273,8 +266,6 @@
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       closeMenus(null);
-      const nav = $('#primary-nav'), tgl = $('.nav-toggle');
-      if (nav && nav.classList.contains('is-open')) { nav.classList.remove('is-open'); if (tgl) { tgl.setAttribute('aria-expanded', 'false'); tgl.focus(); } }
       return;
     }
     // history tabs: arrow keys move between tabs
@@ -975,8 +966,6 @@
     // don't freeze open menus into the cached snapshot
     closeMenus(null);
     $$('.preview__text[data-state="loading"]').forEach((el) => el.setAttribute('data-state', 'idle'));
-    const nav = $('#primary-nav'); if (nav) nav.classList.remove('is-open');
-    const tgl = $('.nav-toggle'); if (tgl) tgl.setAttribute('aria-expanded', 'false');
   });
 
   // Tapping a file in a list: if the server takes more than a beat, show the file-page skeleton right away
