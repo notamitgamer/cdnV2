@@ -315,6 +315,69 @@ async def admin_gh(request: Request, body: GhBody):
     return await _mutate_and_save()
 
 
+class LinkBody(BaseModel):
+    link: str
+
+
+class LinkDeleteBody(BaseModel):
+    link: str
+    confirm_path: str
+
+
+def _resolve_link(link: str) -> str:
+    """A CDN page link, raw link, /api/get or /api/pack link, or a plain path -> the bucket path it points at."""
+    s = (link or "").strip()
+    if not s or len(s) > 2000:
+        raise HTTPException(status_code=400, detail="Paste a link to a file or folder.")
+    path = urlparse(s).path if "://" in s else s.split("?")[0].split("#")[0]
+    path = unquote(path).strip()
+    for prefix in ("/api/get/", "/api/pack/"):
+        if path.startswith(prefix):
+            path = path[len(prefix):]
+            break
+    path = path.strip("/")
+    parts = path.split("/")
+    if len(parts) < 2 or any(p in ("", ".", "..") for p in parts) or path.startswith("_"):
+        raise HTTPException(status_code=400, detail="Not a deletable path. Use a file, or a folder at least two levels deep (like owner/repo).")
+    return path
+
+
+@router.post("/api/admin/delete-link/preview")
+async def admin_delete_link_preview(request: Request, body: LinkBody):
+    _require_admin(request)
+    path = _resolve_link(body.link)
+    files = await asyncio.to_thread(storage.files_under, path)
+    if not files:
+        raise HTTPException(status_code=404, detail=f"Nothing found at {path}")
+    total = sum(sz for _, sz in files)
+    return {
+        "path": path,
+        "kind": "file" if len(files) == 1 and files[0][0] == path else "folder",
+        "count": len(files),
+        "size": total,
+        "sample": [p for p, _ in files[:8]],
+    }
+
+
+@router.post("/api/admin/delete-link")
+async def admin_delete_link(request: Request, body: LinkDeleteBody):
+    _require_admin(request)
+    if not await ensure_loaded():
+        raise HTTPException(status_code=503, detail=_load_error)
+    path = _resolve_link(body.link)
+    if path != body.confirm_path.strip().strip("/"):
+        raise HTTPException(status_code=400, detail="That link no longer matches what was checked. Check it again.")
+    files = await asyncio.to_thread(storage.files_under, path)
+    if not files:
+        raise HTTPException(status_code=404, detail=f"Nothing found at {path}")
+    await asyncio.to_thread(storage.delete_object, path)
+    for r in _state["log"]:
+        if r["path"] == path or r["path"].startswith(path + "/"):
+            r["status"] = "deleted"
+    await _mutate_and_save()
+    return {"ok": True, "deleted": len(files), "path": path}
+
+
 @router.post("/api/admin/delete")
 async def admin_delete(request: Request, body: PathBody):
     _require_admin(request)
@@ -375,7 +438,7 @@ details.box .content{margin-top:6px}
 .who p{margin:6px 0 0;font-size:12px}
 
 #login{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:20px}#login input{flex:1 1 220px}
-#qrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}#qrow input{flex:1 1 240px}
+#qrow,#dlrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}#qrow input,#dlrow input{flex:1 1 240px}
 #qinfo{font-size:12px}
 
 @media(min-width:721px){
@@ -396,6 +459,8 @@ details.box .content{margin-top:6px}
 <div id="app" style="display:none">
 <div class="jump-bar" id="jumpbar"></div>
 <div id="top"></div>
+<h2 id="dellink-h" style="margin-top:0">Delete by link</h2>
+<div id="dellink"><div id="dlrow"><input id="dl" type="text" placeholder="Paste a file or folder link" autocomplete="off" spellcheck="false"><button onclick="dlCheck()">Check</button></div><div id="dlout" style="margin:8px 0 14px"></div></div>
 <h2 id="uploads-h" style="margin-top:0">Recent uploads</h2>
 <div id="qrow"><input id="q" type="search" placeholder="Search file name, link, IP, status..." autocomplete="off"><span id="qinfo" class="dim"></span></div>
 <div id="uploads"></div>
@@ -432,6 +497,27 @@ async function load(first){
     document.getElementById('login').style.display='flex';document.getElementById('app').style.display='none';document.getElementById('nav').style.display='none';
   }
 }
+let DL=null;
+async function dlCheck(){
+  const out=document.getElementById('dlout'),v=document.getElementById('dl').value.trim();DL=null;
+  if(!v){out.textContent='';return}
+  out.innerHTML='<span class="dim">Checking...</span>';
+  try{
+    const r=await api('/api/admin/delete-link/preview',{link:v});DL=r;
+    out.innerHTML=`<div><b>${r.kind==='folder'?'Folder':'File'}</b> <span class="mono name">${esc(r.path)}</span> - ${nf(r.count)} file${r.count===1?'':'s'}, ${sz(r.size)}</div>`
+      +(r.kind==='folder'?`<div class="dim" style="font-size:12px;margin:4px 0">${r.sample.map(esc).join('<br>')}${r.count>r.sample.length?`<br>...and ${nf(r.count-r.sample.length)} more`:''}</div>`:'')
+      +`<button class="red" style="margin-top:6px" onclick="dlDelete()">Delete ${nf(r.count)} file${r.count===1?'':'s'}</button>`;
+  }catch(e){out.innerHTML=`<span class="bad">${esc(e.message)}</span>`}
+}
+async function dlDelete(){
+  if(!DL||!confirm(`Permanently delete ${DL.count} file${DL.count===1?'':'s'} under ${DL.path}?`))return;
+  const out=document.getElementById('dlout'),v=document.getElementById('dl').value.trim();
+  try{
+    const r=await api('/api/admin/delete-link',{link:v,confirm_path:DL.path});DL=null;
+    document.getElementById('dl').value='';out.innerHTML=`<span class="ok">Deleted ${nf(r.deleted)} file${r.deleted===1?'':'s'} from ${esc(r.path)}</span>`;load();
+  }catch(e){out.innerHTML=`<span class="bad">${esc(e.message)}</span>`}
+}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='dl')dlCheck()});
 const GH='/api/admin/gh';
 const empty=(n,t)=>`<tr><td class="empty dim" colspan="${n}">${t}</td></tr>`;
 function logout(){sessionStorage.removeItem('t');T='';if(timer){clearInterval(timer);timer=null}document.getElementById('app').style.display='none';document.getElementById('nav').style.display='none';document.getElementById('login').style.display='flex'}

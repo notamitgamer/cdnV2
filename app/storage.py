@@ -323,12 +323,18 @@ def _do_upload_bytes(data: bytes, hf_path: str):
         add=[(data, hf_path)],
     )
 
-def delete_object(path: str):
-    """Delete one object, or everything under path/ (for a synced owner/repo folder)."""
+def files_under(path: str):
+    """[(path, size)] for the file at `path`, or every file under `path/` (a folder)."""
     _ensure_bucket()
     path = path.strip("/")
-    items = [it.path for it in api.list_bucket_tree(HF_BUCKET_ID, prefix=path, recursive=True)
-             if it.type == "file" and (it.path == path or it.path.startswith(path + "/"))]
+    return [(it.path, getattr(it, "size", 0) or 0)
+            for it in api.list_bucket_tree(HF_BUCKET_ID, prefix=path, recursive=True)
+            if it.type == "file" and (it.path == path or it.path.startswith(path + "/"))]
+
+
+def delete_object(path: str):
+    """Delete one object, or everything under path/ (for a synced owner/repo folder)."""
+    items = [p for p, _ in files_under(path)]
     if items:
         api.batch_bucket_files(HF_BUCKET_ID, delete=items)
     _cache.clear()
