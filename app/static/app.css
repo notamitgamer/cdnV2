@@ -204,7 +204,7 @@ pre code { background: none; border: 0; padding: 0; font-size: inherit; }
 :focus { outline: none; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* controls that draw their own focus indicator (ring or underline) must not also get the generic outline */
-.text-input:focus-visible, .select:focus-visible, .url-input:focus-visible, .filter-input:focus-visible, .search-input:focus-visible, .link-row__value:focus-visible { outline: none; }
+.text-input:focus-visible, .select:focus-visible, .url-input:focus-visible, .filter-input:focus-visible, .search-input:focus-visible { outline: none; }
 main:focus { outline: none; }
 
 img, svg, video { max-width: 100%; }
@@ -788,20 +788,26 @@ html[data-js] .preview--image.is-loading::after, html[data-js] .preview--pdf.is-
 }
 .preview--image img, .preview--pdf iframe { transition: opacity 0.2s var(--ease); }
 
-.link-list { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 1.1rem 1.25rem 0.4rem; box-shadow: var(--shadow-sm); }
-.link-list .section-title { margin-bottom: 0.5rem; }
-.link-row { display: grid; grid-template-columns: 9rem minmax(0, 1fr) auto; align-items: center; gap: 0.75rem; padding: 0.7rem 0; border-top: 1px solid var(--border); }
-.link-row:first-of-type { border-top: 0; }
-.link-row__label { font-weight: 600; font-size: var(--fs-md); }
-.link-row__label small { display: block; color: var(--muted); font-weight: 400; font-size: var(--fs-xs); }
-.link-row__value {
-    display: block; min-width: 0; padding: 0.5rem 0.7rem;
+.link-list { display: grid; gap: 0.6rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 0.7rem 0.8rem; }
+.link-tabs { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+.link-tab {
+    min-height: 2rem; padding: 0.25rem 0.8rem; border-radius: 999px;
+    background: transparent; color: var(--muted); border: 1px solid var(--border-strong);
+    font: inherit; font-size: var(--fs-sm); font-weight: 600; cursor: pointer;
+}
+@media (hover: hover) { .link-tab:hover { color: var(--text); background: var(--surface-2); } }
+.link-tab.is-active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.link-show { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.5rem; align-items: center; }
+.link-show__value {
+    display: block; min-width: 0; padding: 0.45rem 0.7rem;
     background: var(--surface-2); color: var(--text);
     border: 1px solid var(--border); border-radius: var(--r-sm);
     font-family: var(--mono); font-size: var(--fs-xs); line-height: 1.5;
-    white-space: normal; overflow-wrap: anywhere; word-break: break-all;
+    white-space: nowrap; overflow-x: auto; scrollbar-width: none;
     -webkit-user-select: all; user-select: all;
 }
+.link-show__value::-webkit-scrollbar { display: none; }
+.link-show__value:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 .notfound { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 1rem; padding: 4rem 0 2rem; }
 .notfound__icon { display: grid; place-items: center; width: 4.5rem; height: 4.5rem; border-radius: 20px; background: var(--warning-soft); color: var(--warning); border: 1px solid var(--warning-border); }
@@ -1000,14 +1006,10 @@ html[data-js] .file-view.is-pending .file-view__content { display: none; }
     .file-head { grid-template-columns: minmax(0, 1fr); }
     .file-head__actions { justify-content: stretch; }
     .file-head__actions .btn { flex: 1 1 0; }
-    .link-row { grid-template-columns: minmax(0, 1fr) auto; }
-    .link-row__label { grid-column: 1 / -1; }
-    .link-row { align-items: start; }
-    .link-row__label small { display: inline; margin-left: 0.4rem; }
     .toc ol { columns: 1; }
     /* small copy buttons become icon-only: the copy glyph is universal, and the link box gets the room back */
-    .link-row .btn > span, [data-copy-preview] > span { display: none; }
-    .link-row .btn-sm, .preview__bar .btn-sm { width: 2.6rem; min-width: 2.6rem; height: 2.6rem; padding: 0; }
+    .link-show .btn > span, [data-copy-preview] > span { display: none; }
+    .link-show .btn-sm, .preview__bar .btn-sm { width: 2.6rem; min-width: 2.6rem; height: 2.6rem; padding: 0; }
     .preview__bar { padding-right: 0.5rem; }
     .sk-btn { width: 2.6rem; height: 2.6rem; }
     .list-item { padding-left: 0.85rem; padding-right: 0.85rem; }
