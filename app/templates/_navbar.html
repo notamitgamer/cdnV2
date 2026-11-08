@@ -6,10 +6,9 @@
 {%- endmacro %}
 <header class="site-header">
     <div class="site-header__inner">
-        <a href="/" class="wordmark" aria-label="amit/cdn, home">
-            <img src="/static/icons/logo.svg" alt="" width="28" height="28" decoding="async">
-            <span class="wordmark__text">amit<b>/</b>cdn</span>
-        </a>
+        <button type="button" class="icon-btn nav-toggle" data-action="pane-toggle" aria-label="Toggle sidebar" aria-expanded="false" aria-controls="pane">
+            <span class="i-open">{{ icon('menu', 20) }}</span><span class="i-close">{{ icon('close', 20) }}</span>
+        </button>
 
         <div class="site-header__tools">
             <a href="/find" class="icon-btn quick-action{{ ' is-active' if page == 'search' }}" aria-label="Find a file" title="Find"{{ ' aria-current="page"'|safe if page == 'search' }}>{{ icon('search', 18) }}</a>
@@ -17,10 +16,6 @@
             <button type="button" class="icon-btn theme-toggle" data-action="theme-toggle" aria-label="Switch colour theme" title="Switch colour theme">
                 <span class="i-sun">{{ icon('sun', 18) }}</span><span class="i-moon">{{ icon('moon', 18) }}</span>
             </button>
-            <button type="button" class="icon-btn nav-toggle" data-action="pane-toggle" aria-label="Toggle sidebar" aria-expanded="false" aria-controls="pane">
-                <span class="i-open">{{ icon('menu', 20) }}</span><span class="i-close">{{ icon('close', 20) }}</span>
-            </button>
         </div>
-
     </div>
 </header>
