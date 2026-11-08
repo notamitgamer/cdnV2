@@ -1072,6 +1072,14 @@ async def serve(request: Request, path: str):
             ctx,
         )
 
+    if clean_path == "privacy":
+        ctx = await render_context({"page": "privacy"})
+        return templates.TemplateResponse(
+            request,
+            "privacy.html",
+            ctx,
+        )
+
     if clean_path:
         info = await get_path_info(clean_path)
 
