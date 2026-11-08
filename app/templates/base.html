@@ -47,7 +47,6 @@
                 var t = localStorage.getItem('cdn_theme');
                 if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
                 document.documentElement.setAttribute('data-theme', t);
-                if (localStorage.getItem('cdn_notice_off_v1') === '1') document.documentElement.setAttribute('data-notice', 'off');
                 if (localStorage.getItem('cdn_pane_v1') === 'off') document.documentElement.setAttribute('data-pane', 'off');
             } catch (e) {}
         })();

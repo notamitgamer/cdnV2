@@ -202,11 +202,6 @@
       setView(next);
       return;
     }
-    if (action === 'dismiss-notice') {
-      store.set('cdn_notice_off_v1', '1');
-      document.documentElement.setAttribute('data-notice', 'off');
-      return;
-    }
     if (action === 'clear-history') {
       store.del(act.getAttribute('data-key'));
       renderHistory();
