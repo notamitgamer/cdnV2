@@ -1,7 +1,7 @@
 /*!
  * cdnV2 listing helpers:
- *  - select files/folders (checkboxes) and act on them from a bottom bar: download, copy link,
- *    and delete (only offered when the admin token from /admin is held in this tab's sessionStorage).
+ *  - select files/folders (checkboxes) and act on them from a bottom bar: download and copy link.
+ *    There is deliberately no delete here; files are removed by the owner, outside the UI.
  *  - on phones, the floating upload button tucks away while scrolling down so it never sits on top of rows.
  * Rows are rendered by the server template or composed by fasttree.js, so checkboxes are added here, after render,
  * rather than in the templates. File names are only ever written with textContent.
@@ -17,7 +17,6 @@
   const sel = new Map(); // path -> { type: 'file' | 'folder', row }
 
   const onListing = () => document.body && document.body.dataset.page === 'listing' && $('#file-list');
-  const adminToken = () => { try { return sessionStorage.getItem('t') || ''; } catch (e) { return ''; } };
 
   function toast(msg, type) {
     const region = $('#toasts');
@@ -115,7 +114,6 @@
     actions.appendChild(btn('Select all', 'all'));
     actions.appendChild(btn('Download', 'download'));
     actions.appendChild(btn('Copy link', 'copy'));
-    if (adminToken()) actions.appendChild(btn('Delete', 'delete', 'sel-bar__danger'));
     actions.appendChild(btn('Clear', 'clear'));
     bar.appendChild(actions);
     root.setAttribute('data-selecting', '');
@@ -147,32 +145,6 @@
       if (items.length > 1) toast('Starting ' + items.length + ' downloads. Your browser may ask to allow them.');
       return;
     }
-    if (action === 'delete') return del(items);
-  }
-
-  async function del(items) {
-    const files = items.filter((i) => i.type === 'file' && i.path.includes('/'));
-    const skipped = items.length - files.length;
-    if (!files.length) { toast('Only files inside a folder can be deleted here.', 'error'); return; }
-    const names = files.slice(0, 5).map((i) => i.path).join('\n') + (files.length > 5 ? '\n…and ' + (files.length - 5) + ' more' : '');
-    if (!window.confirm('Delete ' + files.length + ' file' + (files.length === 1 ? '' : 's') + ' permanently?\n\n' + names + (skipped ? '\n\n(' + skipped + ' selected folder/root item(s) will be skipped.)' : ''))) return;
-    let done = 0;
-    for (const f of files) {
-      let r;
-      try {
-        r = await fetch('/api/admin/delete', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + adminToken() }, body: JSON.stringify({ path: f.path }) });
-      } catch (e) { toast('Network error while deleting.', 'error'); break; }
-      if (r.status === 401 || r.status === 429) {
-        try { sessionStorage.removeItem('t'); } catch (e) { /* ignore */ }
-        toast('Admin login expired. Sign in again at /admin.', 'error'); renderBar(); break;
-      }
-      if (!r.ok) { toast('Could not delete ' + f.path.split('/').pop() + ' (' + r.status + ').', 'error'); break; }
-      const v = sel.get(f.path);
-      if (v) { v.row.remove(); sel.delete(f.path); }
-      done++;
-    }
-    if (done) { toast('Deleted ' + done + ' file' + (done === 1 ? '' : 's')); if (window.__cdnFast) window.__cdnFast.refresh(true); }
-    renderBar();
   }
 
   // --- events --------------------------------------------------------------------------------------
