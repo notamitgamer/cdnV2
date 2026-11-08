@@ -58,9 +58,10 @@
     <script src="/static/prefetch.js" defer></script>
     <script src="/static/fasttree.js" defer></script>
     <script src="/static/pane.js?v={{ asset_v }}" defer></script>
+    <script src="/static/listing.js?v={{ asset_v }}" defer></script>
     {% block head_extra %}{% endblock %}
 </head>
-<body data-page="{{ page }}">
+<body data-page="{{ page }}" data-raw-base="{{ raw_base_url }}">
     <a class="skip-link" href="#main">Skip to content</a>
     {% include "_sidebar.html" %}
     {% include "_navbar.html" %}

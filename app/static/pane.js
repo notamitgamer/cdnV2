@@ -220,7 +220,7 @@
     const tools = [
       ['/', 'All files', 'home', 'listing'], ['/shorten', 'URL shortener', 'link', 'shorten'], ['/gh-sync', 'GitHub sync', 'sync', 'gh-sync'],
       ['/documentation', 'Docs', 'book', 'documentation'], ['/history', 'History', 'clock', 'history'], ['/stats', 'Stats', 'bars', 'stats'], ['/admin', 'Admin', 'shield', 'admin'],
-      ['/privacy', 'Privacy Policy', 'book', 'Privacy Policy'],
+      ['/privacy', 'Privacy Policy', 'book', 'privacy'],
     ];
     const sTools = section('Tools');
     for (const [href, label, ic, key] of tools) {
