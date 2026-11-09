@@ -80,6 +80,45 @@ def _og_logo_version() -> str:
 templates.env.globals["og_logo_v"] = _og_logo_version()
 
 
+def _parse_emoji_ids(raw: str) -> dict:
+    """DISCORD_EMOJI_IDS="download=123,raw=456,open=789,folder=1,zip=2" -> {name: id}."""
+    out = {}
+    for part in raw.split(","):
+        name, _, eid = part.strip().partition("=")
+        if name and eid.strip().isdigit():
+            out[name.strip()] = eid.strip()
+    return out
+
+
+_DISCORD_EMOJI = _parse_emoji_ids(os.getenv("DISCORD_EMOJI_IDS", ""))
+
+
+def _discord_button(label: str, url: str, icon: str | None = None) -> dict:
+    """A link-style button for the Discord component embed; gets a custom-emoji icon when its ID is configured."""
+    button = {"type": 2, "style": 5, "label": label, "url": url}
+    if icon and icon in _DISCORD_EMOJI:
+        button["emoji"] = {"id": _DISCORD_EMOJI[icon], "name": f"cdn_{icon}"}
+    return button
+
+
+def _discord_link(text: str, url: str) -> str:
+    """Bold, hyperlinked title in Discord markdown (brackets in the name are escaped)."""
+    safe = text.replace("\\", "\\\\").replace("[", "\\[").replace("]", "\\]")
+    return f"**[{safe}]({url})**"
+
+
+templates.env.globals["discord_button"] = _discord_button
+
+
+def _discord_title(text: str, url: str) -> str:
+    """Hyperlinked heading line (### [text](url)) for the top of a Discord component embed."""
+    return "### " + _discord_link(text, url)[2:-2]
+
+
+templates.env.globals["discord_title"] = _discord_title
+templates.env.globals["discord_link"] = _discord_link
+
+
 _GZ_CACHE: dict = {}
 
 
