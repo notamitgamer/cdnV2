@@ -143,6 +143,9 @@ async def favicon():
 
 
 CDN_BASE_URL = os.getenv("CDN_BASE_URL", "https://cdn.amit.is-a.dev")
+if os.getenv("IS_PULL_REQUEST", "").lower() == "true" and os.getenv("RENDER_EXTERNAL_URL"):
+    # Render PR preview: build links (card image, buttons) from the preview's own URL, not the live site's.
+    CDN_BASE_URL = os.environ["RENDER_EXTERNAL_URL"].rstrip("/")
 RAW_DOMAIN = os.getenv("RAW_DOMAIN", "raw.cdn.amit.is-a.dev")
 RAW_BASE_URL = os.getenv("RAW_BASE_URL", f"https://{RAW_DOMAIN}")
 RAW_PREFIX = "raw/"
