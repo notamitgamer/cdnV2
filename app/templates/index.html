@@ -12,6 +12,20 @@
 {% else %}{% set page_title = 'Listing' %}
 {% endif %}
 
+{#- Link-preview (Discord, Slack, etc.) metadata. base.html reads og_image / og_video / og_audio / og_type. -#}
+{% if page == 'file' %}
+{% set _raw = raw_base_url ~ '/' ~ (path | urlencode) %}
+{% set _ext = file_ext or '' %}
+{% set page_description = (_ext | upper ~ ' file' if _ext else 'File') ~ ((' · ' ~ file_size_str) if file_size_str and file_size_str != '-' else '') ~ ' · ' ~ path %}
+{% if _ext in ['png', 'jpg', 'jpeg', 'gif', 'webp', 'avif', 'bmp'] %}{% set og_image = _raw %}{% set og_card = 'summary_large_image' %}
+{% elif _ext in ['mp4', 'webm', 'mov', 'm4v', 'ogv'] %}{% set og_video = _raw %}{% set og_card = 'player' %}
+{% elif _ext in ['mp3', 'wav', 'ogg', 'oga', 'flac', 'm4a', 'aac', 'opus'] %}{% set og_audio = _raw %}
+{% endif %}
+{% elif page == 'listing' and path %}
+{% set page_title = path.split('/')[-1] %}
+{% set page_description = (items | length) ~ ' item' ~ ('' if (items | length) == 1 else 's') ~ ' in /' ~ path %}
+{% endif %}
+
 {% block content %}
 {% if page == 'listing' %}{% include "_page_listing.html" %}
 {% elif page == 'file' %}{% include "_page_file.html" %}
