@@ -21,9 +21,23 @@
 {% elif _ext in ['mp4', 'webm', 'mov', 'm4v', 'ogv'] %}{% set og_video = _raw %}{% set og_card = 'player' %}
 {% elif _ext in ['mp3', 'wav', 'ogg', 'oga', 'flac', 'm4a', 'aac', 'opus'] %}{% set og_audio = _raw %}
 {% endif %}
+{#- Discord "component embed": link buttons shown under the preview (server-rendered JSON, max 3000 bytes). -#}
+{% set _page = cdn_base_url ~ '/' ~ (path | urlencode) %}
+{% set _de_text = {'type': 10, 'content': '**' ~ filename ~ '**\n' ~ page_description} %}
+{% set _de_gallery = [{'type': 12, 'items': [{'media': {'url': _raw}, 'description': filename}]}] if og_image else [] %}
+{% set _de_buttons = {'type': 1, 'components': [
+    {'type': 2, 'style': 5, 'label': 'Download', 'url': cdn_base_url ~ '/api/get/' ~ (path | urlencode)},
+    {'type': 2, 'style': 5, 'label': 'Raw', 'url': _raw},
+    {'type': 2, 'style': 5, 'label': 'Open', 'url': _page}]} %}
+{% set discord_embed = {'component': {'type': 17, 'components': [_de_text] + _de_gallery + [_de_buttons]}} %}
 {% elif page == 'listing' and path %}
 {% set page_title = path.split('/')[-1] %}
 {% set page_description = (items | length) ~ ' item' ~ ('' if (items | length) == 1 else 's') ~ ' in /' ~ path %}
+{% set _de_text = {'type': 10, 'content': '**' ~ path.split('/')[-1] ~ '/**\n' ~ page_description} %}
+{% set _de_buttons = {'type': 1, 'components': [
+    {'type': 2, 'style': 5, 'label': 'Open', 'url': cdn_base_url ~ '/' ~ (path | urlencode) ~ '/'},
+    {'type': 2, 'style': 5, 'label': 'Download zip', 'url': cdn_base_url ~ '/api/pack/' ~ (path | urlencode)}]} %}
+{% set discord_embed = {'component': {'type': 17, 'components': [_de_text, _de_buttons]}} %}
 {% endif %}
 
 {% block content %}

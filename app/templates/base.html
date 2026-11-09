@@ -49,6 +49,9 @@
     {% if og_audio %}<meta property="og:audio" content="{{ og_audio }}">{% endif %}
     <meta property="og:type" content="{{ 'video.other' if og_video else 'website' }}">
     <meta name="twitter:card" content="{{ og_card or 'summary' }}">
+    {% if discord_embed %}{% set _de_json = discord_embed | tojson %}{% if _de_json | length <= 2900 %}
+    <script id="discord:component-embed" type="application/json">{{ _de_json }}</script>
+    {% endif %}{% endif %}
 
     {#- Applies the saved (or system) colour theme before first paint, so there is no flash. Identical on every
         page, so Turbo treats it as already-run. app.js owns the toggle. -#}
