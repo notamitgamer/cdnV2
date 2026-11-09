@@ -395,9 +395,10 @@ async def admin_delete(request: Request, body: PathBody):
 _PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>CDN admin</title>
 <style>
+@font-face{font-family:"IBM Plex Sans";font-weight:400;font-display:swap;src:url("/static/fonts/plex-sans-400.woff2") format("woff2")}@font-face{font-family:"IBM Plex Sans";font-weight:600;font-display:swap;src:url("/static/fonts/plex-sans-600.woff2") format("woff2")}@font-face{font-family:"IBM Plex Sans";font-weight:700;font-display:swap;src:url("/static/fonts/plex-sans-700.woff2") format("woff2")}@font-face{font-family:"IBM Plex Mono";font-weight:400;font-display:swap;src:url("/static/fonts/plex-mono-400.woff2") format("woff2")}@font-face{font-family:"IBM Plex Mono";font-weight:600;font-display:swap;src:url("/static/fonts/plex-mono-600.woff2") format("woff2")}
 :root{--bg:#0d1117;--sf:#161b22;--bd:#30363d;--ln:#21262d;--tx:#e6edf3;--dim:#9da7b3;--red:#ff7b72;--grn:#56d364;--amb:#d29922;--blu:#58a6ff}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;margin:0 auto;padding:14px 14px 64px;background:var(--bg);color:var(--tx);max-width:1200px;-webkit-text-size-adjust:100%}
+body{font:14px/1.45 "IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;margin:0 auto;padding:14px 14px 64px;background:var(--bg);color:var(--tx);max-width:1200px;-webkit-text-size-adjust:100%}
 header.bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
 h1{font-size:18px;margin:0}h2{font-size:14px;margin:20px 0 8px;color:var(--dim);font-weight:600;scroll-margin-top:54px}
 a{color:var(--blu);text-decoration:none}
@@ -422,7 +423,7 @@ th{color:var(--dim);font-weight:600}
 button{font:inherit;font-size:12px;min-height:28px;padding:3px 8px;border-radius:6px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);cursor:pointer}
 button.red{border-color:#da3633;color:var(--red)}button.green{border-color:#238636;color:var(--grn)}button:active{background:var(--ln)}
 input{font:inherit;font-size:14px;padding:8px 10px;border-radius:6px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);width:100%;max-width:420px}
-.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;overflow-wrap:break-word}.nw{white-space:nowrap}
+.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;overflow-wrap:break-word}.nw{white-space:nowrap}
 .dim{color:var(--dim)}.bad{color:var(--red)}.ok{color:var(--grn)}.warn{color:var(--amb)}
 .badge{display:inline-block;padding:1px 5px;border-radius:4px;font-size:10px;font-weight:600;text-transform:uppercase}
 .badge.ok{background:#1f3522;color:var(--grn)}.badge.bad{background:#3d1d1d;color:var(--red)}.badge.dim{background:var(--ln);color:var(--dim)}.badge.warn{background:#3a2d12;color:var(--amb)}
