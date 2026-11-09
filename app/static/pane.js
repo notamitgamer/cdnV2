@@ -96,7 +96,7 @@
   }
 
   // --- state ---------------------------------------------------------------------------------------
-  const state = { mode: 'quick', expanded: new Set(['']), lastPath: null, cur: { kind: 'other', path: '', page: '' } };
+  const state = { expanded: new Set(['']), lastPath: null, cur: { kind: 'other', path: '', page: '' } };
 
   function current() {
     const page = (document.body && document.body.dataset.page) || '';
@@ -114,8 +114,6 @@
     state.lastPath = location.pathname;
     if (moved) {
       const c = state.cur;
-      // browsing (any folder, the root, a file) -> the file tree; the other pages -> the tools list
-      state.mode = c.kind === 'other' ? 'quick' : 'tree';
       if (c.kind !== 'other') {
         const segs = c.path ? c.path.split('/') : [];
         if (c.kind === 'file') segs.pop();
@@ -149,21 +147,6 @@
     a.title = opts.title || opts.label;
     r.appendChild(a);
     return r;
-  }
-
-  function renderQuick(body) {
-    const c = state.cur;
-    const tools = [
-      ['/', 'All files', 'home', 'listing'], ['/shorten', 'URL shortener', 'link', 'shorten'], ['/gh-sync', 'GitHub sync', 'sync', 'gh-sync'],
-      ['/documentation', 'Docs', 'book', 'documentation'], ['/history', 'History', 'clock', 'history'], ['/stats', 'Stats', 'bars', 'stats'], ['/admin', 'Admin', 'shield', 'admin'],
-      ['/privacy', 'Privacy Policy', 'book', 'privacy'],
-    ];
-    const list = el('div', 'pane-tools');
-    for (const [href, label, ic, key] of tools) {
-      const active = key === 'listing' ? (c.kind === 'folder' && !c.path) : c.page === key;
-      list.appendChild(row({ icon: ic, label, href, active }));
-    }
-    body.appendChild(list);
   }
 
   function renderTree(body) {
@@ -212,22 +195,16 @@
     const pane = $('#pane');
     const body = $('#pane-body');
     if (!pane || !body) return;
-    $$('[data-pane-mode]', pane).forEach((b) => {
-      const on = b.getAttribute('data-pane-mode') === state.mode;
-      b.classList.toggle('is-active', on);
-      b.setAttribute('aria-selected', String(on));
-    });
     const keep = body.scrollTop;
     body.replaceChildren();
-    body.setAttribute('data-mode', state.mode);
-    if (state.mode === 'tree') renderTree(body); else renderQuick(body);
+    renderTree(body);
     body.scrollTop = keep;
     $$('[data-foot]', pane).forEach((a) => {
       const on = state.cur.page === a.getAttribute('data-foot');
       a.classList.toggle('is-active', on);
       if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
-    if (scrollToActive && state.mode === 'tree') {
+    if (scrollToActive) {
       const a = $('.pane-row.is-active', body);
       if (a && a.scrollIntoView) a.scrollIntoView({ block: 'nearest' });
     }
@@ -246,7 +223,7 @@
       $$('.nav-toggle').forEach((b) => b.setAttribute('aria-expanded', String(off)));
     } else {
       setOpen(!root.hasAttribute('data-pane-open'));
-      if (root.hasAttribute('data-pane-open')) { const first = $('#pane .pane-tab.is-active') || $('#pane a'); if (first) first.focus({ preventScroll: true }); }
+      if (root.hasAttribute('data-pane-open')) { const first = $('#pane a'); if (first) first.focus({ preventScroll: true }); }
     }
   }
 
@@ -255,8 +232,6 @@
     if (!t) return;
     const tog = t.closest('[data-action="pane-toggle"]');
     if (tog) { e.preventDefault(); e.stopPropagation(); toggle(); return; }
-    const mode = t.closest('[data-pane-mode]');
-    if (mode) { state.mode = mode.getAttribute('data-pane-mode') === 'tree' ? 'tree' : 'quick'; render(true); return; }
     const exp = t.closest('[data-pane-expand]');
     if (exp) {
       const p = exp.getAttribute('data-pane-expand');
