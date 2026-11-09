@@ -137,6 +137,13 @@ RAW_BASE_URL = os.getenv("RAW_BASE_URL", f"https://{RAW_DOMAIN}")
 RAW_PREFIX = "raw/"
 
 
+@app.on_event("startup")
+async def _start_discord_bot():
+    """Starts the optional Discord link-buttons bot (does nothing unless DISCORD_BOT_TOKEN is set)."""
+    from .discord_bot import start_bot
+    start_bot(CDN_BASE_URL, RAW_BASE_URL)
+
+
 async def render_context(extra: dict) -> dict:
     stats = await repo_stats()
     ctx = dict(extra)
