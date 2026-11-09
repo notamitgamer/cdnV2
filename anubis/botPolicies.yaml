@@ -38,6 +38,13 @@ bots:
     path_regex: ^/mask/
     action: ALLOW
 
+  # Link-preview crawlers (Discord, Slack, X, Telegram...) fetch the page once to build the embed.
+  # They send a "Mozilla" user agent but cannot solve a challenge, so without this rule shared
+  # links show no preview at all.
+  - name: link-preview-bots
+    user_agent_regex: (Discordbot|Slackbot|Twitterbot|facebookexternalhit|TelegramBot|WhatsApp|LinkedInBot)
+    action: ALLOW
+
   # --- Stock Anubis rules ------------------------------------------------------
   # Same as the stock (data)/bots/_deny-pathological.yaml, minus cloudflare-kitesurf.
   # That rule adds +15 weight to anything carrying a Cloudflare header (Cf-Ray, Cdn-Loop),
