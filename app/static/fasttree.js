@@ -63,11 +63,16 @@
     return `${q / 100n}.${(q % 100n).toString().padStart(2, '0')} ${units[idx]}`;
   }
 
+  // storage.format_modified: "2026-01-31 14:05" in UTC, or "-" when unknown
+  function formatModified(ts) {
+    return ts ? new Date(ts * 1000).toISOString().slice(0, 16).replace('T', ' ') : '-';
+  }
+
   // --- the tree --------------------------------------------------------------------------------------
 
-  // files: [[path, size], ...]  ->  folder index
+  // files: [[path, size, modified], ...]  ->  folder index
   function buildIndex(files) {
-    const folders = new Map(); // folder path -> { dirs: Set(name), files: [[name, size]] }
+    const folders = new Map(); // folder path -> { dirs: Set(name), files: [[name, size, modified]] }
     const get = (p) => {
       let f = folders.get(p);
       if (!f) folders.set(p, (f = { dirs: new Set(), files: [] }));
@@ -75,7 +80,7 @@
     };
     get('');
     let bytes = 0;
-    for (const [path, size] of files) {
+    for (const [path, size, ts] of files) {
       const segs = path.split('/');
       const name = segs.pop();
       let parent = '';
@@ -84,7 +89,7 @@
         parent = parent ? parent + '/' + seg : seg;
         get(parent);
       }
-      get(parent).files.push([name, size]);
+      get(parent).files.push([name, size, ts || 0]);
       bytes += size;
     }
     return { folders, count: files.length, bytes };
@@ -101,7 +106,7 @@
       return x < y ? -1 : x > y ? 1 : 0;
     };
     const dirs = [...f.dirs].map((n) => ({ name: n, path: prefix + n, is_dir: true, size_str: '-' }));
-    const files = f.files.map(([n, s]) => ({ name: n, path: prefix + n, is_dir: false, size_str: formatSize(s) }));
+    const files = f.files.map(([n, s, t]) => ({ name: n, path: prefix + n, is_dir: false, size_str: formatSize(s), ts: t || 0, modified: formatModified(t) }));
     return dirs.sort(cmp).concat(files.sort(cmp));
   }
 
@@ -155,7 +160,7 @@
     const rows = visible.map((i) =>
       i.is_dir
         ? fill(p.row_dir, { name: escapeHtml(i.name), path: escapeHtml(i.path) })
-        : fill(p.row_file, { name: escapeHtml(i.name), path: escapeHtml(i.path), size_str: escapeHtml(i.size_str) })
+        : fill(p.row_file, { name: escapeHtml(i.name), path: escapeHtml(i.path), size_str: escapeHtml(i.size_str), ts: String(i.ts), modified: escapeHtml(i.modified) })
     );
     let list = path ? fill(p.go_up, { parent_path: escapeHtml(parent) }) + '\n' : '';
     list += rows.join('\n');
@@ -338,7 +343,7 @@
   }
 
   if (typeof module === 'object' && module.exports) {
-    module.exports = { escapeHtml, jsonForScript, formatSize, buildIndex, listFolder, compose, folderPathFromUrl, boot };
+    module.exports = { escapeHtml, jsonForScript, formatSize, formatModified, buildIndex, listFolder, compose, folderPathFromUrl, boot };
   } else {
     boot(global);
   }

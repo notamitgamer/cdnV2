@@ -38,6 +38,7 @@ from .storage import (
     bucket_url,
     auth_headers,
     format_size,
+    format_modified,
 )
 from .gh_oidc import verify_actions_token
 from .shortener import shorten_url, get_destination_url
@@ -112,6 +113,35 @@ async def static_icons(filename: str):
         file_path,
         headers={"Cache-Control": "public, max-age=86400"},
     )
+
+
+_OG_IMAGE_EXT = {"png", "jpg", "jpeg", "gif", "webp", "avif", "bmp"}   # svg is not shown by chat apps
+_OG_VIDEO = {"mp4": "video/mp4", "m4v": "video/mp4", "webm": "video/webm", "mov": "video/quicktime", "ogv": "video/ogg"}
+_OG_AUDIO = {"mp3": "audio/mpeg", "wav": "audio/wav", "ogg": "audio/ogg", "oga": "audio/ogg", "flac": "audio/flac",
+             "m4a": "audio/mp4", "aac": "audio/aac", "opus": "audio/ogg"}
+
+
+def og_for_file(path: str, filename: str, ext: str, size_str: str, modified: str) -> dict:
+    """Link-preview data for a file page (Discord, Slack, Telegram and friends read these <meta> tags).
+
+    Images show large, video and audio get a player, and everything else a small card with the file's
+    type and size. A link preview cannot carry buttons: only a bot message can.
+    """
+    from urllib.parse import quote
+    raw_url = f"{RAW_BASE_URL}/{quote(path)}"
+    bits = [ext.upper() if ext else "File"]
+    if size_str and size_str != "-":
+        bits.append(size_str)
+    if modified and modified != "-":
+        bits.append(f"{modified} UTC")
+    og = {"description": " · ".join(bits), "url": f"{CDN_BASE_URL}/{quote(path)}"}
+    if ext in _OG_IMAGE_EXT:
+        og["image"] = raw_url
+    elif ext in _OG_VIDEO:
+        og.update(type="video.other", video=raw_url, video_type=_OG_VIDEO[ext])
+    elif ext in _OG_AUDIO:
+        og.update(type="music.song", audio=raw_url, audio_type=_OG_AUDIO[ext])
+    return og
 
 
 @app.get("/favicon.ico")
@@ -1091,13 +1121,17 @@ async def serve(request: Request, path: str):
                 else ""
             )
 
+            modified = format_modified(info.get("ts"))
             ctx = await render_context({
                 "page": "file",
                 "path": clean_path,
                 "filename": filename,
                 "raw_base_url": RAW_BASE_URL,
                 "file_ext": ext,
+                "file_size": info["size"],
                 "file_size_str": format_size(info["size"]),
+                "file_modified": modified,
+                "og": og_for_file(clean_path, filename, ext, format_size(info["size"]), modified),
             })
 
             return templates.TemplateResponse(

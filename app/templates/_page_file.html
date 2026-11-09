@@ -37,7 +37,8 @@
             <h1 class="file-name">{{ filename }}</h1>
             <p class="file-meta-row">
                 {% if ext %}<span class="file-pill">{{ ext | upper }}</span>{% endif %}
-                {% if file_size_str and file_size_str != '-' %}<span class="file-pill">{{ file_size_str }}</span>{% endif %}
+                {% if file_size_str and file_size_str != '-' %}<span class="file-pill"{% if file_size is number %} title="{{ '{:,}'.format(file_size) }} bytes"{% endif %}>{{ file_size_str }}{% if file_size is number and file_size >= 1024 %} ({{ '{:,}'.format(file_size) }} bytes){% endif %}</span>{% endif %}
+                {% if file_modified and file_modified != '-' %}<span class="file-pill" title="Last modified, UTC">{{ file_modified }} UTC</span>{% endif %}
                 <span class="file-path">{{ path }}</span>
             </p>
         </div>
@@ -61,6 +62,19 @@
         <div class="link-show">
             <code class="link-show__value" id="link-show-value" tabindex="0" title="{{ raw_url }}">{{ raw_url }}</code>
             <button type="button" class="btn btn-sm" id="link-show-copy" data-copy="{{ raw_url }}" aria-label="Copy link">{{ icon('copy', 14) }}<span>Copy</span></button>
+        </div>
+    </section>
+
+    {#- For servers and scripts: the same raw link as a ready-to-paste command. -#}
+    <section class="link-list" aria-labelledby="cmd-title">
+        <h2 id="cmd-title" class="sr-only">Download from the command line</h2>
+        <div class="link-tabs" role="group" aria-label="Command">
+            <button type="button" class="link-tab is-active" data-action="pick-link" data-url="wget &quot;{{ raw_url }}&quot;" aria-pressed="true">wget</button>
+            <button type="button" class="link-tab" data-action="pick-link" data-url="curl -LO &quot;{{ raw_url }}&quot;" aria-pressed="false">curl</button>
+        </div>
+        <div class="link-show">
+            <code class="link-show__value" tabindex="0">wget &quot;{{ raw_url }}&quot;</code>
+            <button type="button" class="btn btn-sm" data-copy="wget &quot;{{ raw_url }}&quot;" aria-label="Copy command">{{ icon('copy', 14) }}<span>Copy</span></button>
         </div>
     </section>
 

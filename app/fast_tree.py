@@ -2,7 +2,7 @@
 
 The browser keeps two things between visits:
 
-* the **tree**: every non-hidden file as ``[path, size]`` (``/api/tree``), small enough that the whole
+* the **tree**: every non-hidden file as ``[path, size, modified]`` (``/api/tree``), small enough that the whole
   bucket's structure fits in a few kilobytes gzipped, and
 * the **shell**: a server-rendered folder page with *slots* where the folder-specific parts go, plus
   the HTML of each of those parts with ``@@placeholders@@`` (``/api/shell``).
@@ -52,7 +52,7 @@ def tree_payload(items: list) -> tuple[dict, str]:
     if _tree_memo is not None and _tree_memo[0] is items:
         return _tree_memo[1], _tree_memo[2]
 
-    files = sorted([it["path"], int(it["size"] or 0)] for it in items if not it["is_dir"])
+    files = sorted([it["path"], int(it["size"] or 0), int(it.get("ts") or 0)] for it in items if not it["is_dir"])
     etag = _digest(json.dumps(files, separators=(",", ":"), ensure_ascii=False))
     if len(files) > MAX_FILES:
         payload = {"v": etag, "n": len(files), "too_large": True}
@@ -82,7 +82,7 @@ def shell_payload(env, ctx: dict) -> tuple[dict, str]:
         "toolbar": m.toolbar("@@counts@@", "@@path@@"),
         "go_up": m.go_up("@@parent_path@@"),
         "row_dir": m.row_dir("@@name@@", "@@path@@"),
-        "row_file": m.row_file("@@name@@", "@@path@@", "@@size_str@@"),
+        "row_file": m.row_file("@@name@@", "@@path@@", "@@size_str@@", "@@ts@@", "@@modified@@"),
         "empty": m.empty_state(),
         "stats": m.footer_stats("@@n@@", "@@s@@", "@@size_str@@"),
         "crumb_container": m.crumb_container("@@inner@@", ctx["cdn_base_url"], "@@tail@@"),

@@ -22,6 +22,12 @@
 {% endif %}
         <div class="list-container">
             <div class="list-group">
+                <div class="list-head" role="group" aria-label="Sort by">
+                    <button type="button" class="list-head__name" data-action="sort-col" data-sort="name">Name</button>
+                    <button type="button" class="list-head__date" data-action="sort-col" data-sort="date">Last modified (UTC)</button>
+                    <button type="button" class="list-head__size" data-action="sort-col" data-sort="size">Size</button>
+                    <span class="list-head__dl"></span>
+                </div>
                 <div id="file-list">
                     {% if skeleton %}<!--@list-->{% else %}
                     {% if path %}
@@ -33,7 +39,7 @@
                     {% if item.is_dir %}
                     {{ row_dir(item.name, item.path) }}
                     {% else %}
-                    {{ row_file(item.name, item.path, item.size_str) }}
+                    {{ row_file(item.name, item.path, item.size_str, item.ts, item.modified) }}
                     {% endif %}
                     {% endif %}
                     {% endfor %}

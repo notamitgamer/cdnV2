@@ -52,8 +52,23 @@
     return path ? { path, type: a.classList.contains('folder-link') ? 'folder' : 'file' } : null;
   }
 
+  const inSelectMode = () => root.hasAttribute('data-select-mode');
+  function setSelectMode(on) {
+    if (on) root.setAttribute('data-select-mode', ''); else { root.removeAttribute('data-select-mode'); clear(true); removeBar(); }
+    const b = $('[data-sel-toggle]');
+    if (b) { b.textContent = on ? 'Done' : 'Select'; b.setAttribute('aria-pressed', String(on)); }
+  }
+
   function decorate() {
-    if (!onListing()) { clear(true); removeBar(); return; }
+    if (!onListing()) { clear(true); removeBar(); root.removeAttribute('data-select-mode'); return; }
+    // checkboxes stay out of sight until you choose Select, so the listing reads like a plain directory index
+    const actions = $('.listing-toolbar__actions');
+    if (actions && !$('[data-sel-toggle]', actions)) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'btn'; b.dataset.selToggle = ''; b.textContent = inSelectMode() ? 'Done' : 'Select';
+      b.setAttribute('aria-pressed', String(inSelectMode()));
+      actions.insertBefore(b, actions.firstChild);
+    }
     $$('#file-list .list-item').forEach((row) => {
       if ($('.sel-box', row)) return;
       const info = rowInfo(row);
@@ -125,7 +140,7 @@
 
   async function act(action) {
     const items = Array.from(sel, ([path, v]) => ({ path, type: v.type }));
-    if (action === 'clear') return clear();
+    if (action === 'clear') { setSelectMode(false); return; }
     if (action === 'all') {
       $$('#file-list .list-item').forEach((row) => { if (row.offsetParent !== null) setSelected(row, true); });
       return;
@@ -152,19 +167,20 @@
   window.addEventListener('click', (e) => {
     const t = e.target instanceof Element ? e.target : null;
     if (!t) return;
+    if (t.closest('[data-sel-toggle]')) { e.preventDefault(); setSelectMode(!inSelectMode()); return; }
     const a = t.closest('[data-sel-action]');
     if (a) { e.preventDefault(); act(a.dataset.selAction); return; }
     const row = t.closest('#file-list .list-item');
     if (!row || !onListing()) return;
     if (t.closest('.sel-box')) { setSelected(row, t.checked !== undefined ? t.checked : !row.classList.contains('is-selected')); return; }
-    if (sel.size && !t.closest('.download-icon')) {
+    if ((sel.size || inSelectMode()) && !t.closest('.download-icon')) {
       const info = rowInfo(row);
       if (info) { e.preventDefault(); e.stopPropagation(); setSelected(row, !sel.has(info.path)); }
     }
   }, true);
 
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && sel.size) clear(); });
-  document.addEventListener('turbo:load', () => { clear(true); decorate(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { if (sel.size) clear(); else if (inSelectMode()) setSelectMode(false); } });
+  document.addEventListener('turbo:load', () => { clear(true); root.removeAttribute('data-select-mode'); decorate(); });
   document.addEventListener('turbo:render', decorate);
   document.addEventListener('turbo:before-cache', () => { clear(true); removeBar(); $$('.sel-box').forEach((b) => b.remove()); });
   // sorting / searching reorder or hide rows in place; make sure every row still has its checkbox

@@ -34,9 +34,22 @@
     <meta property="og:site_name" content="{{ site_name }}">
     <meta property="og:title" content="{{ full_title }}">
     <meta property="og:description" content="{{ description }}">
-    <meta property="og:image" content="{{ (cdn_base_url ~ '/static/icons/og-logo.png') if cdn_base_url else '/static/icons/og-logo.png' }}">
-    <meta property="og:type" content="website">
-    <meta name="twitter:card" content="summary">
+    <meta property="og:image" content="{{ og.image if og and og.image else ((cdn_base_url ~ '/static/icons/og-logo.png') if cdn_base_url else '/static/icons/og-logo.png') }}">
+    <meta property="og:type" content="{{ og.type if og and og.type else 'website' }}">
+    <meta name="twitter:card" content="{{ 'summary_large_image' if og and og.image else ('player' if og and og.video else 'summary') }}">
+    {%- if og and og.url %}
+    <meta property="og:url" content="{{ og.url }}">
+    {%- endif %}
+    {%- if og and og.video %}
+    <meta property="og:video" content="{{ og.video }}">
+    <meta property="og:video:secure_url" content="{{ og.video }}">
+    <meta property="og:video:type" content="{{ og.video_type }}">
+    {%- endif %}
+    {%- if og and og.audio %}
+    <meta property="og:audio" content="{{ og.audio }}">
+    <meta property="og:audio:secure_url" content="{{ og.audio }}">
+    <meta property="og:audio:type" content="{{ og.audio_type }}">
+    {%- endif %}
 
     {#- Applies the saved (or system) colour theme before first paint, so there is no flash. Identical on every
         page, so Turbo treats it as already-run. app.js owns the toggle. -#}
@@ -47,7 +60,7 @@
                 var t = localStorage.getItem('cdn_theme');
                 if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
                 document.documentElement.setAttribute('data-theme', t);
-                if (localStorage.getItem('cdn_pane_v1') === 'off') document.documentElement.setAttribute('data-pane', 'off');
+                if (localStorage.getItem('cdn_pane_v1') !== 'on') document.documentElement.setAttribute('data-pane', 'off');
             } catch (e) {}
         })();
     </script>

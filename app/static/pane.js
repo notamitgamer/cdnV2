@@ -236,8 +236,8 @@
   }
   function toggle() {
     if (DESKTOP.matches) {
-      const off = root.getAttribute('data-pane') === 'off';
-      if (off) { root.removeAttribute('data-pane'); ls.del(K_PANE); } else { root.setAttribute('data-pane', 'off'); ls.set(K_PANE, 'off'); }
+      const off = root.getAttribute('data-pane') === 'off'; // collapsed is the default; opening it is remembered
+      if (off) { root.removeAttribute('data-pane'); ls.set(K_PANE, 'on'); } else { root.setAttribute('data-pane', 'off'); ls.del(K_PANE); }
       $$('.nav-toggle').forEach((b) => b.setAttribute('aria-expanded', String(off)));
     } else {
       setOpen(!root.hasAttribute('data-pane-open'));

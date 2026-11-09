@@ -1,6 +1,8 @@
 import os
 import re
 import time
+import datetime
+from email.utils import parsedate_to_datetime
 import unicodedata
 import uuid
 import json
@@ -106,13 +108,19 @@ async def get_file_info(path: str) -> dict:
             exists = r.status_code == 200
             size = None
             content_type = None
+            ts = None
             if exists:
+                try:
+                    lm = r.headers.get("Last-Modified")
+                    ts = int(parsedate_to_datetime(lm).timestamp()) if lm else None
+                except (TypeError, ValueError):
+                    ts = None
                 try:
                     size = int(r.headers["Content-Length"]) if "Content-Length" in r.headers else None
                 except (ValueError, TypeError):
                     size = None
                 content_type = r.headers.get("Content-Type")
-            result = {"exists": exists, "size": size, "content_type": content_type}
+            result = {"exists": exists, "size": size, "content_type": content_type, "ts": ts}
             _set_cache(cache_key, result)
             return result
 
@@ -129,7 +137,7 @@ async def get_path_info(path: str) -> dict:
         if entry["path"] == path:
             if entry["is_dir"]:
                 return {"exists": False, "size": None, "content_type": None}
-            return {"exists": True, "size": entry.get("size"), "content_type": None}
+            return {"exists": True, "size": entry.get("size"), "content_type": None, "ts": entry.get("ts") or None}
     return await get_file_info(path)
 
 def _under(path: str, items: list) -> list:
@@ -188,13 +196,17 @@ async def list_directory(path: str):
             size = getattr(item, "size", 0)
 
             size_str = format_size(size) if not is_dir else "-"
+            up = getattr(item, "uploaded_at", None)
+            ts = int(up.timestamp()) if up else 0
 
             files_and_folders.append({
                 "name": name,
                 "path": item.path,
                 "is_dir": is_dir,
                 "size": size,
-                "size_str": size_str
+                "size_str": size_str,
+                "ts": ts,
+                "modified": format_modified(ts),
             })
 
         files_and_folders.sort(key=lambda x: (not x["is_dir"], x["name"].lower()))
@@ -223,6 +235,13 @@ async def list_files_recursive(path: str):
                     f"{ZIP_MAX_TOTAL_BYTES // (1024 * 1024)} MB)."
                 )
     return files
+
+def format_modified(ts) -> str:
+    """Unix seconds -> "2026-01-31 14:05" (UTC), or "-" when unknown. static/fasttree.js does the same."""
+    if not ts:
+        return "-"
+    return datetime.datetime.fromtimestamp(int(ts), datetime.timezone.utc).strftime("%Y-%m-%d %H:%M")
+
 
 def format_size(size_bytes) -> str:
     if size_bytes is None:

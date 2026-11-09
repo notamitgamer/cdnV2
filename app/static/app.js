@@ -187,11 +187,24 @@
       // an <a data-action="dialog-close"> still follows its href (the zip download)
       return;
     }
+    if (action === 'sort-col') {
+      const select = $('#sort-select');
+      if (!select) return;
+      const col = act.getAttribute('data-sort');
+      const first = col === 'name' ? 'name' : col + '-desc';
+      const second = col === 'name' ? 'name-desc' : col + '-asc';
+      const next = select.value === first ? second : first;
+      if ($$('option', select).some((o) => o.value === next && !o.disabled)) { select.value = next; select.dispatchEvent(new Event('change', { bubbles: true })); }
+      return;
+    }
     if (action === 'pick-link') {
+      // chips and the one-line display live in the same .link-list, so this serves both the links and the commands
       const url = act.getAttribute('data-url') || '';
-      $$('.link-tab').forEach((b) => { const on = b === act; b.classList.toggle('is-active', on); b.setAttribute('aria-pressed', String(on)); });
-      const val = $('#link-show-value');
-      const copy = $('#link-show-copy');
+      const group = act.closest('.link-list');
+      if (!group) return;
+      $$('.link-tab', group).forEach((b) => { const on = b === act; b.classList.toggle('is-active', on); b.setAttribute('aria-pressed', String(on)); });
+      const val = $('.link-show__value', group);
+      const copy = $('.link-show [data-copy]', group);
       if (val) { val.textContent = url; val.setAttribute('title', url); }
       if (copy) copy.setAttribute('data-copy', url);
       return;
@@ -319,6 +332,7 @@
   });
 
   const SIZE_UNITS = { B: 1, KB: 1024, MB: 1048576, GB: 1073741824, TB: 1099511627776 };
+  function rowTs(row) { return Number(row.getAttribute('data-ts')) || 0; }
   function rowBytes(row) {
     const el = $('.size-label', row);
     const m = el && /([\d.]+)\s*(B|KB|MB|GB|TB)/i.exec(el.textContent);
@@ -334,9 +348,14 @@
     // there, show "Default order" instead of a stale saved choice (without overwriting it), and hide the control
     // entirely when there is nothing to reorder.
     const hasSizes = rows.some((r) => rowBytes(r) >= 0);
-    $$('option', select).forEach((o) => { if (o.value.indexOf('size') === 0) o.disabled = !hasSizes; });
+    const hasDates = rows.some((r) => rowTs(r) > 0);
+    $$('option', select).forEach((o) => {
+      if (o.value.indexOf('size') === 0) o.disabled = !hasSizes;
+      if (o.value.indexOf('date') === 0) o.disabled = !hasDates;
+    });
     let mode = store.get('cdn_sort_v1', 'default');
     if (!hasSizes && mode.indexOf('size') === 0) mode = 'default';
+    if (!hasDates && mode.indexOf('date') === 0) mode = 'default';
     select.value = $$('option', select).some((o) => o.value === mode && !o.disabled) ? mode : 'default';
     const wrap = select.closest('.select-wrap');
     if (wrap) wrap.hidden = rows.filter((r) => r.getAttribute('data-name') !== '..').length < 2;
@@ -350,11 +369,20 @@
       'name-desc': (a, b) => byName(b, a),
       'size-desc': (a, b) => rowBytes(b) - rowBytes(a) || byName(a, b),
       'size-asc': (a, b) => rowBytes(a) - rowBytes(b) || byName(a, b),
+      'date-desc': (a, b) => rowTs(b) - rowTs(a) || byName(a, b),
+      'date-asc': (a, b) => rowTs(a) - rowTs(b) || byName(a, b),
     }[select.value] || byName;
     rows.sort((a, b) => (isUp(b) - isUp(a)) || (isDir(b) - isDir(a)) || cmp(a, b));
     const frag = document.createDocumentFragment();
     rows.forEach((r) => frag.appendChild(r));
     list.insertBefore(frag, list.firstChild);
+    // mark the column the list is sorted by (the header buttons double as the sort control)
+    const active = select.value.split('-')[0];
+    $$('.list-head [data-sort]').forEach((b) => {
+      const on = b.getAttribute('data-sort') === active;
+      b.classList.toggle('is-active', on);
+      if (on) b.setAttribute('aria-sort', select.value.endsWith('-desc') ? 'descending' : 'ascending'); else b.removeAttribute('aria-sort');
+    });
   }
 
   async function onZip(btn) {

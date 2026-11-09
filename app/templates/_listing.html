@@ -28,6 +28,7 @@
 {% endmacro %}
 
 {% macro toolbar(counts_html, path) %}
+        <h1 class="index-title">Index of /{{ path }}</h1>
         <div class="listing-toolbar">
             <p class="listing-toolbar__counts">
                 {{ counts_html }}
@@ -42,6 +43,8 @@
                         <option value="name-desc">Name Z–A</option>
                         <option value="size-desc">Largest</option>
                         <option value="size-asc">Smallest</option>
+                        <option value="date-desc">Newest</option>
+                        <option value="date-asc">Oldest</option>
                     </select>
                 </label>
                 <button id="download-zip-btn" type="button" class="btn" data-path="{{ path }}" title="Download everything in this folder as a .zip" aria-label="Download everything in this folder as a .zip">
@@ -57,7 +60,7 @@
                     <div class="list-item" data-name="..">
                         <div class="item-name">
                             <svg class="folder-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
-                            <a href="{{ parent_path }}" class="folder-link">Go up a directory</a>
+                            <a href="{{ parent_path }}" class="folder-link">Parent directory</a>
                         </div>
                     </div>
 {% endmacro %}
@@ -69,17 +72,21 @@
                             <a href="/{{ path }}" class="folder-link" data-full-name="{{ name }}/">{{ name }}/</a>
                         </div>
                         <div class="item-meta">
+                            <span class="date-label">-</span>
+                            <span class="size-none">-</span>
+                            <span class="dl-spacer"></span>
                         </div>
                     </div>
 {% endmacro %}
 
-{% macro row_file(name, path, size_str) %}
-                    <div class="list-item" data-name="{{ name }}">
+{% macro row_file(name, path, size_str, ts, modified) %}
+                    <div class="list-item" data-name="{{ name }}" data-ts="{{ ts }}">
                         <div class="item-name">
                             <svg class="file-icon-list" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
                             <a href="/{{ path }}" class="file-link" data-full-name="{{ name }}">{{ name }}</a>
                         </div>
                         <div class="item-meta">
+                            <span class="date-label">{{ modified }}</span>
                             <span class="size-label">{{ size_str }}</span>
                             <a href="/api/get/{{ path }}" class="download-icon" title="Download" aria-label="Download {{ name }}" data-turbo="false">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>

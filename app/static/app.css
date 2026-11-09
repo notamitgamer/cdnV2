@@ -1229,3 +1229,53 @@ html[data-fab-hidden] .fab { transform: translateY(calc(100% + 2rem)); pointer-e
 .pane-tree .pane-twisty { margin-top: 0.1rem; }
 .pane-tree .pane-link, .pane-tree .pane-ico { align-items: flex-start; }
 .pane-tree .pane-link .pane-ico { margin-top: 0.35rem; }
+
+/* ============================== Plain directory index ==============================
+   List view reads like a mirror's "Index of /": a title, a header row (Name, Last modified, Size) that
+   sorts, and one compact line per entry. Grid view keeps its cards. */
+.index-title { margin: 0.2rem 0 0.6rem; font-size: var(--fs-lg); font-weight: 600; font-family: var(--mono); overflow-wrap: anywhere; }
+
+.list-head {
+    display: flex; align-items: center; padding: 0.4rem 1.1rem;
+    background: var(--surface-2); border-bottom: 1px solid var(--border-strong);
+    font-size: var(--fs-xs); font-weight: 600; color: var(--muted);
+}
+.list-head button { padding: 0; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.list-head button:hover, .list-head button.is-active { color: var(--text); }
+.list-head button[aria-sort="ascending"]::after { content: " \2191"; }
+.list-head button[aria-sort="descending"]::after { content: " \2193"; }
+.list-head__name { flex: 1 1 auto; min-width: 0; margin-right: 1rem; }
+.list-head__date { flex: 0 0 10.5rem; margin-right: 0.5rem; }
+.list-head__size { flex: 0 0 5.5rem; margin-right: 0.5rem; text-align: right !important; }
+.list-head__dl { flex: 0 0 1.85rem; }
+
+.date-label { flex: 0 0 10.5rem; }
+.size-label, .size-none { flex: 0 0 5.5rem; text-align: right; }
+.dl-spacer { flex: 0 0 1.85rem; }
+
+/* list view: no icons, shorter rows */
+html:not([data-view="grid"]) .list-item { min-height: 2.5rem; padding-top: 0.1rem; padding-bottom: 0.1rem; }
+html:not([data-view="grid"]) .item-name a { padding: 0.3rem 0; }
+@media (hover: hover) and (pointer: fine) {
+    html:not([data-view="grid"]) .list-item { min-height: 2rem; }
+    html:not([data-view="grid"]) .item-name a { padding: 0.15rem 0; }
+}
+html:not([data-view="grid"]) .list-item .item-name > svg { display: none; }
+html:not([data-view="grid"]) .item-name a.folder-link { font-weight: 600; }
+html:not([data-view="grid"]) .item-name a.file-link { font-weight: 400; }
+
+/* grid view: cards only */
+html[data-view="grid"] .list-head, html[data-view="grid"] .date-label,
+html[data-view="grid"] .size-none, html[data-view="grid"] .dl-spacer { display: none; }
+
+@media (max-width: 640px) {
+    .list-head__date, .date-label { display: none; }
+    .list-head__name { margin-right: 0.5rem; }
+}
+
+/* checkboxes only appear once you choose Select */
+.sel-box { display: none; }
+html[data-select-mode] .sel-box, html[data-selecting] .sel-box { display: inline-block; }
+@media (max-width: 640px) {
+    .listing-toolbar__counts { flex: 1 0 100%; }
+}

@@ -3,7 +3,7 @@
     _page_*.html partial; this file only picks one. /api/shell renders it with skeleton=True. -#}
 {% from "_listing.html" import visit_script %}
 
-{% if page == 'file' %}{% set page_title = filename %}
+{% if page == 'file' %}{% set page_title = filename %}{% if og %}{% set page_description = og.description %}{% endif %}
 {% elif page == 'upload' %}{% set page_title = 'New' %}
 {% elif page == 'search' %}{% set page_title = 'Find' %}
 {% elif page == 'history' %}{% set page_title = 'History' %}

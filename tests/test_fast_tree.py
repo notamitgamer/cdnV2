@@ -52,7 +52,7 @@ def norm(html):
 gz = {"Accept-Encoding": "gzip"}
 r = client.get("/api/tree", headers=gz)
 tree = r.json()
-paths = {p for p, _ in tree["files"]}
+paths = {f[0] for f in tree["files"]}
 check(r.status_code == 200 and r.headers.get("content-encoding") == "gzip", "/api/tree is served gzipped")
 check(tree["n"] == len(tree["files"]) == len(paths), "...with one entry per file")
 check("README.md" in paths and ".gitattributes" in paths and "bsc/semester_1/notes.txt" in paths, "...containing the files")
@@ -146,6 +146,15 @@ js = json.loads(node("-e", "const {formatSize}=require('./app/static/fasttree.js
                            "console.log(JSON.stringify(JSON.parse(process.argv[1]).map(formatSize)))", json.dumps(sizes)))
 py = [storage.format_size(s) for s in sizes]
 check(js == py, f"format_size agrees with Python for {len(sizes)} sizes, including exact rounding ties")
+
+stamps = [0, 1, 59, 3600, 1767225600, 1767225660, 1893456000, 2**31 - 1]
+js = json.loads(node("-e", "const {formatModified}=require('./app/static/fasttree.js');"
+                           "console.log(JSON.stringify(JSON.parse(process.argv[1]).map(formatModified)))", json.dumps(stamps)))
+py = [storage.format_modified(s) for s in stamps]
+check(js == py, f"format_modified agrees with Python for {len(stamps)} timestamps (UTC, '-' when unknown)")
+check(storage.format_modified(1767225600) == "2026-01-01 00:00", "format_modified is UTC 'YYYY-MM-DD HH:MM'")
+_root = json.loads(node("tests/compose.js", f"{tmp}/tree.json", f"{tmp}/shell.json", ""))[""]
+check("2026-01-01 00:00" in _root or "data-ts=" in _root, "built pages carry each file's modified date and timestamp")
 
 tricky = ["plain", "a&b", "it's", "<script>alert(1)</script>", "ünï 😀", "tab\there", 'q"uote', "back\\slash",
           "\x7f", "\u2028", "line\nbreak", "$&", "@@name@@", "</script>"]
