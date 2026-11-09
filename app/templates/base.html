@@ -36,9 +36,22 @@
     <meta property="og:site_name" content="{{ site_name }}">
     <meta property="og:title" content="{{ full_title }}">
     <meta property="og:description" content="{{ description }}">
-    <meta property="og:image" content="{{ (cdn_base_url ~ '/static/icons/og-logo.png') if cdn_base_url else '/static/icons/og-logo.png' }}">
-    <meta property="og:type" content="website">
-    <meta name="twitter:card" content="summary">
+    <meta property="og:url" content="{{ cdn_base_url ~ '/' ~ (path | urlencode) if path else cdn_base_url }}">
+    {% if og_image %}
+    <meta property="og:image" content="{{ og_image }}">
+    {% else %}
+    <meta property="og:image" content="{{ (cdn_base_url ~ '/static/icons/og-logo.png?v=' ~ og_logo_v) if cdn_base_url else '/static/icons/og-logo.png?v=' ~ og_logo_v }}">
+    {% endif %}
+    {% if og_video %}
+    <meta property="og:video" content="{{ og_video }}">
+    <meta property="og:video:secure_url" content="{{ og_video }}">
+    {% endif %}
+    {% if og_audio %}<meta property="og:audio" content="{{ og_audio }}">{% endif %}
+    <meta property="og:type" content="{{ 'video.other' if og_video else 'website' }}">
+    <meta name="twitter:card" content="{{ og_card or 'summary' }}">
+    {% if discord_embed %}{% set _de_json = discord_embed | tojson %}{% if _de_json | length <= 2900 %}
+    <script id="discord:component-embed" type="application/json">{{ _de_json }}</script>
+    {% endif %}{% endif %}
 
     {#- Applies the saved (or system) colour theme before first paint, so there is no flash. Identical on every
         page, so Turbo treats it as already-run. app.js owns the toggle. -#}

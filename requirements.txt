@@ -6,3 +6,5 @@ python-multipart
 jinja2
 pyjwt[crypto]
 yt-dlp
+discord.py>=2.4
+pillow

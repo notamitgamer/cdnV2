@@ -27,6 +27,9 @@ bots:
   # Uploads, shortening, etc.: every non-GET/HEAD request under /api/.
   - import: (data)/apps/allow-api-routes.yaml
 
+  - name: og-card
+    path_regex: ^/api/og/
+    action: ALLOW
   - name: static-assets
     path_regex: ^/static/
     action: ALLOW
@@ -36,6 +39,13 @@ bots:
   # Short links get pasted into chats and forums, where link-preview bots follow them.
   - name: short-links
     path_regex: ^/mask/
+    action: ALLOW
+
+  # Link-preview crawlers (Discord, Slack, X, Telegram...) fetch the page once to build the embed.
+  # They send a "Mozilla" user agent but cannot solve a challenge, so without this rule shared
+  # links show no preview at all.
+  - name: link-preview-bots
+    user_agent_regex: (Discordbot|Slackbot|Twitterbot|facebookexternalhit|TelegramBot|WhatsApp|LinkedInBot)
     action: ALLOW
 
   # --- Stock Anubis rules ------------------------------------------------------

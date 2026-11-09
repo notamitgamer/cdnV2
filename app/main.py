@@ -69,6 +69,17 @@ def _asset_version() -> str:
 templates.env.globals["asset_v"] = _asset_version()
 
 
+def _og_logo_version() -> str:
+    """Content hash of the link-preview logo, appended to its URL so Discord and others refetch it after it changes."""
+    try:
+        return hashlib.sha1((STATIC_DIR / "icons" / "og-logo.png").read_bytes()).hexdigest()[:8]
+    except OSError:
+        return "0"
+
+
+templates.env.globals["og_logo_v"] = _og_logo_version()
+
+
 _GZ_CACHE: dict = {}
 
 
@@ -132,9 +143,19 @@ async def favicon():
 
 
 CDN_BASE_URL = os.getenv("CDN_BASE_URL", "https://cdn.amit.is-a.dev")
+if os.getenv("IS_PULL_REQUEST", "").lower() == "true" and os.getenv("RENDER_EXTERNAL_URL"):
+    # Render PR preview: build links (card image, buttons) from the preview's own URL, not the live site's.
+    CDN_BASE_URL = os.environ["RENDER_EXTERNAL_URL"].rstrip("/")
 RAW_DOMAIN = os.getenv("RAW_DOMAIN", "raw.cdn.amit.is-a.dev")
 RAW_BASE_URL = os.getenv("RAW_BASE_URL", f"https://{RAW_DOMAIN}")
 RAW_PREFIX = "raw/"
+
+
+@app.on_event("startup")
+async def _start_discord_bot():
+    """Starts the optional Discord link-buttons bot (does nothing unless DISCORD_BOT_TOKEN is set)."""
+    from .discord_bot import start_bot
+    start_bot(CDN_BASE_URL, RAW_BASE_URL)
 
 
 async def render_context(extra: dict) -> dict:
@@ -267,6 +288,35 @@ async def download_file(path: str, request: Request):
         status_code=r.status_code,
         headers=headers,
     )
+
+
+@app.get("/api/og/{path:path}")
+async def og_card(path: str):
+    """Preview card image (PNG) for a file or folder, used as the link-preview picture in Discord and similar apps."""
+    from .og_card import render_card
+
+    clean = path[:-4] if path.lower().endswith(".png") else path
+    clean = clean.strip("/")
+    if not clean or clean.startswith("_"):
+        raise HTTPException(status_code=404, detail="Not found")
+
+    name = clean.rsplit("/", 1)[-1]
+    info = await get_path_info(clean)
+    if info["exists"]:
+        low = name.lower()
+        ext = next((e for e in (".tar.gz", ".tar.bz2", ".tar.xz") if low.endswith(e)), None)
+        ext = ext[1:] if ext else (low.rsplit(".", 1)[-1] if "." in low else "file")
+        title, kind = name, ext.upper()
+        meta = format_size(info["size"]) if info.get("size") else ""
+    else:
+        items = await list_directory(clean)
+        if not items:
+            raise HTTPException(status_code=404, detail="Not found")
+        title, kind = name + "/", "FOLDER"
+        meta = f"{len(items)} item{'' if len(items) == 1 else 's'}"
+
+    png = await asyncio.to_thread(render_card, title, kind, meta, clean)
+    return Response(png, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
 
 
 UPLOAD_LIMIT_PER_HOUR = 200 * 1024 * 1024        # file uploads (/api/put), per IP
