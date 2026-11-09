@@ -108,6 +108,14 @@ def _discord_link(text: str, url: str) -> str:
 
 
 templates.env.globals["discord_button"] = _discord_button
+
+
+def _discord_title(text: str, url: str) -> str:
+    """Hyperlinked heading line (### [text](url)) for the top of a Discord component embed."""
+    return "### " + _discord_link(text, url)[2:-2]
+
+
+templates.env.globals["discord_title"] = _discord_title
 templates.env.globals["discord_link"] = _discord_link
 
 

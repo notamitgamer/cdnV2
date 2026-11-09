@@ -29,8 +29,7 @@
 {% else %}{% set og_image = _card %}{% set og_card = 'summary_large_image' %}
 {% endif %}
 {% set _de_head = {'type': 9, 'components': [
-    {'type': 10, 'content': '-# amit/cdn'},
-    {'type': 10, 'content': discord_link(filename, cdn_base_url ~ '/' ~ (path | urlencode)) ~ '\n-# ' ~ (_ext | upper if _ext else 'FILE') ~ ((' · ' ~ _size) if _size else '')}],
+    {'type': 10, 'content': discord_title(filename, cdn_base_url ~ '/' ~ (path | urlencode)) ~ '\n' ~ page_description}],
     'accessory': {'type': 11, 'media': {'url': _logo}}} %}
 {% set _de_gallery = {'type': 12, 'items': [{'media': {'url': _raw if _is_img else _card}, 'description': filename}]} %}
 {% set _de_buttons = {'type': 1, 'components': [
@@ -45,8 +44,7 @@
 {% set _card = cdn_base_url ~ '/api/og/' ~ (path | urlencode) ~ '.png?v=' ~ _n %}
 {% set og_image = _card %}{% set og_card = 'summary_large_image' %}
 {% set _de_head = {'type': 9, 'components': [
-    {'type': 10, 'content': '-# amit/cdn'},
-    {'type': 10, 'content': discord_link(path.split('/')[-1] ~ '/', cdn_base_url ~ '/' ~ (path | urlencode) ~ '/') ~ '\n-# ' ~ _n ~ ' item' ~ ('' if _n == 1 else 's')}],
+    {'type': 10, 'content': discord_title(path.split('/')[-1] ~ '/', cdn_base_url ~ '/' ~ (path | urlencode) ~ '/') ~ '\n' ~ page_description}],
     'accessory': {'type': 11, 'media': {'url': _logo}}} %}
 {% set _de_gallery = {'type': 12, 'items': [{'media': {'url': _card}, 'description': path}]} %}
 {% set _de_buttons = {'type': 1, 'components': [
