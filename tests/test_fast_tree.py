@@ -100,6 +100,10 @@ _assets = sorted(set(_re.findall(r'(?:src|href)="(/static/[\w.-]+\.(?:js|css))(?
 check(len(_assets) >= 4, "base.html references its static assets")
 _css = open("app/static/app.css").read()
 check(_css.count("{") == _css.count("}"), "app.css braces are balanced")
+for _f in sorted(set(_re.findall(r'url\("(/static/fonts/[\w.-]+\.woff2)"\)', _css))):
+    _r = client.get(_f)
+    check(_r.status_code == 200 and _r.headers["content-type"].startswith("font/woff2"), f"{_f} (font in app.css) is served as woff2")
+check(client.get("/static/fonts/x.txt").status_code == 404 and client.get("/static/fonts/OFL-IBM-Plex.txt").status_code == 404, "font route serves only .woff2 files")
 for _a in _assets:
     check(client.get(_a).status_code == 200, f"{_a} (loaded by base.html) is served")
 

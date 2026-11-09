@@ -114,6 +114,15 @@ async def static_icons(filename: str):
     )
 
 
+@app.get("/static/fonts/{filename}")
+async def static_fonts(filename: str):
+    file_path = STATIC_DIR / "fonts" / filename
+    if not filename.endswith(".woff2") or not file_path.is_file():
+        raise HTTPException(status_code=404)
+    # file names carry the weight and never change in place, so browsers can keep them for a year
+    return FileResponse(file_path, media_type="font/woff2", headers={"Cache-Control": "public, max-age=31536000, immutable"})
+
+
 @app.get("/favicon.ico")
 async def favicon():
     return FileResponse(
