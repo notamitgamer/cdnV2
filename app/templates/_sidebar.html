@@ -18,10 +18,18 @@
         <button type="button" class="pane-tab" role="tab" data-pane-mode="tree" aria-selected="true">Files</button>
     </div>
     <div class="pane__body" id="pane-body"></div>
-    <div class="pane__foot">
-        <button type="button" class="icon-btn theme-toggle" data-action="theme-toggle" aria-label="Switch colour theme" title="Switch colour theme">
-            <span class="i-sun">{{ icon('sun', 18) }}</span><span class="i-moon">{{ icon('moon', 18) }}</span>
-        </button>
-    </div>
+    <nav class="pane__foot" aria-label="Help and info">
+        <div class="pane__foot-links">
+            <a href="/documentation" class="pane-foot-link" data-foot="documentation">{{ icon('book', 16) }}<span>Docs</span></a>
+            <a href="/history" class="pane-foot-link" data-foot="history">{{ icon('clock', 16) }}<span>History</span></a>
+            <a href="/stats" class="pane-foot-link" data-foot="stats">{{ icon('bars', 16) }}<span>Stats</span></a>
+        </div>
+        <div class="pane__foot-row">
+            <a href="/privacy" class="pane-foot-small" data-foot="privacy">Privacy</a>
+            <button type="button" class="icon-btn theme-toggle" data-action="theme-toggle" aria-label="Switch colour theme" title="Switch colour theme">
+                <span class="i-sun">{{ icon('sun', 18) }}</span><span class="i-moon">{{ icon('moon', 18) }}</span>
+            </button>
+        </div>
+    </nav>
 </aside>
 <div class="pane-backdrop" data-action="pane-toggle" aria-hidden="true"></div>

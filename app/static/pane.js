@@ -222,6 +222,11 @@
     body.setAttribute('data-mode', state.mode);
     if (state.mode === 'tree') renderTree(body); else renderQuick(body);
     body.scrollTop = keep;
+    $$('[data-foot]', pane).forEach((a) => {
+      const on = state.cur.page === a.getAttribute('data-foot');
+      a.classList.toggle('is-active', on);
+      if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+    });
     if (scrollToActive && state.mode === 'tree') {
       const a = $('.pane-row.is-active', body);
       if (a && a.scrollIntoView) a.scrollIntoView({ block: 'nearest' });
