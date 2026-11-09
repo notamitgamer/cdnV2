@@ -27,6 +27,9 @@ bots:
   # Uploads, shortening, etc.: every non-GET/HEAD request under /api/.
   - import: (data)/apps/allow-api-routes.yaml
 
+  - name: og-card
+    path_regex: ^/api/og/
+    action: ALLOW
   - name: static-assets
     path_regex: ^/static/
     action: ALLOW

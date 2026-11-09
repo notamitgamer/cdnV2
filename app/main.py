@@ -287,6 +287,35 @@ async def download_file(path: str, request: Request):
     )
 
 
+@app.get("/api/og/{path:path}")
+async def og_card(path: str):
+    """Preview card image (PNG) for a file or folder, used as the link-preview picture in Discord and similar apps."""
+    from .og_card import render_card
+
+    clean = path[:-4] if path.lower().endswith(".png") else path
+    clean = clean.strip("/")
+    if not clean or clean.startswith("_"):
+        raise HTTPException(status_code=404, detail="Not found")
+
+    name = clean.rsplit("/", 1)[-1]
+    info = await get_path_info(clean)
+    if info["exists"]:
+        low = name.lower()
+        ext = next((e for e in (".tar.gz", ".tar.bz2", ".tar.xz") if low.endswith(e)), None)
+        ext = ext[1:] if ext else (low.rsplit(".", 1)[-1] if "." in low else "file")
+        title, kind = name, ext.upper()
+        meta = format_size(info["size"]) if info.get("size") else ""
+    else:
+        items = await list_directory(clean)
+        if not items:
+            raise HTTPException(status_code=404, detail="Not found")
+        title, kind = name + "/", "FOLDER"
+        meta = f"{len(items)} item{'' if len(items) == 1 else 's'}"
+
+    png = await asyncio.to_thread(render_card, title, kind, meta, clean)
+    return Response(png, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
+
+
 UPLOAD_LIMIT_PER_HOUR = 200 * 1024 * 1024        # file uploads (/api/put), per IP
 URL_UPLOAD_LIMIT_PER_HOUR = 50 * 1024 * 1024     # uploads from a link (/api/put-url), per IP
 
