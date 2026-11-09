@@ -40,7 +40,7 @@
     {% if og_image %}
     <meta property="og:image" content="{{ og_image }}">
     {% else %}
-    <meta property="og:image" content="{{ (cdn_base_url ~ '/static/icons/og-logo.png') if cdn_base_url else '/static/icons/og-logo.png' }}">
+    <meta property="og:image" content="{{ (cdn_base_url ~ '/static/icons/og-logo.png?v=' ~ og_logo_v) if cdn_base_url else '/static/icons/og-logo.png?v=' ~ og_logo_v }}">
     {% endif %}
     {% if og_video %}
     <meta property="og:video" content="{{ og_video }}">

@@ -69,6 +69,17 @@ def _asset_version() -> str:
 templates.env.globals["asset_v"] = _asset_version()
 
 
+def _og_logo_version() -> str:
+    """Content hash of the link-preview logo, appended to its URL so Discord and others refetch it after it changes."""
+    try:
+        return hashlib.sha1((STATIC_DIR / "icons" / "og-logo.png").read_bytes()).hexdigest()[:8]
+    except OSError:
+        return "0"
+
+
+templates.env.globals["og_logo_v"] = _og_logo_version()
+
+
 _GZ_CACHE: dict = {}
 
 
