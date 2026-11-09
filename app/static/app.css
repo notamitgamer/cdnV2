@@ -677,9 +677,11 @@ html[data-view="grid"] body[data-page="listing"] #file-list .list-item[data-ext]
     padding: 1px 5px; border-radius: 0; background: var(--text); color: var(--bg);
     font: 700 0.625rem/1.4 var(--mono); letter-spacing: 0.02em; pointer-events: none;
 }
-/* the whole card is the link: the name's link stretches over the card; the download button sits above it */
-html[data-view="grid"] body[data-page="listing"] #file-list .item-name a::after { content: ""; position: absolute; inset: 0; z-index: 0; }
-html[data-view="grid"] body[data-page="listing"] #file-list .download-icon { position: relative; z-index: 1; }
+/* the whole row (list) or card (grid) is the link: the name's link stretches over it; the download button and the checkbox sit above */
+body[data-page="listing"] #file-list .list-item { position: relative; }
+body[data-page="listing"] #file-list .item-name a::after { content: ""; position: absolute; inset: 0; z-index: 0; }
+body[data-page="listing"] #file-list .download-icon { position: relative; z-index: 1; }
+body[data-page="listing"] #file-list .list-item > .sel-box { position: relative; z-index: 2; }
 /* "Go up" stays a slim full-width row, and the empty state spans the grid */
 html[data-view="grid"] body[data-page="listing"] #file-list .list-item[data-name=".."] {
     grid-column: 1 / -1; flex-direction: row; justify-content: flex-start; padding: 0.55rem 0.9rem; text-align: left;
