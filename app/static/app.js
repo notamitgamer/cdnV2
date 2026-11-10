@@ -187,15 +187,6 @@
       // an <a data-action="dialog-close"> still follows its href (the zip download)
       return;
     }
-    if (action === 'pick-link') {
-      const url = act.getAttribute('data-url') || '';
-      $$('.link-tab').forEach((b) => { const on = b === act; b.classList.toggle('is-active', on); b.setAttribute('aria-pressed', String(on)); });
-      const val = $('#link-show-value');
-      const copy = $('#link-show-copy');
-      if (val) { val.textContent = url; val.setAttribute('title', url); }
-      if (copy) copy.setAttribute('data-copy', url);
-      return;
-    }
     if (action === 'view-toggle') {
       const next = document.documentElement.getAttribute('data-view') === 'grid' ? 'list' : 'grid';
       store.set(VIEW_KEY, next);
@@ -809,7 +800,7 @@
       pre.appendChild(code);
       const bar = document.createElement('div');
       bar.className = 'preview__bar';
-      bar.innerHTML = '<span></span><button type="button" class="btn btn-sm" data-copy-preview aria-label="Copy file contents" title="Copy file contents">' + ICON.copy + '<span>Copy contents</span></button>';
+      bar.innerHTML = '<span></span><button type="button" class="btn btn-sm" data-copy-preview title="Copy the whole file contents">' + ICON.copy + '<span>Copy code</span></button>';
       bar.firstChild.textContent = lines.length + ' line' + (lines.length !== 1 ? 's' : '') + (truncated ? ' · preview truncated' : '');
       // everything is built off-screen above, then swapped in at once (replacing the skeleton)
       box.replaceChildren(bar, pre);
@@ -830,7 +821,7 @@
     const code = $('code', b.closest('.preview__text'));
     const text = code ? Array.from(code.children).map((s) => s.textContent).join('\n') : '';
     const ok = await copyText(text);
-    if (ok) { flashButton(b, 'Copied'); toast('Contents copied'); } else toast('Could not copy', { type: 'error' });
+    if (ok) { flashButton(b, 'Copied'); toast('Code copied'); } else toast('Could not copy', { type: 'error' });
   });
   // an image that fails to load (deleted upstream, blocked host) degrades to the plain no-preview state
   function imageFailed(box) {

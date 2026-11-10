@@ -25,7 +25,7 @@ URL_RE = re.compile(r"https?://[^\s<>()\[\]|]+", re.I)
 MAX_LINKS_PER_MESSAGE = 3
 # Routes of the web UI/API that are not files or folders.
 RESERVED_FIRST_SEGMENTS = {
-    "api", "static", "mask", "pack", "admin", "stats", "new", "find", "history", "privacy",
+    "api", "static", "mask", "pack", "admin", "stats", "new", "find", "history", "privacy", "terms",
     "documentation", "gh-sync", "shorten", "ping", "raw", "favicon.ico",
 }
 COPY_ID = "cdnbot:copy"

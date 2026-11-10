@@ -1178,6 +1178,14 @@ async def serve(request: Request, path: str):
             ctx,
         )
 
+    if clean_path == "terms":
+        ctx = await render_context({"page": "terms"})
+        return templates.TemplateResponse(
+            request,
+            "terms.html",
+            ctx,
+        )
+
     if clean_path:
         info = await get_path_info(clean_path)
 
