@@ -800,7 +800,7 @@
       pre.appendChild(code);
       const bar = document.createElement('div');
       bar.className = 'preview__bar';
-      bar.innerHTML = '<span></span><button type="button" class="btn btn-sm" data-copy-preview aria-label="Copy file contents" title="Copy file contents">' + ICON.copy + '<span>Copy code</span></button>';
+      bar.innerHTML = '<span></span><button type="button" class="btn btn-sm" data-copy-preview title="Copy the whole file contents">' + ICON.copy + '<span>Copy code</span></button>';
       bar.firstChild.textContent = lines.length + ' line' + (lines.length !== 1 ? 's' : '') + (truncated ? ' · preview truncated' : '');
       // everything is built off-screen above, then swapped in at once (replacing the skeleton)
       box.replaceChildren(bar, pre);
