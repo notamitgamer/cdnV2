@@ -187,15 +187,6 @@
       // an <a data-action="dialog-close"> still follows its href (the zip download)
       return;
     }
-    if (action === 'pick-link') {
-      const url = act.getAttribute('data-url') || '';
-      $$('.link-tab').forEach((b) => { const on = b === act; b.classList.toggle('is-active', on); b.setAttribute('aria-pressed', String(on)); });
-      const val = $('#link-show-value');
-      const copy = $('#link-show-copy');
-      if (val) { val.textContent = url; val.setAttribute('title', url); }
-      if (copy) copy.setAttribute('data-copy', url);
-      return;
-    }
     if (action === 'view-toggle') {
       const next = document.documentElement.getAttribute('data-view') === 'grid' ? 'list' : 'grid';
       store.set(VIEW_KEY, next);

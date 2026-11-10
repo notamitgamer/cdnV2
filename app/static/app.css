@@ -783,26 +783,6 @@ html[data-js] .preview--image.is-loading::after, html[data-js] .preview--pdf.is-
 }
 .preview--image img, .preview--pdf iframe { transition: opacity 0.2s var(--ease); }
 
-.link-list { display: grid; gap: 0.6rem; background: var(--surface); border: 1px solid var(--border); border-radius: 0; padding: 0.7rem 0.8rem; }
-.link-tabs { display: flex; gap: 0.35rem; flex-wrap: wrap; }
-.link-tab {
-    min-height: 2rem; padding: 0.25rem 0.8rem; border-radius: 0;
-    background: transparent; color: var(--muted); border: 1px solid var(--border-strong);
-    font: inherit; font-size: var(--fs-sm); font-weight: 600; cursor: pointer;
-}
-@media (hover: hover) { .link-tab:hover { color: var(--text); background: var(--surface-2); } }
-.link-tab.is-active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
-.link-show { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.5rem; align-items: center; }
-.link-show__value {
-    display: block; min-width: 0; padding: 0.45rem 0.7rem;
-    background: var(--surface-2); color: var(--text);
-    border: 1px solid var(--border); border-radius: 0;
-    font-family: var(--mono); font-size: var(--fs-xs); line-height: 1.5;
-    white-space: nowrap; overflow-x: auto; scrollbar-width: none;
-    -webkit-user-select: all; user-select: all;
-}
-.link-show__value::-webkit-scrollbar { display: none; }
-.link-show__value:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 .notfound { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 1rem; padding: 4rem 0 2rem; }
 .notfound__icon { display: grid; place-items: center; width: 4.5rem; height: 4.5rem; border-radius: 0; background: var(--warning-soft); color: var(--warning); border: 1px solid var(--warning-border); }
@@ -817,11 +797,7 @@ html[data-js] .file-view.is-pending .file-view__content { display: none; }
 .sk-pills { width: 38%; height: 1.2rem; }
 .file-skel__actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .sk-action { height: 2.5rem; flex: 1 1 6rem; max-width: 9rem; border-radius: 0; }
-.file-skel__card, .file-skel__preview { background: var(--surface); border: 1px solid var(--border); border-radius: 0; box-shadow: var(--shadow-sm); }
-.file-skel__card { display: grid; gap: 1.1rem; padding: 1.2rem 1.25rem; }
-.file-skel__row { display: grid; gap: 0.55rem; }
-.sk-rowlabel { width: 30%; }
-.sk-rowbar { width: 100%; height: 2.1rem; border-radius: 0; }
+.file-skel__preview { background: var(--surface); border: 1px solid var(--border); border-radius: 0; box-shadow: var(--shadow-sm); }
 .file-skel__preview { display: grid; gap: 0.85rem; align-content: start; min-height: 16rem; padding: 1.1rem 1rem 1.3rem; }
 .sk-previewbar { width: 100%; height: 2rem; border-radius: 0; margin-bottom: 0.4rem; }
 
@@ -987,12 +963,12 @@ html[data-js] .file-view.is-pending .file-view__content { display: none; }
     :root { --gutter: 1rem; }
     .page { padding-top: 1.1rem; }
     .file-head { grid-template-columns: minmax(0, 1fr); }
-    .file-head__actions { justify-content: stretch; }
-    .file-head__actions .btn { flex: 1 1 0; }
+    .file-head__actions { display: grid; grid-template-columns: 1fr 1fr; }
+    .file-head__actions .btn { min-width: 0; }
     .toc ol { columns: 1; }
-    /* small copy buttons become icon-only: the copy glyph is universal, and the link box gets the room back */
-    .link-show .btn > span, [data-copy-preview] > span { display: none; }
-    .link-show .btn-sm, .preview__bar .btn-sm { width: 2.6rem; min-width: 2.6rem; height: 2.6rem; padding: 0; }
+    /* the small copy button in the preview bar becomes icon-only: the copy glyph is universal */
+    [data-copy-preview] > span { display: none; }
+    .preview__bar .btn-sm { width: 2.6rem; min-width: 2.6rem; height: 2.6rem; padding: 0; }
     .preview__bar { padding-right: 0.5rem; }
     .sk-btn { width: 2.6rem; height: 2.6rem; }
     .list-item { padding-left: 0.85rem; padding-right: 0.85rem; }
@@ -1004,7 +980,6 @@ html[data-js] .file-view.is-pending .file-view__content { display: none; }
     .zip-long { display: none; }
     .zip-short { display: inline; }
     .listing-toolbar__actions .select { max-width: 7.6rem; }
-    .file-head__actions .btn-primary { flex: 1 1 100%; }
     .dropzone { padding: 2.25rem 1rem; }
     .input-row { flex-direction: column; }
     .page-stats .tiles { grid-template-columns: repeat(2, 1fr); }
