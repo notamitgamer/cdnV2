@@ -966,9 +966,6 @@ html[data-js] .file-view.is-pending .file-view__content { display: none; }
     .file-head__actions { display: grid; grid-template-columns: 1fr 1fr; }
     .file-head__actions .btn { min-width: 0; }
     .toc ol { columns: 1; }
-    /* the small copy button in the preview bar becomes icon-only: the copy glyph is universal */
-    [data-copy-preview] > span { display: none; }
-    .preview__bar .btn-sm { width: 2.6rem; min-width: 2.6rem; height: 2.6rem; padding: 0; }
     .preview__bar { padding-right: 0.5rem; }
     .sk-btn { width: 2.6rem; height: 2.6rem; }
     .list-item { padding-left: 0.85rem; padding-right: 0.85rem; }
