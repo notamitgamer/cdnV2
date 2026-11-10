@@ -157,7 +157,7 @@ check(r.status_code == 200 and "2.93 KB" in r.text and calls["head"] == 0, "open
 r = c.get("/bsc", headers={"Accept-Encoding": "identity"})
 check(r.status_code == 200 and "content-encoding" not in r.headers, "identity clients get plain HTML")
 
-for path in ["/new", "/find", "/history", "/privacy", "/shorten", "/documentation", "/gh-sync"]:
+for path in ["/new", "/find", "/history", "/privacy", "/terms", "/shorten", "/documentation", "/gh-sync"]:
     r = c.get(path, headers=gz)
     check(r.status_code == 200 and r.headers.get("content-encoding") == "gzip"
           and "max-age" in r.headers["cache-control"], f"{path} is cached and gzipped")
