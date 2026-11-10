@@ -731,7 +731,6 @@ html[data-view="grid"] body[data-page="listing"] #file-list .empty-state { grid-
     border-radius: 0; color: var(--text);
     font-family: var(--mono); font-size: var(--fs-xs); font-weight: 650;
 }
-.file-path { color: var(--muted); font-family: var(--mono); font-size: var(--fs-xs); overflow-wrap: anywhere; }
 .file-head__actions { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end; }
 
 .preview {
