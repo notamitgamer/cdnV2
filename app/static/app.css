@@ -1174,7 +1174,7 @@ html[data-pane-open] body { overflow: hidden; }
 @media (hover: hover) { .pane-foot-link:hover { background: var(--surface-2); } }
 .pane-foot-link.is-active { background: var(--surface-2); }
 .pane__foot-row { display: flex; align-items: center; justify-content: space-between; padding: 0 0.2rem 0 0.6rem; }
-.pane-foot-legal { display: flex; flex-direction: column; gap: 0.15rem; }
+.pane-foot-legal { display: flex; flex-wrap: wrap; align-items: center; gap: 0.2rem 1rem; min-width: 0; }
 .pane-foot-small { font-size: var(--fs-sm); color: var(--muted); }
 @media (hover: hover) { .pane-foot-small:hover { color: var(--text); } }
 .pane-foot-small.is-active { color: var(--text); }
