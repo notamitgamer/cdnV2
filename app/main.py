@@ -425,7 +425,10 @@ class _CountRateLimiter:
 _shorten_limiter = _CountRateLimiter(per_minute=10, per_hour=50)
 SHORTEN_MAX_URL_LENGTH = 2048
 BATCH_MIN_FILES = 2
-ALLOWED_UPLOAD_FOLDERS = {"uploads", "third-party"}
+PUBLIC_UPLOAD_FOLDERS = {"uploads", "third-party"}
+# "github-attachment" is write-only via the API: not in the upload page, error messages or docs, and hidden from
+# listings/search/stats (storage._HIDDEN_PREFIXES). Files in it are still reachable by direct link.
+ALLOWED_UPLOAD_FOLDERS = PUBLIC_UPLOAD_FOLDERS | {"github-attachment"}
 
 
 def _validate_folder(folder: str) -> str:
@@ -433,7 +436,7 @@ def _validate_folder(folder: str) -> str:
     if folder not in ALLOWED_UPLOAD_FOLDERS:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid folder. Must be one of: {', '.join(sorted(ALLOWED_UPLOAD_FOLDERS))}.",
+            detail=f"Invalid folder. Must be one of: {', '.join(sorted(PUBLIC_UPLOAD_FOLDERS))}.",
         )
     return folder
 

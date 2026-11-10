@@ -154,7 +154,7 @@ def _fetch_tree_recursive(path: str = ""):
     ))
     return _under(path, items)
 
-_HIDDEN_PREFIXES = ("_batches", "_shortened", "_logs", "_admin",)
+_HIDDEN_PREFIXES = ("_batches", "_shortened", "_logs", "_admin", "github-attachment",)
 
 def _is_hidden_path(path: str) -> bool:
     return any(path == p or path.startswith(p + "/") for p in _HIDDEN_PREFIXES)

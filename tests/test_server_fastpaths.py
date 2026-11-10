@@ -30,6 +30,7 @@ FILES = {
     "bsc/semester_1/notes.txt": 12,
     "bsc/semester_1/deep/a.bin": 5,
     "_logs/hidden.log": 1,
+    "github-attachment/abc12345-x.png": 9,
 }
 calls = {"tree": 0, "head": 0}
 
@@ -173,5 +174,20 @@ for name in ("app.css", "app.js"):
           and r.headers["vary"] == "Accept-Encoding", f"/static/{name} is gzipped and decodes to the original")
     r = c.get(f"/static/{name}", headers={"accept-encoding": "identity"})
     check("content-encoding" not in r.headers and r.content == plain, f"/static/{name} stays plain for clients without gzip")
+
+# --- the write-only github-attachment folder ----------------------------------------------------------
+
+reset()
+check(m._validate_folder("github-attachment") == "github-attachment", "github-attachment is an accepted upload folder")
+try:
+    m._validate_folder("nope")
+    check(False, "an unknown folder is rejected")
+except m.HTTPException as e:
+    check(e.status_code == 400 and "github-attachment" not in e.detail, "the folder error never mentions github-attachment")
+check(storage._is_hidden_path("github-attachment/abc12345-x.png"), "github-attachment is hidden from listings")
+r = c.get("/", headers=gz)
+check(r.status_code == 200 and "github-attachment" not in r.text, "the root listing does not show github-attachment")
+r = c.get("/github-attachment", headers=gz)
+check(r.status_code == 404, "the github-attachment folder itself is not browsable")
 
 print("\nall server fast-path checks passed")
