@@ -1,11 +1,11 @@
 # --- Anubis (proof-of-work bot filter), only used when ANUBIS_ENABLED=1 ------
-FROM python:3.14-slim-bookworm AS anubis
+FROM python:3.15-slim-bookworm AS anubis
 ENV ANUBIS_VERSION=1.28.1
 ENV ANUBIS_SHA256=adcb3c2fdfd0fb91cbf7e8376dbcc479f654c85dd3795db3e9a06004786bbdc9
 COPY anubis/fetch_anubis.py /fetch_anubis.py
 RUN python3 /fetch_anubis.py
 
-FROM python:3.14-slim-bookworm
+FROM python:3.15-slim-bookworm
 
 WORKDIR /app
 
