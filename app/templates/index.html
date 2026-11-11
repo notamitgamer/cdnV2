@@ -12,8 +12,8 @@
 {% else %}{% set page_title = 'Listing' %}
 {% endif %}
 
-{#- Link-preview (Discord, Slack, etc.) metadata. base.html reads og_image / og_video / og_audio / og_type, and the
-    discord_embed block (Discord "component embed": themed container, logo header, preview card, link buttons;
+{#- Link-preview (Discord, Slack, etc.) metadata. base.html reads og_video / og_audio / og_type, and the
+    discord_embed block (Discord "component embed": themed container, logo header, link buttons; no preview image;
     server-rendered JSON, max 3000 bytes). -#}
 {% set _logo = cdn_base_url ~ '/static/icons/og-logo.png?v=' ~ og_logo_v %}
 {% if page == 'file' %}
@@ -21,36 +21,28 @@
 {% set _ext = file_ext or '' %}
 {% set _size = file_size_str if file_size_str and file_size_str != '-' else '' %}
 {% set page_description = (_ext | upper ~ ' file' if _ext else 'File') ~ ((' · ' ~ _size) if _size else '') ~ ' · ' ~ path %}
-{% set _is_img = _ext in ['png', 'jpg', 'jpeg', 'gif', 'webp', 'avif', 'bmp'] %}
-{% set _card = cdn_base_url ~ '/api/og/' ~ (path | urlencode) ~ '.png?v=' ~ (_size | urlencode) %}
-{% if _is_img %}{% set og_image = _raw %}{% set og_card = 'summary_large_image' %}
-{% elif _ext in ['mp4', 'webm', 'mov', 'm4v', 'ogv'] %}{% set og_video = _raw %}{% set og_card = 'player' %}{% set og_image = _card %}
-{% elif _ext in ['mp3', 'wav', 'ogg', 'oga', 'flac', 'm4a', 'aac', 'opus'] %}{% set og_audio = _raw %}{% set og_image = _card %}{% set og_card = 'summary_large_image' %}
-{% else %}{% set og_image = _card %}{% set og_card = 'summary_large_image' %}
+{% if _ext in ['mp4', 'webm', 'mov', 'm4v', 'ogv'] %}{% set og_video = _raw %}{% set og_card = 'player' %}
+{% elif _ext in ['mp3', 'wav', 'ogg', 'oga', 'flac', 'm4a', 'aac', 'opus'] %}{% set og_audio = _raw %}
 {% endif %}
 {% set _de_head = {'type': 9, 'components': [
     {'type': 10, 'content': discord_title(filename, cdn_base_url ~ '/' ~ (path | urlencode)) ~ '\n' ~ page_description}],
     'accessory': {'type': 11, 'media': {'url': _logo}}} %}
-{% set _de_gallery = {'type': 12, 'items': [{'media': {'url': _raw if _is_img else _card}, 'description': filename}]} %}
 {% set _de_buttons = {'type': 1, 'components': [
     discord_button('Download', cdn_base_url ~ '/api/get/' ~ (path | urlencode), 'download'),
     discord_button('Raw', _raw, 'raw'),
     discord_button('Open', cdn_base_url ~ '/' ~ (path | urlencode), 'open')]} %}
-{% set discord_embed = {'component': {'type': 17, 'accent_color': 10146541, 'components': [_de_head, _de_gallery, {'type': 14, 'divider': true, 'spacing': 1}, _de_buttons]}} %}
+{% set discord_embed = {'component': {'type': 17, 'accent_color': 10146541, 'components': [_de_head, _de_buttons]}} %}
 {% elif page == 'listing' and path %}
 {% set page_title = path.split('/')[-1] %}
 {% set _n = items | length %}
 {% set page_description = _n ~ ' item' ~ ('' if _n == 1 else 's') ~ ' in /' ~ path %}
-{% set _card = cdn_base_url ~ '/api/og/' ~ (path | urlencode) ~ '.png?v=' ~ _n %}
-{% set og_image = _card %}{% set og_card = 'summary_large_image' %}
 {% set _de_head = {'type': 9, 'components': [
     {'type': 10, 'content': discord_title(path.split('/')[-1] ~ '/', cdn_base_url ~ '/' ~ (path | urlencode) ~ '/') ~ '\n' ~ page_description}],
     'accessory': {'type': 11, 'media': {'url': _logo}}} %}
-{% set _de_gallery = {'type': 12, 'items': [{'media': {'url': _card}, 'description': path}]} %}
 {% set _de_buttons = {'type': 1, 'components': [
     discord_button('Open', cdn_base_url ~ '/' ~ (path | urlencode) ~ '/', 'folder'),
     discord_button('Download zip', cdn_base_url ~ '/api/pack/' ~ (path | urlencode), 'zip')]} %}
-{% set discord_embed = {'component': {'type': 17, 'accent_color': 10146541, 'components': [_de_head, _de_gallery, {'type': 14, 'divider': true, 'spacing': 1}, _de_buttons]}} %}
+{% set discord_embed = {'component': {'type': 17, 'accent_color': 10146541, 'components': [_de_head, _de_buttons]}} %}
 {% endif %}
 
 {% block content %}
