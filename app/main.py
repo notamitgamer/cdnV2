@@ -215,12 +215,26 @@ async def not_found_handler(request: Request, exc: HTTPException):
     return templates.TemplateResponse(request, "index.html", ctx, status_code=404)
 
 
-async def _proxy_stream(client: httpx.AsyncClient, r: httpx.Response):
+# One long-lived client for proxying files from Hugging Face. Reusing it keeps the TLS connection to
+# Hugging Face open (keep-alive), so a request no longer pays for a fresh handshake every time.
+_proxy_client = httpx.AsyncClient(
+    follow_redirects=True,
+    timeout=httpx.Timeout(30.0, connect=10.0),
+    limits=httpx.Limits(max_keepalive_connections=20, max_connections=100, keepalive_expiry=60.0),
+)
+
+
+@app.on_event("shutdown")
+async def _close_proxy_client():
+    await _proxy_client.aclose()
+
+
+async def _proxy_stream(r: httpx.Response):
     try:
         async for chunk in r.aiter_raw():
             yield chunk
     finally:
-        await client.aclose()
+        await r.aclose()
 
 
 _WEB_ASSET_MIME_TYPES = {
@@ -261,7 +275,7 @@ def _resolve_content_type(filename: str, upstream_content_type: str | None) -> s
 
 async def stream_raw(path: str, request: Request):
     hf_url = bucket_url(path)
-    client = httpx.AsyncClient(follow_redirects=True)
+    client = _proxy_client
     req_headers = dict(auth_headers())
     range_header = request.headers.get("range")
     if range_header:
@@ -270,12 +284,13 @@ async def stream_raw(path: str, request: Request):
     r = await client.send(req, stream=True)
 
     if r.status_code not in (200, 206):
-        await client.aclose()
+        await r.aclose()
         raise HTTPException(status_code=404, detail="File not found")
 
     headers = {
         "Access-Control-Allow-Origin": "*",
-        "Cache-Control": "public, max-age=31536000",
+        # Short cache so an overwritten file shows up within ~10 seconds (a year made stale copies stick).
+        "Cache-Control": "public, max-age=10",
         "X-Content-Type-Options": "nosniff",
         "Accept-Ranges": "bytes",
     }
@@ -290,7 +305,7 @@ async def stream_raw(path: str, request: Request):
         headers["Content-Type"] = resolved_type
 
     return StreamingResponse(
-        _proxy_stream(client, r),
+        _proxy_stream(r),
         status_code=r.status_code,
         headers=headers,
     )
@@ -299,7 +314,7 @@ async def stream_raw(path: str, request: Request):
 @app.get("/api/get/{path:path}")
 async def download_file(path: str, request: Request):
     hf_url = bucket_url(path)
-    client = httpx.AsyncClient(follow_redirects=True)
+    client = _proxy_client
     req_headers = dict(auth_headers())
     range_header = request.headers.get("range")
     if range_header:
@@ -308,7 +323,7 @@ async def download_file(path: str, request: Request):
     r = await client.send(req, stream=True)
 
     if r.status_code not in (200, 206):
-        await client.aclose()
+        await r.aclose()
         raise HTTPException(status_code=404, detail="Not found")
 
     filename = path.split("/")[-1]
@@ -323,7 +338,7 @@ async def download_file(path: str, request: Request):
             headers[h] = r.headers[h]
 
     return StreamingResponse(
-        _proxy_stream(client, r),
+        _proxy_stream(r),
         status_code=r.status_code,
         headers=headers,
     )
