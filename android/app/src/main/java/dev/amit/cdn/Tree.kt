@@ -82,6 +82,17 @@ private val textExts = setOf(
     "html", "htm", "xml", "yml", "yaml", "toml", "ini", "cfg", "conf", "csv", "tsv", "log", "py", "rb", "go", "rs", "c", "h",
     "cpp", "hpp", "cc", "java", "kt", "swift", "php", "sh", "bash", "zsh", "fish", "bat", "ps1", "sql", "lua", "r", "pl",
     "vue", "svelte", "diff", "patch", "tex", "srt", "vtt", "gitignore", "map",
+    "cs", "dart", "scala", "groovy", "gradle", "kts", "properties", "env", "lock", "asm", "s", "nim", "zig", "hs", "ml",
+    "clj", "ex", "exs", "erl", "jl", "m", "mm", "vb", "jsonl", "ndjson", "ipynb", "gitattributes", "editorconfig",
+    "cmake", "mk", "make", "dockerfile", "tf", "hcl", "proto", "graphql", "gql", "scss", "styl", "pug", "ejs", "hbs",
+    "twig", "jinja", "j2", "adoc", "org", "nfo", "text", "asc", "pem", "crt", "key", "pub", "sum", "mod", "ino", "v", "sv",
+    "vhd", "f", "f90", "pas", "bas", "cob", "lisp", "el", "vim", "awk", "sed", "gitmodules", "npmrc", "nvmrc",
+)
+
+/** Well-known text files that have no extension. */
+private val textNames = setOf(
+    "makefile", "dockerfile", "license", "licence", "readme", "changelog", "authors", "contributors", "copying",
+    "notice", "procfile", "gemfile", "rakefile", "vagrantfile", "jenkinsfile", "codeowners", "todo",
 )
 
 fun extOf(path: String): String {
@@ -96,7 +107,7 @@ fun kindOf(path: String): Kind {
         e in videoExts -> Kind.VIDEO
         e in audioExts -> Kind.AUDIO
         e == "pdf" -> Kind.PDF
-        e in textExts -> Kind.TEXT
+        e in textExts || path.substringAfterLast('/').lowercase() in textNames -> Kind.TEXT
         else -> Kind.OTHER
     }
 }
