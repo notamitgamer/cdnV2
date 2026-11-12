@@ -7,7 +7,7 @@
  *   - Page set-up lives in init(), which is idempotent and runs on DOMContentLoaded and every turbo:load.
  *   - Page markup is built with textContent / escaped strings, never by concatenating raw names into HTML.
  *
- * Sections: helpers · theme · header/menus · copy · listing (filter, sort, zip, truncation) · upload ·
+ * Sections: helpers · header/menus · copy · listing (filter, sort, zip, truncation) · upload ·
  *           history · search · file preview · lifecycle
  */
 (function () {
@@ -112,25 +112,6 @@
   window.CDN = { toast, copyText, formatBytes, esc };
 
   // ---------------------------------------------------------------------------------------------
-  // theme (the initial value is applied by an inline script in <head>; this owns changes)
-  // ---------------------------------------------------------------------------------------------
-  function syncThemeColor() {
-    const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
-    if (!bg) return;
-    $$('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', bg));
-  }
-  function setTheme(t, persist) {
-    document.documentElement.setAttribute('data-theme', t);
-    if (persist) store.set('cdn_theme', t);
-    syncThemeColor();
-  }
-  try {
-    const mq = matchMedia('(prefers-color-scheme: dark)');
-    const onSystem = (e) => { if (!store.get('cdn_theme')) setTheme(e.matches ? 'dark' : 'light', false); };
-    if (mq.addEventListener) mq.addEventListener('change', onSystem); else if (mq.addListener) mq.addListener(onSystem);
-  } catch (e) { /* matchMedia unavailable */ }
-
-  // ---------------------------------------------------------------------------------------------
   // header, menus, copy, dialogs: one delegated click handler
   // ---------------------------------------------------------------------------------------------
   function closeMenus(except) {
@@ -153,10 +134,6 @@
     const act = t.closest('[data-action]');
     const action = act && act.getAttribute('data-action');
 
-    if (action === 'theme-toggle') {
-      setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark', true);
-      return;
-    }
     if (action === 'more-toggle') {
       const more = act.closest('.more');
       const open = !more.classList.contains('is-open');
@@ -918,7 +895,6 @@
   // lifecycle
   // ---------------------------------------------------------------------------------------------
   function init() {
-    syncThemeColor();
     applyPlaceholders();
     applySort();
     applyView();

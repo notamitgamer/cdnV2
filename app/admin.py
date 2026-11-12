@@ -15,9 +15,11 @@ import hmac
 import ipaddress
 import json
 import os
+import re
 import time
 import uuid
 from collections import deque
+from pathlib import Path
 from urllib.parse import unquote, urlparse
 
 import httpx
@@ -396,44 +398,44 @@ _PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>CDN admin</title>
 <style>
 @font-face{font-family:"IBM Plex Sans";font-weight:400;font-display:swap;src:url("/static/fonts/plex-sans-400.woff2") format("woff2")}@font-face{font-family:"IBM Plex Sans";font-weight:600;font-display:swap;src:url("/static/fonts/plex-sans-600.woff2") format("woff2")}@font-face{font-family:"IBM Plex Sans";font-weight:700;font-display:swap;src:url("/static/fonts/plex-sans-700.woff2") format("woff2")}@font-face{font-family:"IBM Plex Mono";font-weight:400;font-display:swap;src:url("/static/fonts/plex-mono-400.woff2") format("woff2")}@font-face{font-family:"IBM Plex Mono";font-weight:600;font-display:swap;src:url("/static/fonts/plex-mono-600.woff2") format("woff2")}
-:root{--bg:#0d1117;--sf:#161b22;--bd:#30363d;--ln:#21262d;--tx:#e6edf3;--dim:#9da7b3;--red:#ff7b72;--grn:#56d364;--amb:#d29922;--blu:#58a6ff;--red-bd:#da3633;--grn-bd:#238636;--red-bg:#3d1d1d;--grn-bg:#1f3522;--amb-bg:#3a2d12}
+/*TOKENS*/
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{font:14px/1.45 "IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;margin:0 auto;padding:14px 14px 64px;background:var(--bg);color:var(--tx);max-width:1200px;-webkit-text-size-adjust:100%}
+body{font:14px/1.45 var(--font);margin:0 auto;padding:14px 14px 64px;background:var(--bg);color:var(--text);max-width:1200px;-webkit-text-size-adjust:100%}
 header.bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
-h1{font-size:18px;margin:0}h2{font-size:14px;margin:20px 0 8px;color:var(--dim);font-weight:600;scroll-margin-top:54px}
-a{color:var(--blu);text-decoration:none}
+h1{font-size:18px;margin:0}h2{font-size:14px;margin:20px 0 8px;color:var(--muted);font-weight:600;scroll-margin-top:54px}
+a{color:var(--accent);text-decoration:none}
 .links{display:flex;gap:8px;align-items:center}
 .tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
-.tile{display:block;background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:8px 12px;color:var(--tx);text-decoration:none}
-.tile b{display:block;font-size:20px;line-height:1.2}.tile span{font-size:11px;color:var(--dim)}.tile.amb{border-color:var(--amb)}.tile.amb b{color:var(--amb)}
+.tile{display:block;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--text);text-decoration:none}
+.tile b{display:block;font-size:20px;line-height:1.2}.tile span{font-size:11px;color:var(--muted)}.tile.amb{border-color:var(--warning)}.tile.amb b{color:var(--warning)}
 
 /* Sticky Mobile Quick Nav */
-.jump-bar{position:sticky;top:0;z-index:20;background:var(--bg);padding:6px 0 8px;display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;border-bottom:1px solid var(--ln);margin-bottom:8px}
+.jump-bar{position:sticky;top:0;z-index:20;background:var(--bg);padding:6px 0 8px;display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;border-bottom:1px solid var(--surface-2);margin-bottom:8px}
 .jump-bar::-webkit-scrollbar{display:none}
-.jump-bar a{white-space:nowrap;font-size:12px;background:var(--sf);border:1px solid var(--bd);padding:4px 10px;border-radius:14px;color:var(--tx)}
-.jump-bar a.has-badge{border-color:var(--amb);color:var(--amb)}
+.jump-bar a{white-space:nowrap;font-size:12px;background:var(--surface);border:1px solid var(--border);padding:4px 10px;border-radius:var(--r);color:var(--text)}
+.jump-bar a.has-badge{border-color:var(--warning);color:var(--warning)}
 
 /* Standard Horizontal Scroll Table Layout */
-.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--bd);border-radius:8px;background:var(--sf);margin-bottom:10px}
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:var(--r);background:var(--surface);margin-bottom:10px}
 table{width:100%;border-collapse:collapse;font-size:13px}
-th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--ln);vertical-align:middle}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--surface-2);vertical-align:middle}
 tr:last-child td{border-bottom:0}
-th{color:var(--dim);font-weight:600}
+th{color:var(--muted);font-weight:600}
 .act{white-space:nowrap;text-align:right}.name{overflow-wrap:anywhere}
-button{font:inherit;font-size:12px;min-height:28px;padding:3px 8px;border-radius:6px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);cursor:pointer}
-button.red{border-color:var(--red-bd);color:var(--red)}button.green{border-color:var(--grn-bd);color:var(--grn)}button:active{background:var(--ln)}
-input{font:inherit;font-size:14px;padding:8px 10px;border-radius:6px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);width:100%;max-width:420px}
-.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;overflow-wrap:break-word}.nw{white-space:nowrap}
-.dim{color:var(--dim)}.bad{color:var(--red)}.ok{color:var(--grn)}.warn{color:var(--amb)}
-.badge{display:inline-block;padding:1px 5px;border-radius:4px;font-size:10px;font-weight:600;text-transform:uppercase}
-.badge.ok{background:var(--grn-bg);color:var(--grn)}.badge.bad{background:var(--red-bg);color:var(--red)}.badge.dim{background:var(--ln);color:var(--dim)}.badge.warn{background:var(--amb-bg);color:var(--amb)}
-.banner{background:var(--red-bg);border:1px solid var(--red-bd);padding:8px 12px;border-radius:6px;margin:10px 0;font-size:13px}
+button{font:inherit;font-size:12px;min-height:28px;padding:3px 8px;border-radius:var(--r);border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer}
+button.red{border-color:var(--danger-border);color:var(--danger)}button.green{border-color:var(--success);color:var(--success)}button:active{background:var(--surface-2)}
+input{font:inherit;font-size:14px;padding:8px 10px;border-radius:var(--r);border:1px solid var(--border);background:var(--bg);color:var(--text);width:100%;max-width:420px}
+.mono{font-family:var(--mono);font-size:12px;overflow-wrap:break-word}.nw{white-space:nowrap}
+.dim{color:var(--muted)}.bad{color:var(--danger)}.ok{color:var(--success)}.warn{color:var(--warning)}
+.badge{display:inline-block;padding:1px 5px;border-radius:var(--r);font-size:10px;font-weight:600;text-transform:uppercase}
+.badge.ok{background:var(--success-soft);color:var(--success)}.badge.bad{background:var(--danger-soft);color:var(--danger)}.badge.dim{background:var(--surface-2);color:var(--muted)}.badge.warn{background:var(--warning-soft);color:var(--warning)}
+.banner{background:var(--danger-soft);border:1px solid var(--danger-border);padding:8px 12px;border-radius:var(--r);margin:10px 0;font-size:13px}
 
 /* Collapsible sections */
 details.box{margin-bottom:10px;scroll-margin-top:54px}
-details.box summary{cursor:pointer;font-weight:600;font-size:13px;color:var(--tx);display:flex;align-items:center;justify-content:space-between;list-style:none;padding:4px 0}
+details.box summary{cursor:pointer;font-weight:600;font-size:13px;color:var(--text);display:flex;align-items:center;justify-content:space-between;list-style:none;padding:4px 0}
 details.box summary::-webkit-details-marker{display:none}
-details.box summary::after{content:'+';font-size:14px;color:var(--dim)}
+details.box summary::after{content:'+';font-size:14px;color:var(--muted)}
 details.box[open] summary::after{content:'−'}
 details.box .content{margin-top:6px}
 .who p{margin:6px 0 0;font-size:12px}
@@ -591,3 +593,13 @@ document.getElementById('q').addEventListener('input',e=>{clearTimeout(qt);qt=se
 document.getElementById('tok').addEventListener('keydown',e=>{if(e.key==='Enter')go()});
 if(T)load(true);
 </script></body></html>"""
+
+
+def _shared_tokens() -> str:
+    """The :root token block from app.css, so /admin uses the same palette as the rest of the site."""
+    css = (Path(__file__).parent / "static" / "app.css").read_text(encoding="utf-8")
+    m = re.search(r"^:root \{.*?^\}", css, re.S | re.M)
+    return m.group(0) if m else ""
+
+
+_PAGE = _PAGE.replace("/*TOKENS*/", _shared_tokens())

@@ -11,55 +11,55 @@
  *             6 lists · 7 file page · 8 upload · 9 history/search · 10 docs/prose · 11 stats · 12 shortener
  *             13 responsive · 14 motion/print
  *
- * Theming: colours live in tokens. `html[data-theme]` is set before first paint (see base.html); the
- * prefers-color-scheme block is only the no-JS fallback. Add a colour once, here, for both themes.
+ * Theming: dark only. Every colour lives in the tokens block below; add a colour once, here.
+ * /admin embeds this block too (see app/admin.py), so it shares the palette.
  */
 
 /* ============================== 1. Tokens ============================== */
 :root {
-    color-scheme: light;
+    color-scheme: dark;
 
     /* surfaces */
-    --bg: #f3f4f5;
-    --surface: #ffffff;
-    --surface-2: #eceef0;
-    --surface-3: #e2e5e8;
-    --border: #dcdfe3;
-    --border-strong: #b9bec4;
+    --bg: #1e1f23;
+    --surface: #232428;
+    --surface-2: #2c2d31;
+    --surface-3: #303338;
+    --border: #303338;
+    --border-strong: #515256;
 
     /* text */
-    --text: #1e1f23;
-    --muted: #5c6168;
+    --text: #f1f1f1;
+    --muted: #b6b6b6;
 
     /* brand: the logo's blue for actions, its orange as a rare highlight */
-    --accent: #466371;
-    --accent-hover: #364f5b;
+    --accent: #9ad2ed;
+    --accent-hover: #b9e1f4;
     --accent-solid: #466371;
-    --accent-soft: #e3edf1;
+    --accent-soft: #28353c;
     --accent-contrast: #ffffff;
     --highlight: #ff6a42;
-    --folder: #4b97b8;
-    --fab: #466371;
-    --fab-hover: #364f5b;
+    --folder: #9ad2ed;
+    --fab: #58595b;
+    --fab-hover: #6a6b6e;
 
-    --accent-solid-hover: #364f5b;
+    --accent-solid-hover: #55798a;
     --on-solid: #ffffff;               /* text/icons on any solid fill (accent, danger, fab) */
 
     /* status */
-    --success: #166534;
-    --success-soft: #e8f6ec;
-    --warning: #a14a08;
-    --warning-soft: #fdf3e1;
-    --warning-border: #f0cf9a;
-    --danger: #c0262d;
-    --danger-soft: #fdecec;
-    --danger-border: #f2b8bb;
+    --success: #4ade80;
+    --success-soft: #11251a;
+    --warning: #fbbf24;
+    --warning-soft: #2a2110;
+    --warning-border: #5c4516;
+    --danger: #ff7b72;
+    --danger-soft: #2c1517;
+    --danger-border: #6b2b2f;
 
     /* overlays and fixed surfaces */
     --scrim: rgb(8 8 10 / 0.55);       /* dialog backdrop */
     --scrim-pane: rgb(0 0 0 / 0.5);    /* side-pane backdrop */
     --media-bg: #000000;               /* behind video previews */
-    --toast-success-icon: #4ade80;
+    --toast-success-icon: #15803d;
     --paper: #ffffff;                  /* print */
     --ink: #000000;
 
@@ -68,14 +68,14 @@
     --c5: #39c5cf; --c6: #db61a2; --c7: #8b949e; --c8: #e3702d;
 
     /* file-type hues (icons, badges) */
-    --ft-image: #6b6f76;
-    --ft-video: #6b6f76;
-    --ft-audio: #6b6f76;
-    --ft-archive: #6b6f76;
-    --ft-code: #6b6f76;
-    --ft-doc: #6b6f76;
-    --ft-data: #6b6f76;
-    --ft-font: #6b6f76;
+    --ft-image: #aaaaaa;
+    --ft-video: #aaaaaa;
+    --ft-audio: #aaaaaa;
+    --ft-archive: #aaaaaa;
+    --ft-code: #aaaaaa;
+    --ft-doc: #aaaaaa;
+    --ft-data: #aaaaaa;
+    --ft-font: #aaaaaa;
 
     /* shape, depth, motion */
     --r-sm: 0;
@@ -101,64 +101,6 @@
     --page-w: 960px;
     --gutter: 1.25rem;
     --header-h: 3.5rem;
-}
-
-:root[data-theme="dark"] {
-    color-scheme: dark;
-    --bg: #1e1f23;
-    --surface: #232428;
-    --surface-2: #2c2d31;
-    --surface-3: #303338;
-    --border: #303338;
-    --border-strong: #515256;
-    --text: #f1f1f1;
-    --muted: #b6b6b6;
-
-    --accent: #9ad2ed;
-    --accent-hover: #b9e1f4;
-    --accent-solid: #466371;
-    --accent-soft: #28353c;
-    --accent-contrast: #ffffff;
-    --accent-solid-hover: #55798a;
-    --toast-success-icon: #15803d;
-    --folder: #9ad2ed;
-    --fab: #58595b;
-    --fab-hover: #6a6b6e;
-
-    --success: #4ade80;
-    --success-soft: #11251a;
-    --warning: #fbbf24;
-    --warning-soft: #2a2110;
-    --warning-border: #5c4516;
-    --danger: #ff7b72;
-    --danger-soft: #2c1517;
-    --danger-border: #6b2b2f;
-
-    --ft-image: #aaaaaa;
-    --ft-video: #aaaaaa;
-    --ft-audio: #aaaaaa;
-    --ft-archive: #aaaaaa;
-    --ft-code: #aaaaaa;
-    --ft-doc: #aaaaaa;
-    --ft-data: #aaaaaa;
-    --ft-font: #aaaaaa;
-
-    --shadow-sm: none;
-    --shadow-md: none;
-    --shadow-lg: none;
-}
-
-/* no-JS fallback: follow the system when data-theme was never set */
-@media (prefers-color-scheme: dark) {
-    :root:not([data-theme]) {
-        color-scheme: dark;
-        --bg: #1e1f23; --surface: #232428; --surface-2: #2c2d31; --surface-3: #303338;
-        --border: #303338; --border-strong: #515256; --text: #f1f1f1; --muted: #b6b6b6;
-        --accent: #9ad2ed; --accent-hover: #b9e1f4; --accent-solid: #466371; --accent-soft: #28353c;
-        --accent-solid-hover: #55798a; --toast-success-icon: #15803d;
-        --success: #4ade80; --warning: #fbbf24; --danger: #ff7b72;
-        --folder: #9ad2ed; --fab: #58595b; --fab-hover: #6a6b6e;
-    }
 }
 
 /* ============================== 2. Base ============================== */
@@ -353,9 +295,6 @@ body.turbo-loading .page { opacity: 0.55; pointer-events: none; transition: opac
 .more.is-open .more__menu { display: flex; flex-direction: column; gap: 2px; }
 .more.is-open .more__toggle { background: var(--surface-2); color: var(--text); }
 
-.theme-toggle .i-sun { display: none; }
-:root[data-theme="dark"] .theme-toggle .i-sun { display: inline-flex; }
-:root[data-theme="dark"] .theme-toggle .i-moon { display: none; }
 .nav-toggle { display: none; }
 .site-header__tools .quick-action { display: none; }
 .quick-action.is-active { color: var(--accent); background: var(--accent-soft); }

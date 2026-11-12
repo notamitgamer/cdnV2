@@ -256,8 +256,8 @@ jsDelivr.
 
 ## UI notes
 
-- **One stylesheet, one script.** All styling is in `app/static/app.css` (tokens at the top; light/dark via
-  `html[data-theme]`, set before first paint) and all behaviour in `app/static/app.js`. Both are loaded on every
+- **One stylesheet, one script.** All styling is in `app/static/app.css` (tokens at the top; dark only, and `/admin` shares
+  them) and all behaviour in `app/static/app.js`. Both are loaded on every
   page and versioned with a content hash (`?v=`), so a deploy never pairs new HTML with old CSS.
 - **Delegated events only.** Turbo swaps `<body>` on each visit, so `app.js` binds everything on `document`
   (via `data-action`, `data-copy`, ids) and re-runs an idempotent `init()` on `turbo:load`.
