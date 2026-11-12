@@ -1,10 +1,7 @@
 package dev.amit.cdn
 
-import android.content.Intent
 import android.graphics.Color as AndroidColor
-import android.net.Uri
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
@@ -23,17 +20,18 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -47,9 +45,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -79,6 +75,8 @@ fun CdnApp(vm: CdnViewModel = viewModel()) {
     var folder by rememberSaveable { mutableStateOf("") }
     var filter by rememberSaveable { mutableStateOf("") }
     var selectedPath by rememberSaveable { mutableStateOf<String?>(null) }
+    var menuOpen by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     fun goUp() {
         folder = folder.substringBeforeLast('/', "")
@@ -86,6 +84,13 @@ fun CdnApp(vm: CdnViewModel = viewModel()) {
     }
 
     BackHandler(enabled = folder.isNotEmpty() && selectedPath == null) { goUp() }
+
+    val openPath = selectedPath
+    if (openPath != null) {
+        val size = state.files?.firstOrNull { it.path == openPath }?.size ?: 0L
+        FileScreen(path = openPath, size = size, onBack = { selectedPath = null })
+        return
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -112,6 +117,24 @@ fun CdnApp(vm: CdnViewModel = viewModel()) {
                 actions = {
                     IconButton(onClick = { vm.refresh() }) {
                         Icon(Icons.Filled.Refresh, contentDescription = "Refresh")
+                    }
+                    Box {
+                        IconButton(onClick = { menuOpen = true }) {
+                            Icon(Icons.Filled.MoreVert, contentDescription = "More")
+                        }
+                        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                            listOf(
+                                "Docs" to Config.DOCS_URL,
+                                "GitHub sync" to Config.SYNC_DOCS_URL,
+                                "Privacy Policy" to Config.PRIVACY_URL,
+                                "Terms of Use" to Config.TERMS_URL,
+                            ).forEach { (label, url) ->
+                                DropdownMenuItem(
+                                    text = { Text(label) },
+                                    onClick = { menuOpen = false; openInBrowser(context, url) },
+                                )
+                            }
+                        }
                     }
                 },
             )
@@ -154,10 +177,6 @@ fun CdnApp(vm: CdnViewModel = viewModel()) {
         }
     }
 
-    selectedPath?.let { path ->
-        val size = state.files?.firstOrNull { it.path == path }?.size ?: 0L
-        FileSheet(path = path, size = size, onDismiss = { selectedPath = null })
-    }
 }
 
 @Composable
@@ -227,55 +246,6 @@ private fun FolderList(
                 )
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun FileSheet(path: String, size: Long, onDismiss: () -> Unit) {
-    val links = remember(path) { linksFor(path) }
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surface) {
-        Column(Modifier.padding(horizontal = 16.dp).padding(bottom = 24.dp).navigationBarsPadding()) {
-            Text(path.substringAfterLast('/'), style = MaterialTheme.typography.titleMedium)
-            Text(
-                "${formatSize(size)} · $path",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 12.sp,
-                fontFamily = FontFamily.Monospace,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
-            )
-            LinkRow("CDN page", links.page)
-            LinkRow("Raw", links.raw)
-            LinkRow("Download", links.download)
-        }
-    }
-}
-
-@Composable
-private fun LinkRow(label: String, url: String) {
-    val clipboard = LocalClipboardManager.current
-    val context = LocalContext.current
-    Column(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
-        Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(
-            url,
-            fontFamily = FontFamily.Monospace,
-            fontSize = 12.sp,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(vertical = 2.dp),
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = {
-                clipboard.setText(AnnotatedString(url))
-                Toast.makeText(context, "$label link copied", Toast.LENGTH_SHORT).show()
-            }) { Text("Copy") }
-            OutlinedButton(onClick = {
-                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-            }) { Text("Open") }
         }
     }
 }

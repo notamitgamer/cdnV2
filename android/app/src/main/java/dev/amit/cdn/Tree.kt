@@ -70,3 +70,43 @@ fun formatSize(bytes: Long): String {
     }
     return String.format(java.util.Locale.US, "%.2f %s", v, units[i])
 }
+
+/** What the website's file page calls the kind of a file; decides which preview and embed snippet to offer. */
+enum class Kind { IMAGE, VIDEO, AUDIO, PDF, TEXT, OTHER }
+
+private val imageExts = setOf("png", "jpg", "jpeg", "gif", "webp", "avif", "bmp", "ico", "svg")
+private val videoExts = setOf("mp4", "webm", "mov", "m4v", "ogv")
+private val audioExts = setOf("mp3", "wav", "ogg", "oga", "flac", "m4a", "aac", "opus")
+private val textExts = setOf(
+    "txt", "md", "markdown", "rst", "json", "jsonc", "js", "mjs", "cjs", "ts", "tsx", "jsx", "css", "scss", "sass", "less",
+    "html", "htm", "xml", "yml", "yaml", "toml", "ini", "cfg", "conf", "csv", "tsv", "log", "py", "rb", "go", "rs", "c", "h",
+    "cpp", "hpp", "cc", "java", "kt", "swift", "php", "sh", "bash", "zsh", "fish", "bat", "ps1", "sql", "lua", "r", "pl",
+    "vue", "svelte", "diff", "patch", "tex", "srt", "vtt", "gitignore", "map",
+)
+
+fun extOf(path: String): String {
+    val name = path.substringAfterLast('/')
+    return if (name.contains('.')) name.substringAfterLast('.').lowercase() else ""
+}
+
+fun kindOf(path: String): Kind {
+    val e = extOf(path)
+    return when {
+        e in imageExts -> Kind.IMAGE
+        e in videoExts -> Kind.VIDEO
+        e in audioExts -> Kind.AUDIO
+        e == "pdf" -> Kind.PDF
+        e in textExts -> Kind.TEXT
+        else -> Kind.OTHER
+    }
+}
+
+/** The HTML snippet the website offers for embedding a file, or null when there is none for its type. */
+fun embedFor(path: String, raw: String): String? = when {
+    kindOf(path) == Kind.IMAGE -> "<img src=\"$raw\" alt=\"\">"
+    extOf(path) == "css" -> "<link rel=\"stylesheet\" href=\"$raw\">"
+    extOf(path) in setOf("js", "mjs") -> "<script src=\"$raw\"></script>"
+    kindOf(path) == Kind.VIDEO -> "<video src=\"$raw\" controls></video>"
+    kindOf(path) == Kind.AUDIO -> "<audio src=\"$raw\" controls></audio>"
+    else -> null
+}
