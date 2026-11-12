@@ -29,7 +29,7 @@ class CdnApi(private val cacheDir: File) {
     suspend fun loadTree(): List<FileRec> = withContext(Dispatchers.IO) {
         val builder = Request.Builder()
             .url("${Config.CDN_BASE}/api/tree")
-            .header("User-Agent", "amit-cdn-android/0.1")
+            .header("User-Agent", "amit-cdn-android/0.2")
         if (treeFile.exists() && etagFile.exists()) {
             builder.header("If-None-Match", etagFile.readText())
         }
