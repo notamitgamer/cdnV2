@@ -1,6 +1,5 @@
 package dev.amit.cdn
 
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -30,9 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -88,7 +85,7 @@ fun FileScreen(path: String, size: Long, onBack: () -> Unit) {
                 fontSize = 12.sp,
             )
 
-            Preview(path, name, kind, ext, links)
+            Preview(path, name, kind, ext, size, links)
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 CopyButton("Copy CDN link", links.page, primary = true)
@@ -115,7 +112,7 @@ fun FileScreen(path: String, size: Long, onBack: () -> Unit) {
 }
 
 @Composable
-private fun Preview(path: String, name: String, kind: Kind, ext: String, links: Links) {
+private fun Preview(path: String, name: String, kind: Kind, ext: String, size: Long, links: Links) {
     val context = LocalContext.current
     // SVG and ICO need extra decoders, so they open in the browser like the other kinds.
     val inline = kind == Kind.IMAGE && ext != "svg" && ext != "ico"
@@ -130,22 +127,23 @@ private fun Preview(path: String, name: String, kind: Kind, ext: String, links: 
         }
         return
     }
+    // Text and code show right here. Unknown types are tried too, and fall back if they turn out to be binary.
+    if (kind == Kind.TEXT || kind == Kind.OTHER) {
+        TextPreview(rawUrl = links.raw, size = size, mustBeText = kind == Kind.TEXT)
+        return
+    }
     val hint = when (kind) {
         Kind.VIDEO -> "Video preview opens in your browser."
         Kind.AUDIO -> "Audio plays in your browser."
         Kind.PDF -> "PDFs open in your browser."
-        Kind.TEXT -> "Text files open in your browser."
-        Kind.IMAGE -> "This image type opens in your browser."
-        Kind.OTHER -> "No preview for this file type."
+        else -> "This image type opens in your browser."
     }
     Column(
         Modifier.fillMaxWidth().border(1.dp, MaterialTheme.colorScheme.outlineVariant).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(hint, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
-        if (kind != Kind.OTHER) {
-            OutlinedButton(onClick = { openInBrowser(context, links.raw) }) { Text("Open preview") }
-        }
+        OutlinedButton(onClick = { openInBrowser(context, links.raw) }) { Text("Open preview") }
     }
 }
 
@@ -158,12 +156,8 @@ private fun Pill(text: String) {
 
 @Composable
 private fun CopyButton(label: String, value: String, primary: Boolean = false) {
-    val clipboard = LocalClipboardManager.current
     val context = LocalContext.current
-    val onClick = {
-        clipboard.setText(AnnotatedString(value))
-        Toast.makeText(context, "Copied", Toast.LENGTH_SHORT).show()
-    }
+    val onClick = { copyText(context, label, value) }
     if (primary) Button(onClick = onClick, modifier = Modifier.fillMaxWidth()) { Text(label) }
     else OutlinedButton(onClick = onClick, modifier = Modifier.fillMaxWidth()) { Text(label) }
 }

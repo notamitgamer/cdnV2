@@ -27,6 +27,8 @@ data class UploadUi(
     val urlText: String = "",
     val folder: String = UPLOAD_FOLDERS.first(),
     val busy: Boolean = false,
+    /** 0..1 while file bytes are going out; null when unknown (or for a link upload). */
+    val progress: Float? = null,
     val error: String? = null,
     val results: List<UploadResult> = emptyList(),
     val batchUrl: String? = null,
@@ -126,10 +128,18 @@ class CdnViewModel(app: Application) : AndroidViewModel(app) {
         val url = s.urlText.trim()
         if (s.useUrl && url.isEmpty()) return
         if (!s.useUrl && s.picked.isEmpty()) return
-        _upload.update { it.copy(busy = true, error = null, results = emptyList(), batchUrl = null) }
+        _upload.update { it.copy(busy = true, progress = null, error = null, results = emptyList(), batchUrl = null) }
         viewModelScope.launch {
             try {
-                val r = if (s.useUrl) uploader.uploadUrl(url, s.folder) else uploader.uploadFiles(s.picked, s.folder)
+                val r = if (s.useUrl) {
+                    uploader.uploadUrl(url, s.folder)
+                } else {
+                    uploader.uploadFiles(s.picked, s.folder) { p ->
+                        // Called for every chunk; only touch the UI when the bar would visibly move.
+                        val last = _upload.value.progress ?: -1f
+                        if (p - last >= 0.01f || p >= 1f) _upload.update { it.copy(progress = p) }
+                    }
+                }
                 val now = System.currentTimeMillis()
                 val added = r.files.map { UploadedItem(it.filename, it.path, it.size, now) }
                 val cur = _history.value
@@ -137,6 +147,7 @@ class CdnViewModel(app: Application) : AndroidViewModel(app) {
                 _upload.update {
                     it.copy(
                         busy = false,
+                        progress = null,
                         picked = if (s.useUrl) it.picked else emptyList(),
                         urlText = if (s.useUrl) "" else it.urlText,
                         results = r.files,
@@ -145,7 +156,7 @@ class CdnViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 refresh() // so the new files show up in Files and Search
             } catch (e: Exception) {
-                _upload.update { it.copy(busy = false, error = e.message ?: "Upload failed") }
+                _upload.update { it.copy(busy = false, progress = null, error = e.message ?: "Upload failed") }
             }
         }
     }

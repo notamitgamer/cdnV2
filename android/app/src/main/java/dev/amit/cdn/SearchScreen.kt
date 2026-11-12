@@ -1,5 +1,6 @@
 package dev.amit.cdn
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -8,17 +9,22 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,7 +33,22 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-/** One tappable row: a name, an optional muted line under it, and a small label on the right. */
+/** Small square that says what a row is: "DIR" for folders, the file extension for files. */
+@Composable
+private fun TypeBadge(name: String, isDir: Boolean) {
+    val label = if (isDir) "DIR" else extOf(name).uppercase().take(4).ifEmpty { "FILE" }
+    val color = if (isDir) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+    Box(
+        Modifier
+            .size(40.dp)
+            .border(1.dp, if (isDir) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(label, color = color, fontFamily = FontFamily.Monospace, fontSize = 10.sp, maxLines = 1)
+    }
+}
+
+/** One tappable row: a type badge, a name, an optional muted line under it, and a small label on the right. */
 @Composable
 fun ListRow(
     title: String,
@@ -40,11 +61,12 @@ fun ListRow(
         Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(Modifier.weight(1f).padding(end = 12.dp)) {
+        TypeBadge(title, isDir)
+        Column(Modifier.weight(1f)) {
             Text(
                 text = if (isDir) "$title/" else title,
                 color = if (isDir) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
@@ -72,6 +94,25 @@ fun ListRow(
     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 }
 
+/** A one-line text box with a clear button once something is typed. */
+@Composable
+fun SearchField(value: String, onChange: (String) -> Unit, label: String, modifier: Modifier = Modifier) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onChange,
+        singleLine = true,
+        label = { Text(label) },
+        trailingIcon = {
+            if (value.isNotEmpty()) {
+                IconButton(onClick = { onChange("") }) {
+                    Icon(Icons.Filled.Close, contentDescription = "Clear")
+                }
+            }
+        },
+        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+    )
+}
+
 /** Searches every file and folder name in the CDN. Runs on the phone, so results update as you type. */
 @Composable
 fun SearchScreen(
@@ -86,13 +127,7 @@ fun SearchScreen(
     }
 
     Column(Modifier.fillMaxSize()) {
-        OutlinedTextField(
-            value = query,
-            onValueChange = { query = it },
-            singleLine = true,
-            label = { Text("Search all files and folders") },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-        )
+        SearchField(query, { query = it }, "Search all files and folders")
         HorizontalDivider()
         when {
             files == null -> Centered { Text("Loading the file list…", color = MaterialTheme.colorScheme.onSurfaceVariant) }

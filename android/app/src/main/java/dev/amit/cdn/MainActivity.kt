@@ -11,6 +11,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,11 +41,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -55,7 +58,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -106,6 +108,8 @@ fun CdnApp(vm: CdnViewModel) {
     var folder by rememberSaveable { mutableStateOf("") }
     var filter by rememberSaveable { mutableStateOf("") }
     var selectedPath by rememberSaveable { mutableStateOf<String?>(null) }
+    var page by rememberSaveable { mutableStateOf<String?>(null) } // "privacy", "terms" or "about"
+    var sort by rememberSaveable { mutableStateOf(SortOrder.NAME.name) }
     var menuOpen by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val current = Section.valueOf(section)
@@ -115,6 +119,7 @@ fun CdnApp(vm: CdnViewModel) {
         if (upload.incoming) {
             section = Section.UPLOAD.name
             selectedPath = null
+            page = null
             vm.consumeIncoming()
         }
     }
@@ -136,8 +141,18 @@ fun CdnApp(vm: CdnViewModel) {
         section = Section.FILES.name
     }
 
-    BackHandler(enabled = selectedPath == null && current == Section.FILES && folder.isNotEmpty()) { goUp() }
-    BackHandler(enabled = selectedPath == null && current != Section.FILES) { section = Section.FILES.name }
+    BackHandler(enabled = selectedPath == null && page == null && current == Section.FILES && folder.isNotEmpty()) { goUp() }
+    BackHandler(enabled = selectedPath == null && page == null && current != Section.FILES) { section = Section.FILES.name }
+
+    val openPage = page
+    if (openPage != null && selectedPath == null) {
+        when (openPage) {
+            "privacy" -> LegalScreen(PrivacyDoc, onBack = { page = null }, onNavigate = { page = it })
+            "terms" -> LegalScreen(TermsDoc, onBack = { page = null }, onNavigate = { page = it })
+            else -> AboutScreen(onBack = { page = null }, onNavigate = { page = it })
+        }
+        return
+    }
 
     val openPath = selectedPath
     if (openPath != null) {
@@ -168,7 +183,7 @@ fun CdnApp(vm: CdnViewModel) {
                         text = when {
                             current != Section.FILES -> current.label
                             folder.isEmpty() -> "amit/cdn"
-                            else -> folder
+                            else -> folder.substringAfterLast('/')
                         },
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -183,11 +198,13 @@ fun CdnApp(vm: CdnViewModel) {
                             Icon(Icons.Filled.MoreVert, contentDescription = "More")
                         }
                         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                            DropdownMenuItem(text = { Text("Privacy Policy") }, onClick = { menuOpen = false; page = "privacy" })
+                            DropdownMenuItem(text = { Text("Terms of Use") }, onClick = { menuOpen = false; page = "terms" })
+                            DropdownMenuItem(text = { Text("About") }, onClick = { menuOpen = false; page = "about" })
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                             listOf(
                                 "Docs" to Config.DOCS_URL,
                                 "GitHub sync" to Config.SYNC_DOCS_URL,
-                                "Privacy Policy" to Config.PRIVACY_URL,
-                                "Terms of Use" to Config.TERMS_URL,
                             ).forEach { (label, url) ->
                                 DropdownMenuItem(
                                     text = { Text(label) },
@@ -204,14 +221,17 @@ fun CdnApp(vm: CdnViewModel) {
         },
     ) { padding ->
         Column(Modifier.padding(padding).fillMaxSize()) {
-            if (state.loading) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            if (state.loading && current == Section.SEARCH) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             when (current) {
                 Section.FILES -> FilesTab(
                     state = state,
                     folder = folder,
                     filter = filter,
+                    sort = SortOrder.valueOf(sort),
                     onFilter = { filter = it },
+                    onSort = { sort = it.name },
                     onRetry = { vm.refresh() },
+                    onNavigate = { folder = it; filter = "" },
                     onOpenFolder = { openFolder(it) },
                     onOpenFile = { openFile(it) },
                 )
@@ -229,6 +249,7 @@ fun CdnApp(vm: CdnViewModel) {
                     onUrlText = { vm.setUrlText(it) },
                     onUpload = { vm.startUpload() },
                     onOpenFile = { openFile(it) },
+                    onNavigate = { page = it },
                 )
                 Section.HISTORY -> HistoryScreen(
                     history = history,
@@ -263,13 +284,17 @@ private fun BottomTabs(current: Section, onSelect: (Section) -> Unit) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FilesTab(
     state: UiState,
     folder: String,
     filter: String,
+    sort: SortOrder,
     onFilter: (String) -> Unit,
+    onSort: (SortOrder) -> Unit,
     onRetry: () -> Unit,
+    onNavigate: (String) -> Unit,
     onOpenFolder: (String) -> Unit,
     onOpenFile: (String) -> Unit,
 ) {
@@ -289,24 +314,59 @@ private fun FilesTab(
         }
         return
     }
-    Column(Modifier.fillMaxSize()) {
-        state.error?.let {
-            Text(
-                "Refresh failed: $it",
-                color = MaterialTheme.colorScheme.error,
-                fontSize = 13.sp,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+    // Pull down to refresh, like any list on the phone.
+    PullToRefreshBox(isRefreshing = state.loading, onRefresh = onRetry, modifier = Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize()) {
+            state.error?.let {
+                Text(
+                    "Refresh failed: $it",
+                    color = MaterialTheme.colorScheme.error,
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+            }
+            Breadcrumb(folder, onNavigate)
+            FolderList(
+                files = files,
+                folder = folder,
+                filter = filter,
+                sort = sort,
+                onFilter = onFilter,
+                onSort = onSort,
+                onOpenFolder = onOpenFolder,
+                onOpenFile = onOpenFile,
             )
         }
-        FolderList(
-            files = files,
-            folder = folder,
-            filter = filter,
-            onFilter = onFilter,
-            onOpenFolder = onOpenFolder,
-            onOpenFile = onOpenFile,
-        )
     }
+}
+
+/** "cdn / uploads / 2026", every part tappable, so a deep folder is one tap from anywhere above it. */
+@Composable
+private fun Breadcrumb(folder: String, onNavigate: (String) -> Unit) {
+    val parts = if (folder.isEmpty()) emptyList() else folder.split('/')
+    val scroll = rememberScrollState()
+    LaunchedEffect(folder) { scroll.animateScrollTo(scroll.maxValue) }
+    Row(
+        Modifier.fillMaxWidth().horizontalScroll(scroll).padding(horizontal = 16.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Crumb("cdn", current = parts.isEmpty()) { onNavigate("") }
+        parts.forEachIndexed { i, part ->
+            Text("  /  ", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+            Crumb(part, current = i == parts.lastIndex) { onNavigate(parts.take(i + 1).joinToString("/")) }
+        }
+    }
+}
+
+@Composable
+private fun Crumb(label: String, current: Boolean, onClick: () -> Unit) {
+    Text(
+        label,
+        fontSize = 13.sp,
+        maxLines = 1,
+        color = if (current) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary,
+        modifier = Modifier.clickable(enabled = !current, onClick = onClick).padding(vertical = 4.dp),
+    )
 }
 
 @Composable
@@ -314,31 +374,38 @@ private fun FolderList(
     files: List<FileRec>,
     folder: String,
     filter: String,
+    sort: SortOrder,
     onFilter: (String) -> Unit,
+    onSort: (SortOrder) -> Unit,
     onOpenFolder: (String) -> Unit,
     onOpenFile: (String) -> Unit,
 ) {
     val all = remember(files, folder) { listFolder(files, folder) }
-    val shown = remember(all, filter) {
+    val shown = remember(all, filter, sort) {
         val q = filter.trim()
-        if (q.isEmpty()) all else all.filter { it.name.contains(q, ignoreCase = true) }
+        val matching = if (q.isEmpty()) all else all.filter { it.name.contains(q, ignoreCase = true) }
+        sortEntries(matching, sort)
     }
     val fileCount = all.count { !it.isDir }
     val folderCount = all.size - fileCount
 
-    OutlinedTextField(
-        value = filter,
-        onValueChange = onFilter,
-        singleLine = true,
-        label = { Text("Filter this folder") },
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-    )
-    Text(
-        "$folderCount folders · $fileCount files",
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        fontSize = 13.sp,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-    )
+    SearchField(filter, onFilter, "Filter this folder")
+    Row(
+        Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            "$folderCount ${if (folderCount == 1) "folder" else "folders"} · $fileCount ${if (fileCount == 1) "file" else "files"}",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 13.sp,
+        )
+        TextButton(onClick = {
+            onSort(if (sort == SortOrder.NAME) SortOrder.SIZE else SortOrder.NAME)
+        }) {
+            Text("Sort: ${sort.label}", fontSize = 13.sp)
+        }
+    }
     HorizontalDivider()
 
     if (shown.isEmpty()) {
@@ -348,29 +415,13 @@ private fun FolderList(
 
     LazyColumn(Modifier.fillMaxSize()) {
         items(shown, key = { it.path }) { e ->
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .clickable { if (e.isDir) onOpenFolder(e.path) else onOpenFile(e.path) }
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = if (e.isDir) e.name + "/" else e.name,
-                    color = if (e.isDir) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f).padding(end = 12.dp),
-                )
-                Text(
-                    text = if (e.isDir) "${e.count} ${if (e.count == 1) "file" else "files"}" else formatSize(e.size),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 12.sp,
-                )
-            }
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            ListRow(
+                title = e.name,
+                subtitle = null,
+                trailing = if (e.isDir) "${e.count} ${if (e.count == 1) "file" else "files"}" else formatSize(e.size),
+                isDir = e.isDir,
+                onClick = { if (e.isDir) onOpenFolder(e.path) else onOpenFile(e.path) },
+            )
         }
     }
 }
