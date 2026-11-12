@@ -5,15 +5,6 @@ __pycache__/
 .venv/
 venv/
 
-# Android app (android/): never commit a keystore or build output
-android/**/*.keystore
-android/**/*.jks
-android/**/*.apk
-android/**/*.aab
-android/**/build/
-android/.gradle/
-android/local.properties
-
 # Local env files (the template .env.example is committed)
 .env.*
 !.env.example

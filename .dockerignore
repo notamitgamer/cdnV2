@@ -9,5 +9,4 @@
 venv
 .ruff_cache
 .pytest_cache
-android
 *.md
