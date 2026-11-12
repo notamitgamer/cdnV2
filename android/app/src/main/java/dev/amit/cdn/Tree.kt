@@ -110,3 +110,33 @@ fun embedFor(path: String, raw: String): String? = when {
     kindOf(path) == Kind.AUDIO -> "<audio src=\"$raw\" controls></audio>"
     else -> null
 }
+
+/** Every folder path in the file list ("a", "a/b", ...), for searching folder names. */
+fun allFolders(files: List<FileRec>): List<String> {
+    val set = LinkedHashSet<String>()
+    for (f in files) {
+        var i = f.path.indexOf('/')
+        while (i >= 0) {
+            set.add(f.path.substring(0, i))
+            i = f.path.indexOf('/', i + 1)
+        }
+    }
+    return set.toList()
+}
+
+/**
+ * Searches the whole tree by name, like the website's search box, but on the phone so it answers as you type.
+ * Folders come first. A folder's [Entry.count] is -1 here because the search does not count its files.
+ */
+fun searchTree(files: List<FileRec>, folders: List<String>, query: String, limit: Int = 100): List<Entry> {
+    val q = query.trim()
+    if (q.isEmpty()) return emptyList()
+    val byName = compareBy<Entry, String>(String.CASE_INSENSITIVE_ORDER) { it.name }
+    val dirs = folders
+        .filter { it.substringAfterLast('/').contains(q, ignoreCase = true) }
+        .map { Entry(it.substringAfterLast('/'), it, true, 0L, -1) }
+    val hits = files
+        .filter { it.path.substringAfterLast('/').contains(q, ignoreCase = true) }
+        .map { Entry(it.path.substringAfterLast('/'), it.path, false, it.size, 0) }
+    return (dirs.sortedWith(byName) + hits.sortedWith(byName)).take(limit)
+}

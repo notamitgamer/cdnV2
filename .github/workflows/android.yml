@@ -15,6 +15,8 @@ jobs:
   build:
     name: Build debug APK
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # lets the last step publish a GitHub Release (skipped on pull requests)
     defaults:
       run:
         working-directory: android
@@ -40,3 +42,20 @@ jobs:
           name: amit-cdn-debug-apk
           path: android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+
+      # Every merge to main that changes the app publishes a Release with the APK attached,
+      # so there is a stable download link and no need to dig through workflow runs.
+      - name: Publish release
+        if: github.event_name != 'pull_request'
+        working-directory: ${{ github.workspace }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VER=$(grep -m1 'versionName' android/app/build.gradle.kts | sed -E 's/.*"([^"]+)".*/\1/')
+          APK="amit-cdn-${VER}.apk"
+          cp android/app/build/outputs/apk/debug/app-debug.apk "$APK"
+          gh release create "android-v${VER}-${GITHUB_RUN_NUMBER}" "$APK" \
+            --target "$GITHUB_SHA" \
+            --title "amit/cdn for Android ${VER} (build ${GITHUB_RUN_NUMBER})" \
+            --generate-notes \
+            --latest=false
