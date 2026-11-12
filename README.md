@@ -103,22 +103,6 @@ Anubis appends its own hop to `X-Forwarded-For`, so **increase `TRUSTED_PROXY_HO
 enable it, then confirm the "Your IP" box in `/admin` shows your real address. If your raw domain
 does not start with `raw.`, edit the `raw-domain` rule in the policy.
 
-### Discord link buttons (optional)
-
-Set `DISCORD_BOT_TOKEN` and the app runs a small Discord bot. When someone posts a CDN link, Discord shows
-the usual preview (from the page's OpenGraph tags) and the bot replies with buttons: **Copy** (sends the
-link privately so it can be copied), **Download** and **Raw** for files, **Download zip** and **Open** for
-folders.
-
-1. Create an application at <https://discord.com/developers/applications>, add a bot, and turn on the
-   **Message Content Intent**.
-2. Invite it with the `bot` scope and the *View Channels*, *Send Messages* and *Read Message History*
-   permissions.
-3. Set `DISCORD_BOT_TOKEN`. Optionally `DISCORD_GUILD_IDS` (limit to your servers) and `DISCORD_LINK_HOSTS`
-   (extra hosts, e.g. a preview deploy).
-
-The bot lives in the web service, so on a sleeping free plan it only answers while the app is awake.
-
 ## Configuration
 
 All configuration is through environment variables. See [`.env.example`](.env.example) for a commented
@@ -272,8 +256,8 @@ jsDelivr.
 
 ## UI notes
 
-- **One stylesheet, one script.** All styling is in `app/static/app.css` (tokens at the top; light/dark via
-  `html[data-theme]`, set before first paint) and all behaviour in `app/static/app.js`. Both are loaded on every
+- **One stylesheet, one script.** All styling is in `app/static/app.css` (tokens at the top; dark only, and `/admin` shares
+  them) and all behaviour in `app/static/app.js`. Both are loaded on every
   page and versioned with a content hash (`?v=`), so a deploy never pairs new HTML with old CSS.
 - **Delegated events only.** Turbo swaps `<body>` on each visit, so `app.js` binds everything on `document`
   (via `data-action`, `data-copy`, ids) and re-runs an idempotent `init()` on `turbo:load`.
