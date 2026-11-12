@@ -396,7 +396,7 @@ _PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>CDN admin</title>
 <style>
 @font-face{font-family:"IBM Plex Sans";font-weight:400;font-display:swap;src:url("/static/fonts/plex-sans-400.woff2") format("woff2")}@font-face{font-family:"IBM Plex Sans";font-weight:600;font-display:swap;src:url("/static/fonts/plex-sans-600.woff2") format("woff2")}@font-face{font-family:"IBM Plex Sans";font-weight:700;font-display:swap;src:url("/static/fonts/plex-sans-700.woff2") format("woff2")}@font-face{font-family:"IBM Plex Mono";font-weight:400;font-display:swap;src:url("/static/fonts/plex-mono-400.woff2") format("woff2")}@font-face{font-family:"IBM Plex Mono";font-weight:600;font-display:swap;src:url("/static/fonts/plex-mono-600.woff2") format("woff2")}
-:root{--bg:#0d1117;--sf:#161b22;--bd:#30363d;--ln:#21262d;--tx:#e6edf3;--dim:#9da7b3;--red:#ff7b72;--grn:#56d364;--amb:#d29922;--blu:#58a6ff}
+:root{--bg:#0d1117;--sf:#161b22;--bd:#30363d;--ln:#21262d;--tx:#e6edf3;--dim:#9da7b3;--red:#ff7b72;--grn:#56d364;--amb:#d29922;--blu:#58a6ff;--red-bd:#da3633;--grn-bd:#238636;--red-bg:#3d1d1d;--grn-bg:#1f3522;--amb-bg:#3a2d12}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{font:14px/1.45 "IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;margin:0 auto;padding:14px 14px 64px;background:var(--bg);color:var(--tx);max-width:1200px;-webkit-text-size-adjust:100%}
 header.bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
@@ -421,13 +421,13 @@ tr:last-child td{border-bottom:0}
 th{color:var(--dim);font-weight:600}
 .act{white-space:nowrap;text-align:right}.name{overflow-wrap:anywhere}
 button{font:inherit;font-size:12px;min-height:28px;padding:3px 8px;border-radius:6px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);cursor:pointer}
-button.red{border-color:#da3633;color:var(--red)}button.green{border-color:#238636;color:var(--grn)}button:active{background:var(--ln)}
+button.red{border-color:var(--red-bd);color:var(--red)}button.green{border-color:var(--grn-bd);color:var(--grn)}button:active{background:var(--ln)}
 input{font:inherit;font-size:14px;padding:8px 10px;border-radius:6px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);width:100%;max-width:420px}
 .mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;overflow-wrap:break-word}.nw{white-space:nowrap}
 .dim{color:var(--dim)}.bad{color:var(--red)}.ok{color:var(--grn)}.warn{color:var(--amb)}
 .badge{display:inline-block;padding:1px 5px;border-radius:4px;font-size:10px;font-weight:600;text-transform:uppercase}
-.badge.ok{background:#1f3522;color:var(--grn)}.badge.bad{background:#3d1d1d;color:var(--red)}.badge.dim{background:var(--ln);color:var(--dim)}.badge.warn{background:#3a2d12;color:var(--amb)}
-.banner{background:#3d1d1d;border:1px solid #da3633;padding:8px 12px;border-radius:6px;margin:10px 0;font-size:13px}
+.badge.ok{background:var(--grn-bg);color:var(--grn)}.badge.bad{background:var(--red-bg);color:var(--red)}.badge.dim{background:var(--ln);color:var(--dim)}.badge.warn{background:var(--amb-bg);color:var(--amb)}
+.banner{background:var(--red-bg);border:1px solid var(--red-bd);padding:8px 12px;border-radius:6px;margin:10px 0;font-size:13px}
 
 /* Collapsible sections */
 details.box{margin-bottom:10px;scroll-margin-top:54px}
