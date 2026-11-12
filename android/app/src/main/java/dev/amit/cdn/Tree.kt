@@ -140,3 +140,15 @@ fun searchTree(files: List<FileRec>, folders: List<String>, query: String, limit
         .map { Entry(it.path.substringAfterLast('/'), it.path, false, it.size, 0) }
     return (dirs.sortedWith(byName) + hits.sortedWith(byName)).take(limit)
 }
+
+/** How a folder's rows are ordered. Folders always stay above files. */
+enum class SortOrder(val label: String) {
+    NAME("A to Z"),
+    SIZE("Largest first"),
+}
+
+fun sortEntries(list: List<Entry>, order: SortOrder): List<Entry> = when (order) {
+    SortOrder.NAME -> list // listFolder already returns folders first, each A to Z
+    SortOrder.SIZE -> list.filter { it.isDir }.sortedByDescending { it.size } +
+        list.filter { !it.isDir }.sortedByDescending { it.size }
+}

@@ -28,6 +28,13 @@ data class UploadResponse(val files: List<UploadResult>, val batchUrl: String?)
 /** The two folders the website lets anyone upload to. */
 val UPLOAD_FOLDERS = listOf("uploads", "third-party")
 
+/** The server refuses video files (app/upload_guard.py), so say so before spending the upload. */
+private val blockedVideoExts = setOf(
+    "mp4", "m4v", "mov", "webm", "mkv", "avi", "wmv", "flv", "mpg", "mpeg", "3gp", "3g2", "ogv",
+)
+
+fun isBlockedVideo(name: String): Boolean = extOf(name) in blockedVideoExts
+
 /** Reads the display name and size of a picked file. */
 fun describe(resolver: ContentResolver, uri: Uri): Picked {
     var name: String? = null
@@ -47,13 +54,28 @@ fun describe(resolver: ContentResolver, uri: Uri): Picked {
     return Picked(uri, name ?: uri.lastPathSegment ?: "file", size)
 }
 
-/** Streams a picked file straight from its content URI, so large files never sit in memory. */
-private class StreamBody(private val resolver: ContentResolver, private val picked: Picked) : RequestBody() {
+/**
+ * Streams a picked file straight from its content URI, so large files never sit in memory.
+ * [onBytes] is told how many bytes were just written, for the progress bar.
+ */
+private class StreamBody(
+    private val resolver: ContentResolver,
+    private val picked: Picked,
+    private val onBytes: (Int) -> Unit,
+) : RequestBody() {
     override fun contentType() = "application/octet-stream".toMediaType()
     override fun contentLength(): Long = picked.size
     override fun writeTo(sink: BufferedSink) {
         val input = resolver.openInputStream(picked.uri) ?: throw IOException("Could not read ${picked.name}")
-        input.use { sink.writeAll(it.source()) }
+        input.use { stream ->
+            val buffer = ByteArray(64 * 1024)
+            while (true) {
+                val n = stream.read(buffer)
+                if (n < 0) break
+                sink.write(buffer, 0, n)
+                onBytes(n)
+            }
+        }
     }
 }
 
@@ -65,10 +87,27 @@ class UploadApi(private val resolver: ContentResolver) {
         .readTimeout(5, TimeUnit.MINUTES)
         .build()
 
-    suspend fun uploadFiles(files: List<Picked>, folder: String): UploadResponse = withContext(Dispatchers.IO) {
+    /** [onProgress] gets 0..1 as bytes go out; it is not called when the sizes are not known. */
+    suspend fun uploadFiles(
+        files: List<Picked>,
+        folder: String,
+        onProgress: (Float) -> Unit = {},
+    ): UploadResponse = withContext(Dispatchers.IO) {
+        val total = files.sumOf { it.size.coerceAtLeast(0L) }
+        val known = total > 0 && files.none { it.size < 0 }
+        var sent = 0L
         val form = MultipartBody.Builder().setType(MultipartBody.FORM)
         form.addFormDataPart("folder", folder)
-        for (p in files) form.addFormDataPart("files", p.name, StreamBody(resolver, p))
+        for (p in files) {
+            form.addFormDataPart(
+                "files",
+                p.name,
+                StreamBody(resolver, p) { n ->
+                    sent += n
+                    if (known) onProgress((sent.toDouble() / total).coerceAtMost(1.0).toFloat())
+                },
+            )
+        }
         send(Request.Builder().url("${Config.CDN_BASE}/api/put").post(form.build()))
     }
 
@@ -79,7 +118,7 @@ class UploadApi(private val resolver: ContentResolver) {
     }
 
     private fun send(builder: Request.Builder): UploadResponse {
-        val request = builder.header("User-Agent", "amit-cdn-android/0.2").build()
+        val request = builder.header("User-Agent", Config.USER_AGENT).build()
         client.newCall(request).execute().use { r ->
             val text = r.body?.string().orEmpty()
             if (!r.isSuccessful) throw IOException(errorText(r.code, text))

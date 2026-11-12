@@ -1,6 +1,5 @@
 package dev.amit.cdn
 
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -30,9 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -158,12 +155,8 @@ private fun Pill(text: String) {
 
 @Composable
 private fun CopyButton(label: String, value: String, primary: Boolean = false) {
-    val clipboard = LocalClipboardManager.current
     val context = LocalContext.current
-    val onClick = {
-        clipboard.setText(AnnotatedString(value))
-        Toast.makeText(context, "Copied", Toast.LENGTH_SHORT).show()
-    }
+    val onClick = { copyText(context, label, value) }
     if (primary) Button(onClick = onClick, modifier = Modifier.fillMaxWidth()) { Text(label) }
     else OutlinedButton(onClick = onClick, modifier = Modifier.fillMaxWidth()) { Text(label) }
 }

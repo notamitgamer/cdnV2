@@ -1,8 +1,12 @@
 package dev.amit.cdn
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
+import android.widget.Toast
 import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
 
@@ -29,4 +33,11 @@ fun shareLink(context: Context, title: String, url: String) {
         putExtra(Intent.EXTRA_TEXT, url)
     }
     context.startActivity(Intent.createChooser(send, "Share link"))
+}
+
+/** Copies text to the clipboard. Android 13 and newer show their own "copied" notice, older ones need ours. */
+fun copyText(context: Context, label: String, value: String) {
+    val manager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    manager.setPrimaryClip(ClipData.newPlainText(label, value))
+    if (Build.VERSION.SDK_INT < 33) Toast.makeText(context, "Copied", Toast.LENGTH_SHORT).show()
 }
