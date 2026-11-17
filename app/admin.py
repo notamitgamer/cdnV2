@@ -47,6 +47,7 @@ _load_lock = asyncio.Lock()
 _save_lock = asyncio.Lock()
 _loop_task = None
 _auth_fails: dict[str, deque] = {}
+_AUTH_FAILS_MAX = 10000  # prevent unbounded growth
 
 
 def enabled() -> bool:
@@ -205,6 +206,12 @@ def _require_admin(request: Request) -> None:
         raise HTTPException(status_code=429, detail="Too many attempts. Wait a minute.")
     if not hmac.compare_digest(request.headers.get("authorization", ""), f"Bearer {ADMIN_TOKEN}"):
         fails.append(now)
+        # Cleanup old entries to prevent unbounded growth
+        if len(_auth_fails) > _AUTH_FAILS_MAX:
+            cutoff = now - 3600
+            to_delete = [k for k, v in _auth_fails.items() if v and v[-1] < cutoff]
+            for k in to_delete:
+                _auth_fails.pop(k, None)
         raise HTTPException(status_code=401, detail="Unauthorized")
 
 

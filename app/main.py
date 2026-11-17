@@ -70,6 +70,8 @@ templates.env.globals["asset_v"] = _asset_version()
 
 
 _GZ_CACHE: dict = {}
+_GZ_CACHE_ORDER: list[tuple] = []  # LRU order for eviction
+_GZ_CACHE_MAX = 50  # static files are few; this is plenty
 
 
 def _gzipped(path: Path) -> bytes:
@@ -78,6 +80,15 @@ def _gzipped(path: Path) -> bytes:
     data = _GZ_CACHE.get(key)
     if data is None:
         data = _GZ_CACHE[key] = gzip.compress(path.read_bytes(), 9)
+        _GZ_CACHE_ORDER.append(key)
+        if len(_GZ_CACHE) > _GZ_CACHE_MAX:
+            oldest = _GZ_CACHE_ORDER.pop(0)
+            _GZ_CACHE.pop(oldest, None)
+    else:
+        # Move to end (most recently used)
+        if key in _GZ_CACHE_ORDER:
+            _GZ_CACHE_ORDER.remove(key)
+        _GZ_CACHE_ORDER.append(key)
     return data
 
 
@@ -738,6 +749,73 @@ async def zip_stats(path: str):
     }
 
 
+async def _create_zip_response(files: list[dict], prefix_len: int, zip_filename: str) -> StreamingResponse:
+    """Create a ZIP streaming response from a list of files.
+
+    Args:
+        files: List of dicts with 'path' (for folder zips) or 'hf_path' (for batch zips) and optionally 'filename'
+        prefix_len: Length of path prefix to strip for arcnames (0 for batches)
+        zip_filename: Name of the downloaded zip file
+    """
+    ZIP_FETCH_CONCURRENCY = 8
+    semaphore = asyncio.Semaphore(ZIP_FETCH_CONCURRENCY)
+
+    async def fetch(client: httpx.AsyncClient, f: dict):
+        # Support both folder zips (with 'path') and batch zips (with 'hf_path')
+        hf_path = f.get("hf_path") or f.get("path")
+        hf_url = bucket_url(hf_path)
+
+        async with semaphore:
+            r = await client.get(hf_url, headers=auth_headers())
+
+        return f, r
+
+    buffer = io.BytesIO()
+
+    async with httpx.AsyncClient(
+        follow_redirects=True,
+    ) as client:
+        results = await asyncio.gather(
+            *(fetch(client, f) for f in files)
+        )
+
+        with zipfile.ZipFile(
+            buffer,
+            "w",
+            zipfile.ZIP_DEFLATED,
+        ) as zf:
+            seen_names = set()
+            for f, r in results:
+                if r.status_code != 200:
+                    continue
+
+                # Support both folder zips and batch zips
+                arcname = f.get("filename") or f.get("hf_path", "").split("/")[-1] or f["path"][prefix_len:] if prefix_len else f["path"]
+
+                if arcname in seen_names:
+                    base = f.get("hf_path", "").split("/")[-1].split("-")[0] if f.get("hf_path") else f["path"].split("/")[-1].split("-")[0]
+                    arcname = f"{base}-{arcname}"
+
+                seen_names.add(arcname)
+
+                zf.writestr(
+                    arcname,
+                    r.content,
+                )
+
+    buffer.seek(0)
+
+    return StreamingResponse(
+        buffer,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="{zip_filename}"'
+            )
+        },
+    )
+
+
 @app.get("/api/pack/{path:path}")
 async def download_zip(path: str):
     clean_path = path.strip("/")
@@ -762,63 +840,13 @@ async def download_zip(path: str):
         else 0
     )
 
-    ZIP_FETCH_CONCURRENCY = 8
-    semaphore = asyncio.Semaphore(ZIP_FETCH_CONCURRENCY)
-
-    async def fetch(client: httpx.AsyncClient, f: dict):
-        hf_url = bucket_url(f["path"])
-
-        async with semaphore:
-            r = await client.get(hf_url, headers=auth_headers())
-
-        return f, r
-
-    buffer = io.BytesIO()
-
-    async with httpx.AsyncClient(
-        follow_redirects=True,
-    ) as client:
-        results = await asyncio.gather(
-            *(fetch(client, f) for f in files)
-        )
-
-        with zipfile.ZipFile(
-            buffer,
-            "w",
-            zipfile.ZIP_DEFLATED,
-        ) as zf:
-            for f, r in results:
-                if r.status_code != 200:
-                    continue
-
-                arcname = (
-                    f["path"][prefix_len:]
-                    if prefix_len
-                    else f["path"]
-                )
-
-                zf.writestr(
-                    arcname,
-                    r.content,
-                )
-
-    buffer.seek(0)
-
     zip_filename = (
         clean_path.rstrip("/").split("/")[-1]
         if clean_path
         else HF_BUCKET_ID.split("/")[-1]
     ) + ".zip"
 
-    return StreamingResponse(
-        buffer,
-        media_type="application/zip",
-        headers={
-            "Content-Disposition": (
-                f'attachment; filename="{zip_filename}"'
-            )
-        },
-    )
+    return await _create_zip_response(files, prefix_len, zip_filename)
 
 
 @app.get("/api/find")
@@ -932,65 +960,7 @@ async def download_zip_batch(batch_id: str):
             detail="Batch is empty",
         )
 
-    ZIP_FETCH_CONCURRENCY = 8
-    semaphore = asyncio.Semaphore(ZIP_FETCH_CONCURRENCY)
-
-    async def fetch(client: httpx.AsyncClient, f: dict):
-        hf_url = bucket_url(f["hf_path"])
-
-        async with semaphore:
-            r = await client.get(hf_url, headers=auth_headers())
-
-        return f, r
-
-    seen_names = set()
-    buffer = io.BytesIO()
-
-    async with httpx.AsyncClient(
-        follow_redirects=True,
-    ) as client:
-        results = await asyncio.gather(
-            *(fetch(client, f) for f in files)
-        )
-
-        with zipfile.ZipFile(
-            buffer,
-            "w",
-            zipfile.ZIP_DEFLATED,
-        ) as zf:
-            for f, r in results:
-                if r.status_code != 200:
-                    continue
-
-                arcname = (
-                    f.get("filename")
-                    or f["hf_path"].split("/")[-1]
-                )
-
-                if arcname in seen_names:
-                    arcname = (
-                        f"{f['hf_path'].split('/')[-1].split('-')[0]}"
-                        f"-{arcname}"
-                    )
-
-                seen_names.add(arcname)
-
-                zf.writestr(
-                    arcname,
-                    r.content,
-                )
-
-    buffer.seek(0)
-
-    return StreamingResponse(
-        buffer,
-        media_type="application/zip",
-        headers={
-            "Content-Disposition": (
-                f'attachment; filename="batch-{batch_id}.zip"'
-            )
-        },
-    )
+    return await _create_zip_response(files, 0, f"batch-{batch_id}.zip")
 
 
 @app.api_route(

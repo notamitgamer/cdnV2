@@ -53,15 +53,23 @@ def _ensure_bucket():
 _cache = {}
 
 _key_locks: dict[str, asyncio.Lock] = {}
+_key_locks_order: list[str] = []  # LRU order for eviction
 
 def _get_key_lock(key: str) -> asyncio.Lock:
     lock = _key_locks.get(key)
     if lock is None:
         lock = asyncio.Lock()
         _key_locks[key] = lock
-        
+        _key_locks_order.append(key)
+
         if len(_key_locks) > MAX_CACHE_SIZE:
-            _key_locks.pop(next(iter(_key_locks)))
+            oldest = _key_locks_order.pop(0)
+            _key_locks.pop(oldest, None)
+    else:
+        # Move to end (most recently used)
+        if key in _key_locks_order:
+            _key_locks_order.remove(key)
+        _key_locks_order.append(key)
     return lock
 
 def _get_cache(key):

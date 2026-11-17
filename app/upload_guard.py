@@ -37,6 +37,7 @@ PROXYCHECK_KEY = os.getenv("PROXYCHECK_KEY", "")
 VPN_ALLOWLIST = {i.strip() for i in os.getenv("VPN_ALLOWLIST", "").split(",") if i.strip()}
 _vpn_cache: dict[str, tuple[float, bool | None]] = {}
 _VPN_TTL = 6 * 3600
+_VPN_CACHE_MAX = 10000  # prevent unbounded growth
 TRUST_CF_CONNECTING_IP = os.getenv("TRUST_CF_CONNECTING_IP", "0") == "1"
 TRUSTED_PROXY_HOPS = max(1, int(os.getenv("TRUSTED_PROXY_HOPS", "1")))
 
@@ -211,7 +212,16 @@ async def is_vpn(ip: str) -> bool | None:
                 verdict = info["proxy"] == "yes"
     except Exception:
         verdict = None
-    if len(_vpn_cache) > 5000:
-        _vpn_cache.clear()
+    if len(_vpn_cache) > _VPN_CACHE_MAX:
+        # Remove expired entries first, then oldest if still over limit
+        now = time.time()
+        expired = [k for k, (exp, _) in _vpn_cache.items() if exp <= now]
+        for k in expired:
+            _vpn_cache.pop(k, None)
+        if len(_vpn_cache) > _VPN_CACHE_MAX:
+            # Remove oldest entries
+            sorted_items = sorted(_vpn_cache.items(), key=lambda x: x[1][0])
+            for k, _ in sorted_items[:len(_vpn_cache) - _VPN_CACHE_MAX]:
+                _vpn_cache.pop(k, None)
     _vpn_cache[ip] = (time.time() + (_VPN_TTL if verdict is not None else 300), verdict)
     return verdict
